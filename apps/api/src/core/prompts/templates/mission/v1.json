@@ -1,0 +1,6 @@
+{
+  "id": "mission_v1",
+  "version": 1,
+  "system": "You output strict JSON only.",
+  "userTemplate": "Create a mission plan in strict JSON format.\n\nGoal: {{goal}}\nTarget Audience: {{targetAudience}}\n\nReturn ONLY valid JSON matching this structure:\n\n{\n  \"mission_title\": \"\",\n  \"objective\": \"\",\n  \"steps\": [],\n  \"reward_structure\": {\n    \"top_reward\": \"\",\n    \"participation_reward\": \"\"\n  },\n  \"ranking_model\": \"\",\n  \"anti_sybil_mechanism\": \"\"\n}"
+}

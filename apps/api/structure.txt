@@ -1,0 +1,58 @@
+.
+├── package.json
+├── prisma
+│   └── schema.prisma
+├── prisma.config.ts
+├── src
+│   ├── config
+│   │   ├── env.ts
+│   │   ├── index.ts
+│   │   ├── prisma.ts
+│   │   └── redis.ts
+│   ├── core
+│   │   ├── constraints
+│   │   │   └── tweetConstraints.ts
+│   │   ├── gateway
+│   │   ├── llm
+│   │   │   ├── modelRouter.ts
+│   │   │   └── openaiClient.ts
+│   │   ├── prompts
+│   │   │   ├── compiler.ts
+│   │   │   ├── registry.ts
+│   │   │   └── templates
+│   │   ├── registry
+│   │   ├── security
+│   │   │   ├── auth.ts
+│   │   │   ├── rateLimit.ts
+│   │   │   └── rateLimitRedis.ts
+│   │   ├── validators
+│   │   │   ├── createAjvValidator.ts
+│   │   │   ├── missionValidator.ts
+│   │   │   └── tweetValidator.ts
+│   │   └── workflows
+│   │       ├── engine.ts
+│   │       ├── init.ts
+│   │       ├── missionWorkflow.ts
+│   │       ├── registry.ts
+│   │       ├── steps
+│   │       ├── tweetWorkflow.ts
+│   │       └── types.ts
+│   ├── db
+│   │   └── {repositories}
+│   ├── index.ts
+│   ├── jobs
+│   │   └── workers
+│   ├── routes
+│   │   └── generate.ts
+│   ├── schemas
+│   │   ├── inputs
+│   │   ├── mission.schema.json
+│   │   ├── outputs
+│   │   └── tweet.schema.json
+│   └── utils
+│       ├── usageAggregate.ts
+│       └── usageLogger.ts
+├── structure.txt
+└── tsconfig.json
+
+24 directories, 32 files

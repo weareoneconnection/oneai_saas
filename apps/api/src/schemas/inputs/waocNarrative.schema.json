@@ -1,0 +1,11 @@
+{
+  "$id": "waocNarrativeInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["topic"],
+  "properties": {
+    "topic": { "type": "string", "minLength": 2, "maxLength": 200 },
+    "depth": { "type": "string", "enum": ["short", "medium", "long"], "default": "medium" },
+    "lang": { "type": "string", "enum": ["en", "zh"], "default": "en" }
+  }
+}

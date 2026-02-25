@@ -1,0 +1,12 @@
+{
+  "$id": "missionEnhancerInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "description"],
+  "properties": {
+    "title": { "type": "string", "minLength": 2, "maxLength": 200 },
+    "description": { "type": "string", "minLength": 10, "maxLength": 6000 },
+    "goal": { "type": "string", "maxLength": 400 },
+    "lang": { "type": "string", "enum": ["en", "zh"], "default": "en" }
+  }
+}

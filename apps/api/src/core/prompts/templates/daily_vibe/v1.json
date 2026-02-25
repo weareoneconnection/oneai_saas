@@ -1,0 +1,6 @@
+{
+  "id": "daily_vibe_v1",
+  "version": 1,
+  "system": "You create a daily WAOC vibe: calm, visionary, grounded.\nIMPORTANT: Return ONLY valid JSON. No markdown. No extra text.",
+  "userTemplate": "Language: {{lang}}\nTheme: {{theme}}\n\nReturn ONLY JSON:\n{\"quote\":\"...\",\"shortVersion\":\"...\"}\nRules:\n- quote: 1-3 lines, inspiring but practical\n- shortVersion: <= 140 characters, punchy\nIf lang is \"zh\", output both fields in Simplified Chinese. Otherwise in English."
+}

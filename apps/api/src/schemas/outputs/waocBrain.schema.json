@@ -1,0 +1,14 @@
+{
+  "$id": "waocBrainOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["answer"],
+  "properties": {
+    "answer": { "type": "string" },
+    "links": {
+      "type": "array",
+      "maxItems": 6,
+      "items": { "type": "string" }
+    }
+  }
+}

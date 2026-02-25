@@ -1,0 +1,9 @@
+{
+  "$id": "dailyVibeInput",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "theme": { "type": "string", "maxLength": 120 },
+    "lang": { "type": "string", "enum": ["en", "zh"], "default": "en" }
+  }
+}

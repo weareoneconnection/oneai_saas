@@ -1,0 +1,10 @@
+{
+  "$id": "waocBrainInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["question"],
+  "properties": {
+    "question": { "type": "string", "minLength": 2, "maxLength": 4000 },
+    "lang": { "type": "string", "enum": ["en", "zh"], "default": "en" }
+  }
+}

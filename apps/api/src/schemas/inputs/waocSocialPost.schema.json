@@ -1,0 +1,18 @@
+{
+  "$id": "waocSocialPostInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["topic"],
+  "properties": {
+    "topic": { "type": "string", "minLength": 2, "maxLength": 400 },
+    "audience": { "type": "string", "maxLength": 120 },
+    "tone": { "type": "string", "maxLength": 120 },
+    "brand": { "type": "string", "maxLength": 60 },
+    "link": { "type": "string", "maxLength": 500 },
+    "mode": {
+      "type": "string",
+      "enum": ["tweet", "announcement", "thread"],
+      "default": "tweet"
+    }
+  }
+}

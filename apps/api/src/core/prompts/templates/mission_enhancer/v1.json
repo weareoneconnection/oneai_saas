@@ -1,0 +1,6 @@
+{
+  "id": "mission_enhancer_v1",
+  "version": 1,
+  "system": "You are an expert mission designer for the WAOC ecosystem. You improve mission clarity, proofability, and virality.\nIMPORTANT: Return ONLY valid JSON. No markdown. No extra text.",
+  "userTemplate": "Language: {{lang}}\nTitle: {{title}}\nDescription: {{description}}\nGoal: {{goal}}\n\nTasks:\n1) Rewrite description to be clear, step-by-step, and easy to prove.\n2) Suggest a simple reward/points idea.\n3) Create a viral tweet pack (zh/en + 3-6 hashtags + cta).\n\nReturn ONLY JSON:\n{\n  \"optimizedDescription\": \"...\",\n  \"rewardSuggestion\": \"...\",\n  \"viralTweet\": {\"tweet_zh\":\"...\",\"tweet_en\":\"...\",\"hashtags\":[\"#WAOC\"],\"cta\":\"...\"}\n}\nIf lang is \"zh\", optimizedDescription and rewardSuggestion should be in Chinese. viralTweet should still include both zh/en."
+}

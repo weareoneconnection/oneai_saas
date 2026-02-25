@@ -1,0 +1,13 @@
+{
+  "$id": "identityInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source", "message"],
+  "properties": {
+    "source": { "type": "string", "enum": ["telegram", "web", "api"], "default": "telegram" },
+    "userId": { "type": "string", "maxLength": 128 },
+    "handle": { "type": "string", "maxLength": 64 },
+    "message": { "type": "string", "minLength": 2, "maxLength": 4000 },
+    "lang": { "type": "string", "enum": ["en", "zh"], "default": "en" }
+  }
+}

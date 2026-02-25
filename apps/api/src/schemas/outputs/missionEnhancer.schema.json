@@ -1,0 +1,26 @@
+{
+  "$id": "missionEnhancerOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["optimizedDescription", "rewardSuggestion", "viralTweet"],
+  "properties": {
+    "optimizedDescription": { "type": "string" },
+    "rewardSuggestion": { "type": "string" },
+    "viralTweet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tweet_zh", "tweet_en", "hashtags", "cta"],
+      "properties": {
+        "tweet_zh": { "type": "string" },
+        "tweet_en": { "type": "string" },
+        "hashtags": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 8,
+          "items": { "type": "string" }
+        },
+        "cta": { "type": "string" }
+      }
+    }
+  }
+}

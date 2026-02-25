@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "required": ["tweet_zh", "tweet_en", "hashtags", "cta"],
+  "properties": {
+    "tweet_zh": { "type": "string", "minLength": 1 },
+    "tweet_en": { "type": "string", "minLength": 1 },
+    "hashtags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "maxItems": 10
+    },
+    "cta": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

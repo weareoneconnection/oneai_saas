@@ -1,0 +1,10 @@
+{
+  "$id": "waocChatOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reply"],
+  "properties": {
+    "reply": { "type": "string" },
+    "suggestedAction": { "type": "string" }
+  }
+}

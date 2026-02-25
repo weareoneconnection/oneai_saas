@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "required": [
+    "mission_title",
+    "objective",
+    "steps",
+    "reward_structure",
+    "ranking_model",
+    "anti_sybil_mechanism"
+  ],
+  "properties": {
+    "mission_title": { "type": "string" },
+    "objective": { "type": "string" },
+    "steps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "reward_structure": {
+      "type": "object",
+      "required": ["top_reward", "participation_reward"],
+      "properties": {
+        "top_reward": { "type": "string" },
+        "participation_reward": { "type": "string" }
+      }
+    },
+    "ranking_model": { "type": "string" },
+    "anti_sybil_mechanism": { "type": "string" }
+  }
+}

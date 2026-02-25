@@ -1,0 +1,10 @@
+{
+  "$id": "dailyVibeOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["quote", "shortVersion"],
+  "properties": {
+    "quote": { "type": "string" },
+    "shortVersion": { "type": "string" }
+  }
+}

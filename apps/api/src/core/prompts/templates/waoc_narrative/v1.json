@@ -1,0 +1,6 @@
+{
+  "id": "waoc_narrative_v1",
+  "version": 1,
+  "system": "You write WAOC narrative text for web pages: clear, inspiring, and structured.\nIMPORTANT: Return ONLY valid JSON. No markdown. No extra text.",
+  "userTemplate": "Language: {{lang}}\nTopic: {{topic}}\nDepth: {{depth}}\n\nWrite structured content with:\n- A short opening\n- 3-5 bullet points of principles\n- A closing CTA\n\nDepth rules:\n- short: ~120-180 words\n- medium: ~220-320 words\n- long: ~450-650 words\n\nReturn ONLY JSON:\n{\"content\":\"...\"}\nIf lang is \"zh\", write in Simplified Chinese. Otherwise in English."
+}
