@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 type Item = { label: string; href: string; desc?: string };
 
 const builders: Item[] = [
-  { label: "Studio", href: "/studio", desc: "Generate structured outputs" }, // ✅ FIXED
+  { label: "Studio", href: "/studio", desc: "Generate structured outputs" },
   { label: "Templates", href: "/templates", desc: "Reusable blueprints" },
   { label: "Projects", href: "/projects", desc: "Project spaces" },
   { label: "Workflows", href: "/workflows", desc: "Automation chains" },
@@ -28,7 +28,15 @@ function isActive(pathname: string | null, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-function Group({ title, items }: { title: string; items: Item[] }) {
+function Group({
+  title,
+  items,
+  onNavigate,
+}: {
+  title: string;
+  items: Item[];
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
 
   return (
@@ -45,6 +53,7 @@ function Group({ title, items }: { title: string; items: Item[] }) {
             <Link
               key={it.href}
               href={it.href}
+              onClick={() => onNavigate?.()}
               className={[
                 "block rounded-xl px-3 py-2 transition",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
@@ -72,17 +81,18 @@ function Group({ title, items }: { title: string; items: Item[] }) {
   );
 }
 
-export function SideNav() {
+export function SideNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="py-2">
-      <Group title="Builders" items={builders} />
+      <Group title="Builders" items={builders} onNavigate={onNavigate} />
       <div className="mx-4 my-2 h-px bg-black/10" />
-      <Group title="Console" items={consoleItems} />
+      <Group title="Console" items={consoleItems} onNavigate={onNavigate} />
       <div className="mx-4 my-2 h-px bg-black/10" />
 
       <div className="p-3">
         <Link
           href="/login"
+          onClick={() => onNavigate?.()}
           className="block rounded-xl bg-black/5 px-3 py-2 text-sm font-medium text-black/70 hover:bg-black/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
         >
           Account / Login
