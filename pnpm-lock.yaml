@@ -26,6 +26,9 @@ importers:
       '@prisma/client':
         specifier: ^7.4.1
         version: 7.4.1(prisma@7.4.1(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(typescript@5.9.3)
+      '@types/pg':
+        specifier: ^8.16.0
+        version: 8.16.0
       '@upstash/redis':
         specifier: ^1.36.2
         version: 1.36.2
