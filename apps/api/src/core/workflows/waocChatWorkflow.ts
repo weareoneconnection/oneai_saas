@@ -122,7 +122,30 @@ function quickAutoReply(args: {
   ]);
 
   const suggestedAction = links.length ? links.join(" | ") : undefined;
+  // --- WAOC meaning / stands for (deterministic, NEVER let LLM improvise) ---
+const asksMeaning =
+  /waoc.*meaning|what.*waoc|stands for|acronym|全称|什么意思|含义|缩写|代表什么/.test(msg);
 
+if (asksMeaning) {
+  if (lang === "zh") {
+    return {
+      reply:
+        "WAOC = We Are One Connection。\n" +
+        "WAOC 是面向长期协作的协调层：身份、贡献、证明，以及可落地的应用入口（如 One Mission / One Field）。\n\n" +
+        "官方入口：\n" +
+        (links.length ? links.map((x) => `- ${x}`).join("\n") : "（暂未配置官方链接）"),
+      suggestedAction,
+    };
+  }
+  return {
+    reply:
+      "WAOC = We Are One Connection.\n" +
+      "WAOC is a long-term coordination layer for builders: identity, contribution, proofs, and practical applications (e.g., One Mission / One Field).\n\n" +
+      "Official entry points:\n" +
+      (links.length ? links.map((x) => `- ${x}`).join("\n") : "(official links not configured yet)"),
+    suggestedAction,
+  };
+}
   // --- Website / Links ---
   const asksLinks =
     msg === "website" ||
@@ -264,7 +287,46 @@ function applyConstraintsOrFallback(args: {
   const raw = norm(input.message);
   const msgLower = lower(raw);
   const lang: "en" | "zh" = input.lang === "zh" ? "zh" : "en";
+  const replyLower = (data.reply || "").toLowerCase();
+const hasBadExpansion =
+  replyLower.includes("web of all communities") ||
+  replyLower.includes("web of autonomous") ||
+  replyLower.includes("autonomous communities") ||
+  replyLower.includes("we are one community") ||
+  replyLower.includes("one community");
 
+if (hasBadExpansion) {
+  const lang: "en" | "zh" = input.lang === "zh" ? "zh" : "en";
+  const website = env("WEBSITE_URL") || env("WAOC_SITE_URL");
+  const tg = env("TG_URL") || env("WAOC_COMMUNITY_URL");
+  const oneMission = env("ONE_MISSION_URL");
+
+  return {
+    ok: true,
+    data:
+      lang === "zh"
+        ? {
+            reply:
+              "WAOC = We Are One Connection。\n" +
+              "WAOC 是面向长期协作的协调层：身份、贡献、证明，以及可落地的应用入口（如 One Mission / One Field）。\n" +
+              (website || tg || oneMission
+                ? `\n官方入口：${[website && `Website: ${website}`, tg && `Telegram: ${tg}`, oneMission && `One Mission: ${oneMission}`]
+                    .filter(Boolean)
+                    .join(" | ")}`
+                : ""),
+          }
+        : {
+            reply:
+              "WAOC = We Are One Connection.\n" +
+              "WAOC is a long-term coordination layer for builders: identity, contribution, proofs, and practical applications.\n" +
+              (website || tg || oneMission
+                ? `\nOfficial: ${[website && `Website: ${website}`, tg && `Telegram: ${tg}`, oneMission && `One Mission: ${oneMission}`]
+                    .filter(Boolean)
+                    .join(" | ")}`
+                : ""),
+          },
+  };
+}
   // --- Meaning question MUST be hard-fixed ---
   if (looksLikeMeaningQuestion(msgLower)) {
     const fixed: WaocChatData =

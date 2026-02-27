@@ -93,6 +93,8 @@ export function checkWaocChatConstraints(data: WaocChatData) {
     "web of autonomous",
     "autonomous communities",
     "one community",
+    "web of all communities",     // ✅ NEW: screenshot bug
+    "web of all community",       // ✅ optional typo toleranc
   ];
   if (bannedAcronyms.some((s) => lowerReply.includes(s))) {
     errors.push("WAOC acronym expansion is invalid (do not redefine WAOC)");
