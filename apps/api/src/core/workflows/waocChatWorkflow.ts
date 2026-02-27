@@ -19,6 +19,22 @@ export type WaocChatInput = {
   message: string;
   context?: "community" | "mission" | "philosophy" | "general";
   lang?: "en" | "zh";
+
+  /**
+   * ✅ V5: emotion is handled by LLM
+   * bot can pass in:
+   * - greeting_morning | greeting_night | stress | anger | celebrate | gratitude | apology
+   * - or null/undefined
+   */
+  emotionHint?:
+    | "greeting_morning"
+    | "greeting_night"
+    | "stress"
+    | "anger"
+    | "celebrate"
+    | "gratitude"
+    | "apology"
+    | null;
 };
 
 export type WaocChatData = {
@@ -49,8 +65,8 @@ function nonEmptyList(xs: string[]) {
 }
 
 /**
- * Deterministic quick replies for common group queries.
- * Avoids the model replying with generic coaching.
+ * Deterministic quick replies for common FACTUAL queries.
+ * ✅ V5: Removed GM/GN (emotion is handled by LLM)
  * IMPORTANT: Never fabricate CA; only show if env provides it.
  */
 function quickAutoReply(args: {
@@ -81,34 +97,6 @@ function quickAutoReply(args: {
 
   const suggestedAction = links.length ? links.join(" | ") : undefined;
 
-  // --- GM/GN ---
-  const isGm =
-    msg === "gm" ||
-    msg === "gn" ||
-    msg === "good morning" ||
-    msg === "good night" ||
-    msg.startsWith("gm ") ||
-    msg.startsWith("gn ") ||
-    msg.includes(" gm") ||
-    msg.includes(" gn");
-
-  if (isGm) {
-    if (lang === "zh") {
-      return {
-        reply:
-          "GM ☀️ 今天别卷大活，做一个“小贡献”就赢：修一个 bug / 发一个更新 / 完成一个 One Mission。\n" +
-          "你今天准备交付哪个小动作？",
-        suggestedAction,
-      };
-    }
-    return {
-      reply:
-        "GM ☀️ Don’t overthink—ship one small contribution today: fix a bug, post an update, or complete a One Mission.\n" +
-        "What’s the one small thing you’ll ship today?",
-      suggestedAction,
-    };
-  }
-
   // --- Website / Links ---
   const asksLinks =
     msg === "website" ||
@@ -124,14 +112,18 @@ function quickAutoReply(args: {
       return {
         reply:
           "WAOC 官方入口在这里（选你需要的）：\n" +
-          (links.length ? links.map((x) => `- ${x}`).join("\n") : "（暂未配置链接环境变量）"),
+          (links.length
+            ? links.map((x) => `- ${x}`).join("\n")
+            : "（暂未配置链接环境变量）"),
         suggestedAction,
       };
     }
     return {
       reply:
         "WAOC official entry points (pick what you need):\n" +
-        (links.length ? links.map((x) => `- ${x}`).join("\n") : "(links not configured on server env yet)"),
+        (links.length
+          ? links.map((x) => `- ${x}`).join("\n")
+          : "(links not configured on server env yet)"),
       suggestedAction,
     };
   }
@@ -165,7 +157,7 @@ function quickAutoReply(args: {
       return {
         reply:
           "你问的是 WAOC 的 CA（合约地址）对吗？我这边没有在系统里配置 CA，避免我乱写误导。\n" +
-          "你要查的是 Solana 还是 BSC？我可以把你引导到官方入口核对。",
+          "建议你只在官网/置顶消息/官方频道核对。",
         suggestedAction,
       };
     }
@@ -185,8 +177,8 @@ function quickAutoReply(args: {
 
     return {
       reply:
-        "Are you asking for WAOC CA (contract address)? I don’t have a configured CA in this system, so I won’t guess and mislead.\n" +
-        "Which chain do you mean—Solana or BSC? I can point you to official links to verify.",
+        "Are you asking for WAOC CA (contract address)? I don’t have a configured CA in this system, so I won’t guess.\n" +
+        "Please verify via official links / pinned message.",
       suggestedAction,
     };
   }
@@ -206,28 +198,25 @@ function quickAutoReply(args: {
       return {
         reply:
           "One Mission 是 WAOC 的贡献引擎：完成任务 → 记分 → 上榜。\n" +
-          (ONE_MISSION_URL ? `入口：${ONE_MISSION_URL}` : "（One Mission 链接未配置）") +
-          "\n你想创建任务，还是想参与冲榜？",
+          (ONE_MISSION_URL ? `入口：${ONE_MISSION_URL}` : "（One Mission 链接未配置）"),
         suggestedAction,
       };
     }
     return {
       reply:
         "One Mission is WAOC’s contribution engine: complete tasks → earn points → climb the leaderboard.\n" +
-        (ONE_MISSION_URL ? `Entry: ${ONE_MISSION_URL}` : "(One Mission link not configured)") +
-        "\nDo you want to create a mission or participate and climb the board?",
+        (ONE_MISSION_URL ? `Entry: ${ONE_MISSION_URL}` : "(One Mission link not configured)"),
       suggestedAction,
     };
   }
 
-  // (optional) very short single-word triggers
+  // --- help (very short triggers) ---
   if (raw.length <= 14) {
     if (lang === "zh") {
       if (msg === "help" || msg === "帮助") {
         return {
           reply:
-            "我能帮你：解释 WAOC / One Mission / 排行榜、发公告草稿、做投票、写推文、梳理增长策略。\n" +
-            "你现在最想推进哪一件？",
+            "我能帮你：解释 WAOC / One Mission / 排行榜、发公告草稿、做投票、写推文、梳理增长策略。",
           suggestedAction,
         };
       }
@@ -235,8 +224,7 @@ function quickAutoReply(args: {
       if (msg === "help") {
         return {
           reply:
-            "I can help with WAOC/One Mission explanations, draft announcements, polls, tweets, and growth strategy.\n" +
-            "What do you want to push right now?",
+            "I can help explain WAOC/One Mission/leaderboards, draft announcements, polls, tweets, and growth strategy.",
           suggestedAction,
         };
       }
@@ -257,11 +245,27 @@ function checkWaocChatConstraints(data: WaocChatData): { ok: boolean; errors: st
   if (!reply) errors.push("reply must be non-empty");
 
   const lowerReply = reply.toLowerCase();
-  const bannedStarts = ["clarify", "focus on", "identify", "please clarify", "what specific area"];
+
+  // ✅ ban generic coaching openers
+  const bannedStarts = [
+    "clarify",
+    "focus on",
+    "identify",
+    "please clarify",
+    "what specific area",
+    "can you clarify",
+  ];
   if (bannedStarts.some((s) => lowerReply.startsWith(s))) {
     errors.push("reply too generic/coaching; answer directly like a normal person");
   }
 
+  // ✅ WAOC acronym MUST be correct
+  const wrongAcronyms = ["we are one community", "one community"];
+  if (wrongAcronyms.some((s) => lowerReply.includes(s))) {
+    errors.push("WAOC acronym is wrong; must be 'We Are One Connection'");
+  }
+
+  // ✅ suggestedAction length
   if (data?.suggestedAction && data.suggestedAction.length > 200) {
     errors.push("suggestedAction too long (max 200 chars)");
   }
@@ -279,11 +283,12 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
   steps: [
     preparePromptStep<WaocChatInput, WaocChatData>({
       task: "waoc_chat",
-      templateVersion: 4,
+      templateVersion: 4, // ✅ V4
       variables: (input) => ({
         message: input.message,
         context: input.context ?? "general",
         lang: input.lang ?? "en",
+        emotionHint: input.emotionHint ?? "",
       }),
     }),
 
@@ -296,10 +301,11 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
       check: (ctx) => checkWaocChatConstraints(ctx.data as any),
       extraInstruction:
         'Return ONLY valid JSON: {"reply":"...","suggestedAction":"..."}.\n' +
-        "- reply is required and must answer the user directly like a normal person (no coaching openers like 'Clarify' or 'Focus on').\n" +
+        "- reply is required and must answer the user directly like a normal person.\n" +
         "- suggestedAction is optional and short.\n" +
         "- Do NOT force a follow-up question unless it truly helps.\n" +
-        "- If the user message is short (e.g. 'Mission', 'CA', 'website', 'gm'), infer the WAOC context and answer helpfully.\n" +
+        "- If the user message is short (e.g. 'Mission', 'CA', 'website', 'gm', 'gn'), infer the WAOC intent and answer helpfully.\n" +
+        "- WAOC MUST be expanded ONLY as 'We Are One Connection'. Never say 'We Are One Community'.\n" +
         "- Keep it natural and WAOC-context aware.\n",
     }),
 
@@ -314,9 +320,9 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
 
       const raw = norm(ctx.input.message);
       const msg = lower(raw);
-      const lang: "en" | "zh" = (ctx.input.lang === "zh" ? "zh" : "en") as any;
+      const lang: "en" | "zh" = ctx.input.lang === "zh" ? "zh" : "en";
 
-      /** 1) Quick deterministic auto replies (gm/ca/website/mission/etc) */
+      /** 1) Quick deterministic auto replies (FACT only: CA/links/mission/help) */
       const quick = quickAutoReply({ raw, msg, lang });
       if (quick) {
         ctx.data.reply = quick.reply;
@@ -346,18 +352,33 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
             match.task,
             match.task === "waoc_brain"
               ? { question: raw, lang: ctx.input.lang ?? "en" }
-              : { message: raw, lang: ctx.input.lang ?? "en" },
-            { templateVersion:  4}
+              : match.task === "waoc_narrative"
+                ? { topic: raw, depth: "short", lang: ctx.input.lang ?? "en" }
+                : { message: raw, lang: ctx.input.lang ?? "en" },
+            { templateVersion: 5 }
           );
 
           if (r?.success) {
-            const answer = (r.data?.reply ?? r.data?.answer ?? r.data?.text ?? "").toString().trim();
+            // waoc_brain => {answer, links}
+            // waoc_narrative => {content}
+            // mission/tweet => could be reply/text/content
+            const answer =
+              (r.data?.reply ??
+                r.data?.answer ??
+                r.data?.content ??
+                r.data?.text ??
+                "").toString().trim();
+
             if (answer) {
               ctx.data.reply = answer;
 
               if (Array.isArray(r.data?.links) && r.data.links.length) {
                 ctx.data.suggestedAction = "Learn more: " + r.data.links.join(" | ");
               }
+
+              // ✅ re-check constraints after routing override
+              const ok2 = checkWaocChatConstraints(ctx.data as any);
+              if (!ok2.ok) return { ok: false, error: ok2.errors };
             }
           }
         } catch {
