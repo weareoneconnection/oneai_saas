@@ -279,7 +279,7 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
   steps: [
     preparePromptStep<WaocChatInput, WaocChatData>({
       task: "waoc_chat",
-      templateVersion: 1,
+      templateVersion: 4,
       variables: (input) => ({
         message: input.message,
         context: input.context ?? "general",
