@@ -11,6 +11,12 @@ import { refineJsonStep } from "./steps/refineJsonStep.js";
 import { waocChatValidator } from "../validators/waocChatValidator.js";
 import { registerWorkflow } from "./registry.js";
 
+// ✅ NEW: constraints layer
+import {
+  checkWaocChatConstraints,
+  type WaocChatData,
+} from "../constraints/waocChatConstraints.js";
+
 /* =========================
    Types
 ========================= */
@@ -21,7 +27,7 @@ export type WaocChatInput = {
   lang?: "en" | "zh";
 
   /**
-   * ✅ V5: emotion is handled by LLM
+   * ✅ V4: emotion is handled by LLM
    * bot can pass in:
    * - greeting_morning | greeting_night | stress | anger | celebrate | gratitude | apology
    * - or null/undefined
@@ -35,11 +41,6 @@ export type WaocChatInput = {
     | "gratitude"
     | "apology"
     | null;
-};
-
-export type WaocChatData = {
-  reply: string;
-  suggestedAction?: string;
 };
 
 type WaocChatCtx = WorkflowContext<WaocChatInput, WaocChatData> & {
@@ -198,14 +199,18 @@ function quickAutoReply(args: {
       return {
         reply:
           "One Mission 是 WAOC 的贡献引擎：完成任务 → 记分 → 上榜。\n" +
-          (ONE_MISSION_URL ? `入口：${ONE_MISSION_URL}` : "（One Mission 链接未配置）"),
+          (ONE_MISSION_URL
+            ? `入口：${ONE_MISSION_URL}`
+            : "（One Mission 链接未配置）"),
         suggestedAction,
       };
     }
     return {
       reply:
         "One Mission is WAOC’s contribution engine: complete tasks → earn points → climb the leaderboard.\n" +
-        (ONE_MISSION_URL ? `Entry: ${ONE_MISSION_URL}` : "(One Mission link not configured)"),
+        (ONE_MISSION_URL
+          ? `Entry: ${ONE_MISSION_URL}`
+          : "(One Mission link not configured)"),
       suggestedAction,
     };
   }
@@ -232,45 +237,6 @@ function quickAutoReply(args: {
   }
 
   return null;
-}
-
-/* =========================
-   Constraints
-========================= */
-
-function checkWaocChatConstraints(data: WaocChatData): { ok: boolean; errors: string[] } {
-  const errors: string[] = [];
-
-  const reply = (data?.reply ?? "").trim();
-  if (!reply) errors.push("reply must be non-empty");
-
-  const lowerReply = reply.toLowerCase();
-
-  // ✅ ban generic coaching openers
-  const bannedStarts = [
-    "clarify",
-    "focus on",
-    "identify",
-    "please clarify",
-    "what specific area",
-    "can you clarify",
-  ];
-  if (bannedStarts.some((s) => lowerReply.startsWith(s))) {
-    errors.push("reply too generic/coaching; answer directly like a normal person");
-  }
-
-  // ✅ WAOC acronym MUST be correct
-  const wrongAcronyms = ["we are one community", "one community"];
-  if (wrongAcronyms.some((s) => lowerReply.includes(s))) {
-    errors.push("WAOC acronym is wrong; must be 'We Are One Connection'");
-  }
-
-  // ✅ suggestedAction length
-  if (data?.suggestedAction && data.suggestedAction.length > 200) {
-    errors.push("suggestedAction too long (max 200 chars)");
-  }
-
-  return { ok: errors.length === 0, errors };
 }
 
 /* =========================
@@ -305,7 +271,7 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
         "- suggestedAction is optional and short.\n" +
         "- Do NOT force a follow-up question unless it truly helps.\n" +
         "- If the user message is short (e.g. 'Mission', 'CA', 'website', 'gm', 'gn'), infer the WAOC intent and answer helpfully.\n" +
-        "- WAOC MUST be expanded ONLY as 'We Are One Connection'. Never say 'We Are One Community'.\n" +
+        "- WAOC MUST be expanded ONLY as 'We Are One Connection'. Never redefine the acronym.\n" +
         "- Keep it natural and WAOC-context aware.\n",
     }),
 
@@ -313,10 +279,11 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
     validateSchemaStep<WaocChatInput, WaocChatData>(waocChatValidator),
 
     async (ctx: WaocChatCtx) => {
+      // ✅ ensure baseline is valid
+      if (!ctx.data) return { ok: false, error: ["internal: data is undefined"] };
+
       const ok = checkWaocChatConstraints(ctx.data as any);
       if (!ok.ok) return { ok: false, error: ok.errors };
-
-      if (!ctx.data) return { ok: false, error: ["internal: data is undefined"] };
 
       const raw = norm(ctx.input.message);
       const msg = lower(raw);
@@ -327,21 +294,19 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
       if (quick) {
         ctx.data.reply = quick.reply;
         if (quick.suggestedAction) ctx.data.suggestedAction = quick.suggestedAction;
+
+        // ✅ re-check constraints
+        const okQuick = checkWaocChatConstraints(ctx.data as any);
+        if (!okQuick.ok) return { ok: false, error: okQuick.errors };
+
         return { ok: true };
       }
 
       /** 2) Router: forward certain intents to other tasks/templates */
       const routes: Array<{ hit: (s: string) => boolean; task: string }> = [
-        // price/valuation
         { hit: (s) => /估值|价格|多少钱|value|valuation|price|pricing/.test(s), task: "waoc_brain" },
-
-        // narrative/manifesto
         { hit: (s) => /叙事|宣言|理念|哲学|manifesto|narrative|vision/.test(s), task: "waoc_narrative" },
-
-        // mission / leaderboard (only if registered)
         { hit: (s) => /mission|任务|排行榜|leaderboard|rank/.test(s), task: "mission" },
-
-        // tweet
         { hit: (s) => /tweet|推文|发推|x\.com|thread/.test(s), task: "tweet" },
       ];
 
@@ -359,9 +324,6 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
           );
 
           if (r?.success) {
-            // waoc_brain => {answer, links}
-            // waoc_narrative => {content}
-            // mission/tweet => could be reply/text/content
             const answer =
               (r.data?.reply ??
                 r.data?.answer ??
@@ -373,16 +335,17 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
               ctx.data.reply = answer;
 
               if (Array.isArray(r.data?.links) && r.data.links.length) {
-                ctx.data.suggestedAction = "Learn more: " + r.data.links.join(" | ");
+                ctx.data.suggestedAction =
+                  "Learn more: " + r.data.links.join(" | ");
               }
 
-              // ✅ re-check constraints after routing override
+              // ✅ critical: re-check constraints after routing override
               const ok2 = checkWaocChatConstraints(ctx.data as any);
               if (!ok2.ok) return { ok: false, error: ok2.errors };
             }
           }
         } catch {
-          // swallow routing errors: keep original chat reply
+          // swallow routing errors
         }
       }
 
