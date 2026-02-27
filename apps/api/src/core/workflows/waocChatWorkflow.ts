@@ -122,30 +122,36 @@ function quickAutoReply(args: {
   ]);
 
   const suggestedAction = links.length ? links.join(" | ") : undefined;
-  // --- WAOC meaning / stands for (deterministic, NEVER let LLM improvise) ---
-const asksMeaning =
-  /waoc.*meaning|what.*waoc|stands for|acronym|全称|什么意思|含义|缩写|代表什么/.test(msg);
 
-if (asksMeaning) {
-  if (lang === "zh") {
+  // --- WAOC meaning / stands for (deterministic, NEVER let LLM improvise) ---
+  const asksMeaning =
+    /waoc.*meaning|what.*waoc|stands for|acronym|全称|什么意思|含义|缩写|代表什么/.test(msg);
+
+  if (asksMeaning) {
+    if (lang === "zh") {
+      return {
+        reply:
+          "WAOC = We Are One Connection。\n" +
+          "WAOC 是面向长期协作的协调层：身份、贡献、证明，以及可落地的应用入口（如 One Mission / One Field）。\n\n" +
+          "官方入口：\n" +
+          (links.length
+            ? links.map((x) => `- ${x}`).join("\n")
+            : "（暂未配置官方链接）"),
+        suggestedAction,
+      };
+    }
     return {
       reply:
-        "WAOC = We Are One Connection。\n" +
-        "WAOC 是面向长期协作的协调层：身份、贡献、证明，以及可落地的应用入口（如 One Mission / One Field）。\n\n" +
-        "官方入口：\n" +
-        (links.length ? links.map((x) => `- ${x}`).join("\n") : "（暂未配置官方链接）"),
+        "WAOC = We Are One Connection.\n" +
+        "WAOC is a long-term coordination layer for builders: identity, contribution, proofs, and practical applications (e.g., One Mission / One Field).\n\n" +
+        "Official entry points:\n" +
+        (links.length
+          ? links.map((x) => `- ${x}`).join("\n")
+          : "(official links not configured yet)"),
       suggestedAction,
     };
   }
-  return {
-    reply:
-      "WAOC = We Are One Connection.\n" +
-      "WAOC is a long-term coordination layer for builders: identity, contribution, proofs, and practical applications (e.g., One Mission / One Field).\n\n" +
-      "Official entry points:\n" +
-      (links.length ? links.map((x) => `- ${x}`).join("\n") : "(official links not configured yet)"),
-    suggestedAction,
-  };
-}
+
   // --- Website / Links ---
   const asksLinks =
     msg === "website" ||
@@ -288,29 +294,31 @@ function applyConstraintsOrFallback(args: {
   const msgLower = lower(raw);
   const lang: "en" | "zh" = input.lang === "zh" ? "zh" : "en";
   const replyLower = (data.reply || "").toLowerCase();
-const hasBadExpansion =
-  replyLower.includes("web of all communities") ||
-  replyLower.includes("web of autonomous") ||
-  replyLower.includes("autonomous communities") ||
-  replyLower.includes("we are one community") ||
-  replyLower.includes("one community");
 
-if (hasBadExpansion) {
-  const lang: "en" | "zh" = input.lang === "zh" ? "zh" : "en";
-  const website = env("WEBSITE_URL") || env("WAOC_SITE_URL");
-  const tg = env("TG_URL") || env("WAOC_COMMUNITY_URL");
-  const oneMission = env("ONE_MISSION_URL");
+  const hasBadExpansion =
+    replyLower.includes("web of all communities") ||
+    replyLower.includes("web of autonomous") ||
+    replyLower.includes("autonomous communities") ||
+    replyLower.includes("we are one community") ||
+    replyLower.includes("one community");
 
-  return {
-    ok: true,
-    data:
+  if (hasBadExpansion) {
+    const website = env("WEBSITE_URL") || env("WAOC_SITE_URL");
+    const tg = env("TG_URL") || env("WAOC_COMMUNITY_URL");
+    const oneMission = env("ONE_MISSION_URL");
+
+    const fixed: WaocChatData =
       lang === "zh"
         ? {
             reply:
               "WAOC = We Are One Connection。\n" +
-              "WAOC 是面向长期协作的协调层：身份、贡献、证明，以及可落地的应用入口（如 One Mission / One Field）。\n" +
+              "WAOC 是一场关于“人类协作”的长期实验。\n" +
+              "在一个万物互联的时代，信息高度连接，但人类行动仍然碎片化。\n" +
+              "WAOC 的存在，是为了解决这个断层。\n" +
+              "它是一套协调协议，用来对齐：身份、贡献、声誉、共同使命。\n" +
+              "核心目标很简单：让分散的个体成为对齐的建设者；让零散的努力形成集体动能。" +
               (website || tg || oneMission
-                ? `\n官方入口：${[website && `Website: ${website}`, tg && `Telegram: ${tg}`, oneMission && `One Mission: ${oneMission}`]
+                ? `\n\n官网：${[website, tg, oneMission]
                     .filter(Boolean)
                     .join(" | ")}`
                 : ""),
@@ -318,15 +326,21 @@ if (hasBadExpansion) {
         : {
             reply:
               "WAOC = We Are One Connection.\n" +
-              "WAOC is a long-term coordination layer for builders: identity, contribution, proofs, and practical applications.\n" +
+              "WAOC is a long-term experiment in human coordination.\n" +
+              "We live in an age where everything is connected, yet human effort remains fragmented.\n" +
+              "WAOC exists to bridge that gap.\n" +
+              "It is a coordination protocol designed to align identity, contribution, reputation, and shared mission.\n" +
+              "The goal is simple: transform disconnected individuals into aligned builders; transform isolated effort into collective momentum." +
               (website || tg || oneMission
-                ? `\nOfficial: ${[website && `Website: ${website}`, tg && `Telegram: ${tg}`, oneMission && `One Mission: ${oneMission}`]
+                ? `\n\nOfficial: ${[website, tg, oneMission]
                     .filter(Boolean)
                     .join(" | ")}`
                 : ""),
-          },
-  };
-}
+          };
+
+    return { ok: true, data: fixed };
+  }
+
   // --- Meaning question MUST be hard-fixed ---
   if (looksLikeMeaningQuestion(msgLower)) {
     const fixed: WaocChatData =
@@ -401,7 +415,15 @@ if (hasBadExpansion) {
   const c2 = checkWaocChatConstraints(fixed);
   if (c2.ok) return { ok: true, data: fixed };
 
-  return { ok: true, data: { reply: lang === "zh" ? "WAOC = We Are One Connection。" : "WAOC = We Are One Connection." } };
+  return {
+    ok: true,
+    data: {
+      reply:
+        lang === "zh"
+          ? "WAOC = We Are One Connection。"
+          : "WAOC = We Are One Connection.",
+    },
+  };
 }
 
 /* =========================
@@ -417,7 +439,7 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
   steps: [
     preparePromptStep<WaocChatInput, WaocChatData>({
       task: "waoc_chat",
-      templateVersion: 4,
+      templateVersion: 9,
       variables: (input) => ({
         message: input.message,
         context: input.context ?? "general",
@@ -458,7 +480,8 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
       if (!ctx.data) ctx.data = { reply: "" };
 
       // ✅ (1) First constraints gate (post-LLM)
-      ctx.data = applyConstraintsOrFallback({ data: ctx.data, input: ctx.input }).data;
+      ctx.data = applyConstraintsOrFallback({ data: ctx.data, input: ctx.input })
+        .data;
 
       const raw = norm(ctx.input.message);
       const msg = lower(raw);
@@ -467,14 +490,22 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
       // ✅ (2) Deterministic factual quick replies (entry points)
       const quick = quickAutoReply({ raw, msg, lang });
       if (quick) {
-        ctx.data = applyConstraintsOrFallback({ data: quick, input: ctx.input }).data;
+        ctx.data = applyConstraintsOrFallback({ data: quick, input: ctx.input })
+          .data;
         return { ok: true };
       }
 
       // ✅ (3) Router: forward certain intents to other tasks/templates
       const routes: Array<{ hit: (s: string) => boolean; task: string }> = [
-        { hit: (s) => /估值|价格|多少钱|value|valuation|price|pricing/.test(s), task: "waoc_brain" },
-        { hit: (s) => /叙事|宣言|理念|哲学|manifesto|narrative|vision/.test(s), task: "waoc_narrative" },
+        {
+          hit: (s) => /估值|价格|多少钱|value|valuation|price|pricing/.test(s),
+          task: "waoc_brain",
+        },
+        {
+          hit: (s) =>
+            /叙事|宣言|理念|哲学|manifesto|narrative|vision/.test(s),
+          task: "waoc_narrative",
+        },
         { hit: (s) => /mission|任务|排行榜|leaderboard|rank/.test(s), task: "mission" },
         { hit: (s) => /tweet|推文|发推|x\.com|thread/.test(s), task: "tweet" },
       ];
@@ -505,21 +536,29 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
               const next: WaocChatData = { ...ctx.data, reply: answer };
 
               if (Array.isArray(r.data?.links) && r.data.links.length) {
-                next.suggestedAction = "Learn more: " + r.data.links.join(" | ");
+                next.suggestedAction =
+                  "Learn more: " + r.data.links.join(" | ");
               }
 
               // ✅ (4) Second constraints gate (post-routing override)
-              ctx.data = applyConstraintsOrFallback({ data: next, input: ctx.input }).data;
+              ctx.data = applyConstraintsOrFallback({
+                data: next,
+                input: ctx.input,
+              }).data;
             }
           }
         } catch {
           // ignore routing errors; keep current ctx.data
-          ctx.data = applyConstraintsOrFallback({ data: ctx.data, input: ctx.input }).data;
+          ctx.data = applyConstraintsOrFallback({
+            data: ctx.data,
+            input: ctx.input,
+          }).data;
         }
       }
 
       // ✅ Final guarantee
-      ctx.data = applyConstraintsOrFallback({ data: ctx.data, input: ctx.input }).data;
+      ctx.data = applyConstraintsOrFallback({ data: ctx.data, input: ctx.input })
+        .data;
       return { ok: true };
     },
   ],
