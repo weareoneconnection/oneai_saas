@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 
 function apiBase() {
-  return (process.env.ONEAI_API_BASE_URL || "http://localhost:4000").replace(/\/$/, "");
+  return (process.env.ONEAI_API_BASE_URL || "https://oneai-api-production.up.railway.app").replace(/\/$/, "");
 }
 function adminKey() {
   return process.env.ONEAI_ADMIN_API_KEY || "";
