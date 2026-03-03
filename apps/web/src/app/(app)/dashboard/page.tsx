@@ -154,7 +154,10 @@ export default function DashboardPage() {
     setLoading(true);
     setErr("");
     try {
-      const res = await fetch("/api/analytics/dashboard", { cache: "no-store" });
+      const res = await fetch("/api/analytics/dashboard", {
+      cache: "no-store",
+      credentials: "include", // ✅ 加这个
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = (await res.json()) as DashboardPayload;
       setData(json);

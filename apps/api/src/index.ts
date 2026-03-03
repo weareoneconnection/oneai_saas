@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 import generateRoute from "./routes/generate.js";
 import adminRoute from "./routes/admin.js";
-
+import adminDashboardRouter from "./routes/admin_dashboard.js";
 // ✅ NEW: billing
 import billingRoute, { handleStripeWebhook } from "./routes/billing.js";
 
@@ -37,7 +37,7 @@ app.use("/v1/admin", adminRoute);
 
 // ✅ NEW: Billing routes (status / checkout / portal)
 app.use("/v1/billing", billingRoute);
-
+app.use("/v1/admin", adminDashboardRouter);
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
