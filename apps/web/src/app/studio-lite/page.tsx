@@ -642,11 +642,19 @@ function saveSessions(sessions: ChatSession[]) {
 
 function loadCredits() {
   if (typeof window === "undefined") return 20;
+
   try {
     const raw = localStorage.getItem(CREDITS_KEY);
-    const n = Number(raw);
-    return Number.isFinite(n) ? Math.max(0, n) : 20;
-  } catch {
+    console.log("[Studio Lite] loadCredits raw =", raw);
+
+    if (raw === null || raw === "" || !Number.isFinite(Number(raw))) {
+      localStorage.setItem(CREDITS_KEY, "20");
+      return 20;
+    }
+
+    return Math.max(0, Number(raw));
+  } catch (e) {
+    console.error("[Studio Lite] loadCredits error:", e);
     return 20;
   }
 }
@@ -1025,6 +1033,7 @@ export default function StudioLitePage() {
   const [prompt, setPrompt] = useState("");
   const [creditsLeft, setCreditsLeft] = useState(20);
 
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [toast, setToast] = useState("");
 
@@ -1035,51 +1044,54 @@ export default function StudioLitePage() {
   const [renameValue, setRenameValue] = useState("");
 
   useEffect(() => {
-    const initial = loadSessions();
-    const credits = loadCredits();
-    setCreditsLeft(credits);
+  const initial = loadSessions();
+  const credits = loadCredits();
 
-    if (initial.length) {
-      setSessions(initial);
-      setActiveId(initial[0].id);
-      setPack(initial[0].pack);
-      setAudience(initial[0].audience);
-      setTone(initial[0].tone);
-      setLanguage(initial[0].language);
-    } else {
-      const now = new Date().toISOString();
-      const s: ChatSession = {
-        id: makeId(),
-        title: "New chat",
-        createdAt: now,
-        updatedAt: now,
-        pack: "quick",
-        audience: "builders",
-        tone: "contrarian",
-        language: "en",
-        messages: [
-          {
-            id: makeId(),
-            role: "assistant",
-            title: "Hello! 👋",
-            text:
+  console.log("[Studio Lite] initial credits =", credits);
+  setCreditsLeft(credits);
+
+  if (initial.length) {
+    setSessions(initial);
+    setActiveId(initial[0].id);
+    setPack(initial[0].pack);
+    setAudience(initial[0].audience);
+    setTone(initial[0].tone);
+    setLanguage(initial[0].language);
+  } else {
+    const now = new Date().toISOString();
+    const s: ChatSession = {
+      id: makeId(),
+      title: "New chat",
+      createdAt: now,
+      updatedAt: now,
+      pack: "quick",
+      audience: "builders",
+      tone: "contrarian",
+      language: "en",
+      messages: [
+        {
+          id: makeId(),
+          role: "assistant",
+          title: "Hello! 👋",
+          text:
             "Describe what you want in one sentence and press Enter.\n\nExamples:\n• Launch pack. Founders. Goal: 100 waitlist. Topic: AI workflows.\n• Reply pack for web3. Goal: get replies on big accounts.\n• 输入中文，我会直接用中文生成内容。\n\nStudio Lite will generate hooks, tweets, threads and replies automatically.",
-            createdAt: now,
-          },
-        ],
-        lastOutput: null,
-        lastPrompt: null,
-      };
-      const next = sortSessions([s]);
-      setSessions(next);
-      setActiveId(s.id);
-      saveSessions(next);
-    }
-  }, []);
+          createdAt: now,
+        },
+      ],
+      lastOutput: null,
+      lastPrompt: null,
+    };
+    const next = sortSessions([s]);
+    setSessions(next);
+    setActiveId(s.id);
+    saveSessions(next);
+  }
+}, []);
 
   useEffect(() => {
-    saveCredits(creditsLeft);
-  }, [creditsLeft]);
+  console.log("[Studio Lite] saveCredits =", creditsLeft);
+  saveCredits(creditsLeft);
+}, [creditsLeft]);
 
   useEffect(() => {
     if (!toast) return;
@@ -1752,11 +1764,22 @@ export default function StudioLitePage() {
           <div className="flex-1 overflow-auto">
             <div className="mx-auto max-w-4xl px-3 sm:px-4 py-4 sm:py-6 space-y-5">
               <div className="pt-1 pb-1">
-                <div className="text-2xl md:text-3xl font-extrabold tracking-tight">What do you want to create?</div>
-                <div className="mt-2 text-sm text-black/55">
-                  Default output is English. Chinese input will reply in Chinese.
-                </div>
-              </div>
+  <div className="text-2xl md:text-3xl font-extrabold tracking-tight">What do you want to create?</div>
+  <div className="mt-2 text-sm text-black/55">
+    Default output is English. Chinese input will reply in Chinese.
+  </div>
+
+  <div className="mt-2 space-y-1 text-xs font-semibold text-red-500">
+    <div>BUILD: studio-lite-credits-debug-01</div>
+    <div>creditsLeft: {creditsLeft}</div>
+    <div>
+      ls:{" "}
+      {typeof window !== "undefined"
+        ? String(localStorage.getItem(CREDITS_KEY))
+        : "ssr"}
+    </div>
+  </div>
+</div>
 
               {creditsLeft <= 0 ? (
                 <CreditsEmptyState onUpgrade={() => setToast("Upgrade flow here")} />
