@@ -32,6 +32,13 @@ type StudioLiteOutput = {
     language?: LangKey;
     source?: "oneai" | "fallback";
     generated_at?: string;
+    diagnostics?: {
+      used_fallback?: boolean;
+      failed_tasks?: string[];
+      strategy_ok?: boolean;
+      distribution_ok?: boolean;
+      feedback_ok?: boolean;
+    };
   };
 };
 
@@ -96,6 +103,8 @@ type SchedulePlan = {
   items: ScheduleItem[];
 };
 
+const GENERATION_COST = 1;
+
 const PACKS: Record<PackKey, { label: string; includes: string[]; desc: string }> = {
   quick: {
     label: "Quick",
@@ -122,23 +131,6 @@ const PACKS: Record<PackKey, { label: string; includes: string[]; desc: string }
 const STORAGE_KEY = "oneai_studio_lite_sessions_p36_v2";
 const CREDITS_KEY = "oneai_studio_lite_credits_v2";
 
-function StudioLiteLogo({ size = 32 }: { size?: number }) {
-  return (
-    <div
-      className="shrink-0 overflow-hidden rounded-xl"
-      style={{ width: size, height: size }}
-    >
-      <Image
-        src="/icons/icon-512.png"
-        alt="Studio Lite"
-        width={size}
-        height={size}
-        className="h-full w-full object-contain"
-        priority
-      />
-    </div>
-  );
-}
 function cn(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
 }
@@ -172,12 +164,28 @@ function buildThreadText(thread?: string[]) {
 function canDirectPostToX(text: string) {
   return safeTrim(text).length > 0 && safeTrim(text).length <= 280;
 }
-function containsChinese(text: string) {
-  return /[\u3400-\u9FFF]/.test(text);
+function formatFailedTasks(tasks?: string[]) {
+  const arr = (tasks || []).map(safeTrim).filter(Boolean);
+  if (!arr.length) return "";
+  return arr.slice(0, 4).join(", ");
 }
-function resolvePromptLanguage(raw: string, explicit?: LangKey): LangKey {
-  if (explicit === "zh" || explicit === "en") return explicit;
-  return containsChinese(raw) ? "zh" : "en";
+
+function StudioLiteLogo({ size = 32 }: { size?: number }) {
+  return (
+    <div
+      className="shrink-0 overflow-hidden rounded-xl"
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src="/icons/icon-512.png"
+        alt="Studio Lite"
+        width={size}
+        height={size}
+        className="h-full w-full object-contain"
+        priority
+      />
+    </div>
+  );
 }
 
 async function copyToClipboard(text: string) {
@@ -208,10 +216,11 @@ function buildSections(out: StudioLiteOutput) {
   const best = out.best_hook || out.hooks?.[0] || "";
   const sections: Array<{ title: string; text: string; actions?: ("copy" | "post")[] }> = [];
 
-  if (out.meta?.source === "fallback") {
+  if (out.meta?.source === "fallback" || out.meta?.diagnostics?.used_fallback) {
+    const failed = formatFailedTasks(out.meta?.diagnostics?.failed_tasks);
     sections.push({
       title: "Generation Note",
-      text: "Some sections used fallback logic.",
+      text: failed ? `Some sections used fallback logic.\nFailed tasks: ${failed}` : `Some sections used fallback logic.`,
       actions: ["copy"],
     });
   }
@@ -292,6 +301,13 @@ function extractGoal(text: string) {
   return m ? m[1].trim() : "";
 }
 
+function detectLanguageFromPrompt(text: string): LangKey | undefined {
+  if (/[\u4e00-\u9fff]/.test(text)) return "zh";
+  if (/\bchinese\b|\bzh\b|中文|汉语/i.test(text)) return "zh";
+  if (/\benglish\b|\ben\b/i.test(text)) return "en";
+  return undefined;
+}
+
 function parsePrefsFromPrompt(raw: string): ParsedPrefs {
   const text = normalizeText(raw);
   const out: ParsedPrefs = { tags: [] };
@@ -311,11 +327,11 @@ function parsePrefsFromPrompt(raw: string): ParsedPrefs {
   }
 
   const audienceRules: Array<[RegExp, AudienceKey, string]> = [
-    [/\bfounders?\b|\bentrepreneurs?\b|\bstartup\b/i, "founders", "founders"],
-    [/\bbuilders?\b|\bindie\b|\bindie hacker\b/i, "builders", "builders"],
+    [/\bfounders?\b|\bentrepreneurs?\b|\bstartup\b|创业者/i, "founders", "founders"],
+    [/\bbuilders?\b|\bindie\b|\bindie hacker\b|构建者|开发者社区/i, "builders", "builders"],
     [/\bweb3\b|\bcrypto\b|\bdefi\b|\bsolana\b|\bnft\b/i, "web3", "web3"],
-    [/\bcreators?\b|\bcontent\b|\binfluencer\b|\bkol\b/i, "creators", "creators"],
-    [/\bdevelopers?\b|\bdevs?\b|\bengineers?\b/i, "developers", "developers"],
+    [/\bcreators?\b|\bcontent\b|\binfluencer\b|\bkol\b|创作者/i, "creators", "creators"],
+    [/\bdevelopers?\b|\bdevs?\b|\bengineers?\b|开发者|程序员/i, "developers", "developers"],
   ];
   for (const [re, val, tag] of audienceRules) {
     if (re.test(text)) {
@@ -326,10 +342,10 @@ function parsePrefsFromPrompt(raw: string): ParsedPrefs {
   }
 
   const toneRules: Array<[RegExp, ToneKey, string]> = [
-    [/\bcontrarian\b|\bhot take\b|\bunpopular opinion\b|\bspicy\b/i, "contrarian", "contrarian"],
-    [/\bfunny\b|\bwitty\b|\bhumor\b|\bmeme\b/i, "funny", "funny"],
-    [/\bserious\b|\bdirect\b|\bno fluff\b/i, "serious", "serious"],
-    [/\bcalm\b|\bclear\b|\beducational\b|\bexplain\b/i, "calm", "calm"],
+    [/\bcontrarian\b|\bhot take\b|\bunpopular opinion\b|\bspicy\b|逆向观点|反常识/i, "contrarian", "contrarian"],
+    [/\bfunny\b|\bwitty\b|\bhumor\b|\bmeme\b|搞笑|幽默/i, "funny", "funny"],
+    [/\bserious\b|\bdirect\b|\bno fluff\b|严肃|直接/i, "serious", "serious"],
+    [/\bcalm\b|\bclear\b|\beducational\b|\bexplain\b|平静|清晰|解释型/i, "calm", "calm"],
   ];
   for (const [re, val, tag] of toneRules) {
     if (re.test(text)) {
@@ -339,17 +355,10 @@ function parsePrefsFromPrompt(raw: string): ParsedPrefs {
     }
   }
 
-  // only explicit zh/en; no bi
-  const langRules: Array<[RegExp, LangKey, string]> = [
-    [/\bzh\b|\bchinese\b|中文|汉语/i, "zh", "zh"],
-    [/\ben\b|\benglish\b/i, "en", "en"],
-  ];
-  for (const [re, val, tag] of langRules) {
-    if (re.test(text)) {
-      out.language = val;
-      out.tags!.push(`lang:${tag}`);
-      break;
-    }
+  const detectedLang = detectLanguageFromPrompt(text);
+  if (detectedLang) {
+    out.language = detectedLang;
+    out.tags!.push(`lang:${detectedLang}`);
   }
 
   const goal = extractGoal(text);
@@ -632,13 +641,13 @@ function saveSessions(sessions: ChatSession[]) {
 }
 
 function loadCredits() {
-  if (typeof window === "undefined") return 10;
+  if (typeof window === "undefined") return 20;
   try {
     const raw = localStorage.getItem(CREDITS_KEY);
     const n = Number(raw);
-    return Number.isFinite(n) ? Math.max(0, n) : 10;
+    return Number.isFinite(n) ? Math.max(0, n) : 20;
   } catch {
-    return 10;
+    return 20;
   }
 }
 
@@ -663,6 +672,59 @@ function formatDayGroup(iso: string) {
 /* =========================
    UI
    ========================= */
+function CreditsBadge({
+  credits,
+  compact,
+}: {
+  credits: number;
+  compact?: boolean;
+}) {
+  const low = credits <= 3 && credits > 0;
+  const empty = credits <= 0;
+
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold",
+        empty
+          ? "border-red-200 bg-red-50 text-red-700"
+          : low
+          ? "border-amber-200 bg-amber-50 text-amber-700"
+          : "border-black/10 bg-white text-black/75"
+      )}
+      title={empty ? "No credits left" : `${credits} credits remaining`}
+    >
+      <span className="text-[11px]">⚡</span>
+      <span>
+        {credits} {compact ? "credits" : credits === 1 ? "credit" : "credits"}
+      </span>
+    </div>
+  );
+}
+
+function CreditsEmptyState({
+  onUpgrade,
+}: {
+  onUpgrade?: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+      <div className="text-sm font-extrabold text-red-700">No credits left</div>
+      <div className="mt-1 text-sm text-red-700/80 leading-relaxed">
+        Upgrade to continue generating packs with Studio Lite.
+      </div>
+      <div className="mt-3">
+        <button
+          onClick={onUpgrade}
+          className="rounded-full bg-black px-4 py-2 text-xs font-extrabold text-white hover:bg-neutral-900"
+        >
+          Upgrade
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SidebarRow({
   icon,
   label,
@@ -834,7 +896,7 @@ function SuggestChip({ text, onClick }: { text: string; onClick?: () => void }) 
 
 function Tag({ text }: { text: string }) {
   return (
-    <span className="shrink-0 rounded-full /[0.03] px-3 py-1 text-xs font-semibold text-black/70">
+    <span className="shrink-0 rounded-full border border-black/10 bg-black/[0.03] px-3 py-1 text-xs font-semibold text-black/70">
       {text}
     </span>
   );
@@ -961,7 +1023,7 @@ export default function StudioLitePage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [prompt, setPrompt] = useState("");
-  const [creditsLeft, setCreditsLeft] = useState(10);
+  const [creditsLeft, setCreditsLeft] = useState(20);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [toast, setToast] = useState("");
@@ -1001,7 +1063,7 @@ export default function StudioLitePage() {
             role: "assistant",
             title: "Hello! 👋",
             text:
-              "Type one sentence and hit Enter.\n\nExamples:\n• Launch pack. Founders. Goal: 100 waitlist. Topic: AI workflows.\n• Reply pack for web3. Goal: get replies on big accounts.\n• 输入中文，我会直接用中文生成内容。",
+            "Describe what you want in one sentence and press Enter.\n\nExamples:\n• Launch pack. Founders. Goal: 100 waitlist. Topic: AI workflows.\n• Reply pack for web3. Goal: get replies on big accounts.\n• 输入中文，我会直接用中文生成内容。\n\nStudio Lite will generate hooks, tweets, threads and replies automatically.",
             createdAt: now,
           },
         ],
@@ -1060,7 +1122,7 @@ export default function StudioLitePage() {
           id: makeId(),
           role: "assistant",
           title: "Hello! 👋",
-          text: 'Try:\n“Launch pack. Founders. Goal: 100 waitlist. Topic: AI workflows.”\n或直接输入中文需求。',
+          text: 'Try:\n“Launch pack. Founders. Goal: 100 waitlist. Topic: AI workflows.”',
           createdAt: now,
         },
       ],
@@ -1130,12 +1192,11 @@ export default function StudioLitePage() {
   }
 
   const parsedLive = useMemo(() => parsePrefsFromPrompt(prompt), [prompt]);
-  const liveResolvedLanguage = useMemo(() => resolvePromptLanguage(prompt, parsedLive.language), [prompt, parsedLive.language]);
 
   const canGenerate = useMemo(() => {
     if (isGenerating) return false;
     if (!safeTrim(prompt)) return false;
-    if (creditsLeft <= 0) return false;
+    if (creditsLeft < GENERATION_COST) return false;
     return true;
   }, [prompt, isGenerating, creditsLeft]);
 
@@ -1240,9 +1301,10 @@ export default function StudioLitePage() {
   const suggestions = useMemo(
     () => [
       `Launch pack. Founders. Goal: 100 waitlist. Topic: AI workflows.`,
-      `Growth pack for builders. Topic: workflows beat prompts.`,
-      `Reply pack for web3. Goal: get replies on big accounts.`,
-      `给我一套关于 AI workflows 的 launch pack，目标 100 个 waitlist。`,
+      `Reply pack for web3. Funny. Goal: get replies on big accounts.`,
+      `Growth pack for builders. Calm. Topic: workflows beat prompts.`,
+      `Quick pack. English. Hot take: SaaS tools are dying. Workflows replace them.`,
+      `Quick pack. 创业者. 逆向观点. 主题：大多数AI产品其实只是包装好的API。`,
     ],
     []
   );
@@ -1251,13 +1313,13 @@ export default function StudioLitePage() {
     const raw = safeTrim(prompt);
     if (!raw) return setToast("Enter a prompt");
     if (!active) return;
-    if (creditsLeft <= 0) return setToast("No credits left");
+    if (creditsLeft < GENERATION_COST) return setToast("No credits left");
 
     const parsed = parsePrefsFromPrompt(raw);
     const effectivePack = parsed.pack ?? pack;
     const effectiveAudience = parsed.audience ?? audience;
     const effectiveTone = parsed.tone ?? tone;
-    const effectiveLanguage = resolvePromptLanguage(raw, parsed.language);
+    const effectiveLanguage = parsed.language ?? language;
     const now = new Date().toISOString();
 
     setPack(effectivePack);
@@ -1358,7 +1420,7 @@ export default function StudioLitePage() {
       });
 
       setSchedulePlan(null);
-      setCreditsLeft((x) => Math.max(0, x - 1));
+      setCreditsLeft((x) => Math.max(0, x - GENERATION_COST));
       setToast("Generated ✅");
       setPrompt("");
     } catch (e: any) {
@@ -1368,36 +1430,19 @@ export default function StudioLitePage() {
         );
 
         return {
-          ...withoutSkeleton.length
-            ? {
-                ...s,
-                updatedAt: new Date().toISOString(),
-                messages: [
-                  ...withoutSkeleton,
-                  {
-                    id: makeId(),
-                    role: "assistant",
-                    title: "Error",
-                    text: `Failed to generate.\n${e?.message || "Unknown error"}`,
-                    createdAt: new Date().toISOString(),
-                    kind: "normal",
-                  },
-                ],
-              }
-            : {
-                ...s,
-                updatedAt: new Date().toISOString(),
-                messages: [
-                  {
-                    id: makeId(),
-                    role: "assistant",
-                    title: "Error",
-                    text: `Failed to generate.\n${e?.message || "Unknown error"}`,
-                    createdAt: new Date().toISOString(),
-                    kind: "normal",
-                  },
-                ],
-              },
+          ...s,
+          updatedAt: new Date().toISOString(),
+          messages: [
+            ...withoutSkeleton,
+            {
+              id: makeId(),
+              role: "assistant",
+              title: "Error",
+              text: `Failed to generate.\n${e?.message || "Unknown error"}`,
+              createdAt: new Date().toISOString(),
+              kind: "normal",
+            },
+          ],
         };
       });
       setToast("Error");
@@ -1544,13 +1589,22 @@ export default function StudioLitePage() {
                   </Select>
                 </div>
 
-                <div className="mt-4 rounded-2xl /[0.02] p-3">
+                <div className="mt-4 rounded-2xl border border-black/10 bg-black/[0.02] p-3">
                   <div className="text-xs font-semibold text-black/55">Credits</div>
-                  <div className="mt-1 text-sm font-extrabold">
-                    {creditsLeft} <span className="text-black/50 font-semibold">/ local</span>
-                  </div>
+
                   <div className="mt-2">
-                    <Button className="w-full rounded-xl bg-black text-white hover:bg-neutral-900" onClick={() => setToast("Upgrade flow here")}>
+                    <CreditsBadge credits={creditsLeft} />
+                  </div>
+
+                  <div className="mt-3 text-xs text-black/50 leading-relaxed">
+                    Each generation costs {GENERATION_COST} credit.
+                  </div>
+
+                  <div className="mt-2">
+                    <Button
+                      className="w-full rounded-xl bg-black text-white hover:bg-neutral-900"
+                      onClick={() => setToast("Upgrade flow here")}
+                    >
                       Upgrade
                     </Button>
                   </div>
@@ -1611,12 +1665,14 @@ export default function StudioLitePage() {
                   <div className="text-xs text-black/55 truncate">AI Twitter Growth OS</div>
                 </div>
 
-                <span className="hidden lg:inline-flex rounded-full /[0.03] px-2.5 py-1 text-xs font-semibold text-black/70">
+                <span className="hidden lg:inline-flex rounded-full border border-black/10 bg-black/[0.03] px-2.5 py-1 text-xs font-semibold text-black/70">
                   {packLine}
                 </span>
               </div>
 
               <div className="hidden md:flex items-center gap-2">
+                <CreditsBadge credits={creditsLeft} />
+
                 <button
                   className={cn(
                     "rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold hover:bg-black/[0.04]",
@@ -1668,6 +1724,8 @@ export default function StudioLitePage() {
               </div>
 
               <div className="md:hidden flex items-center gap-2">
+                <CreditsBadge credits={creditsLeft} compact />
+
                 <button
                   className="h-9 w-9 rounded-full border border-black/10 bg-white text-sm font-semibold"
                   onClick={() => setMobileActionsOpen((v) => !v)}
@@ -1696,9 +1754,13 @@ export default function StudioLitePage() {
               <div className="pt-1 pb-1">
                 <div className="text-2xl md:text-3xl font-extrabold tracking-tight">What do you want to create?</div>
                 <div className="mt-2 text-sm text-black/55">
-                  Type choices inline — <span className="font-semibold">“Launch pack, founders, topic: AI workflows…”</span>
+                  Default output is English. Chinese input will reply in Chinese.
                 </div>
               </div>
+
+              {creditsLeft <= 0 ? (
+                <CreditsEmptyState onUpgrade={() => setToast("Upgrade flow here")} />
+              ) : null}
 
               <div className="overflow-x-auto">
                 <div className="flex gap-2 pb-2 w-max min-w-full">
@@ -1759,21 +1821,21 @@ export default function StudioLitePage() {
                   <div className="overflow-x-auto">
                     <div className="flex gap-2 w-max min-w-full pb-1">
                       {parsedLive.tags?.length ? (
-                        <>
-                          {parsedLive.tags.slice(0, 8).map((t) => <Tag key={t} text={t} />)}
-                          {!parsedLive.tags.some((t) => t.startsWith("lang:")) ? (
-                            <Tag text={`lang:${liveResolvedLanguage}`} />
-                          ) : null}
-                        </>
+                        parsedLive.tags.slice(0, 8).map((t) => <Tag key={t} text={t} />)
                       ) : (
                         <>
                           <Tag text={`pack:${pack}`} />
                           <Tag text={`aud:${audience}`} />
                           <Tag text={`tone:${tone}`} />
-                          <Tag text={`lang:${liveResolvedLanguage}`} />
+                          <Tag text={`lang:${language}`} />
                         </>
                       )}
                     </div>
+                  </div>
+
+                  <div className="mt-1 flex items-center justify-between gap-3 text-[11px] text-black/45">
+                    <div>Each generation costs {GENERATION_COST} credit.</div>
+                    <div>{creditsLeft} credits remaining</div>
                   </div>
 
                   <div className="flex items-center justify-between gap-3">
@@ -1794,7 +1856,7 @@ export default function StudioLitePage() {
                         {PACKS[pack].label}
                       </button>
 
-                      <span className="rounded-full /[0.03] px-3 py-1 text-xs font-semibold text-black/70 shrink-0">
+                      <span className="rounded-full border border-black/10 bg-black/[0.03] px-3 py-1 text-xs font-semibold text-black/70 shrink-0">
                         {creditsLeft} credits
                       </span>
                     </div>
@@ -1812,12 +1874,14 @@ export default function StudioLitePage() {
                         disabled={!canGenerate}
                         onClick={onGenerate}
                         className={cn(
-                          "h-10 w-10 rounded-full flex items-center justify-center transition shadow-sm",
-                          canGenerate ? "bg-black text-white hover:bg-neutral-900" : "bg-black/10 text-black/30"
+                          "inline-flex h-10 items-center justify-center rounded-full px-4 text-xs font-extrabold transition shadow-sm",
+                          canGenerate
+                            ? "bg-black text-white hover:bg-neutral-900"
+                            : "bg-black/10 text-black/30"
                         )}
-                        title="Send"
+                        title={`Generate · ${GENERATION_COST} credit`}
                       >
-                        ↑
+                        Generate · {GENERATION_COST}
                       </button>
                     </div>
                   </div>
@@ -1825,7 +1889,7 @@ export default function StudioLitePage() {
               </div>
 
               <div className="mt-2 text-center text-[11px] text-black/45">
-                P3.6 release: mobile drawer + sticky composer + smart language routing.
+                P3.7: credits UI + launch-ready generation flow.
               </div>
             </div>
           </div>
@@ -1854,8 +1918,8 @@ export default function StudioLitePage() {
             );
           })}
         </div>
-        <div className="mt-4 rounded-2xl /[0.02] p-3 text-xs text-black/60">
-          Tip: type it inline, for example: <span className="font-semibold">“Launch pack, founders, topic: AI workflows”</span>
+        <div className="mt-4 rounded-2xl border border-black/10 bg-black/[0.02] p-3 text-xs text-black/60">
+          Tip: type it inline — <span className="font-semibold">“Launch pack. Founders. Goal: 100 waitlist…”</span>
         </div>
       </Modal>
 
@@ -1864,7 +1928,7 @@ export default function StudioLitePage() {
           <div className="text-sm text-black/60">No schedule generated yet.</div>
         ) : (
           <div className="space-y-3">
-            <div className="rounded-2xl /[0.02] p-3">
+            <div className="rounded-2xl border border-black/10 bg-black/[0.02] p-3">
               <div className="text-xs font-semibold text-black/60">Strategy</div>
               <div className="mt-1 text-sm text-black/80">{schedulePlan.strategy}</div>
               <div className="mt-2 text-xs text-black/50">
