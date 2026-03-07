@@ -1032,7 +1032,10 @@ export default function StudioLitePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [prompt, setPrompt] = useState("");
   const [creditsLeft, setCreditsLeft] = useState(20);
-
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+  setMounted(true);
+}, []);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [toast, setToast] = useState("");
@@ -1044,6 +1047,8 @@ export default function StudioLitePage() {
   const [renameValue, setRenameValue] = useState("");
 
   useEffect(() => {
+  if (!mounted) return;
+
   const initial = loadSessions();
   const credits = loadCredits();
 
@@ -1086,7 +1091,7 @@ export default function StudioLitePage() {
     setActiveId(s.id);
     saveSessions(next);
   }
-}, []);
+}, [mounted]);
 
   useEffect(() => {
   console.log("[Studio Lite] saveCredits =", creditsLeft);
@@ -1770,14 +1775,9 @@ export default function StudioLitePage() {
   </div>
 
   <div className="mt-2 space-y-1 text-xs font-semibold text-red-500">
-    <div>BUILD: studio-lite-credits-debug-01</div>
-    <div>creditsLeft: {creditsLeft}</div>
-    <div>
-      ls:{" "}
-      {typeof window !== "undefined"
-        ? String(localStorage.getItem(CREDITS_KEY))
-        : "ssr"}
-    </div>
+  <div>BUILD: studio-lite-credits-debug-01</div>
+  <div>creditsLeft: {creditsLeft}</div>
+  <div>ls: {mounted ? String(localStorage.getItem(CREDITS_KEY)) : "…"}</div>
   </div>
 </div>
 
