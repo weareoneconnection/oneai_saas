@@ -171,7 +171,7 @@ export const waocBrainWorkflowDef: WorkflowDefinition<Ctx> = {
   steps: [
     preparePromptStep<WaocBrainInput, WaocBrainData>({
       task: "waoc_brain",
-      templateVersion: 31,
+      templateVersion: 1,
       variables: (input) => ({
         input: JSON.stringify(input, null, 2),
       }),
