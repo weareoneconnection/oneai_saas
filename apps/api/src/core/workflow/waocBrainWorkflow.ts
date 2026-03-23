@@ -69,6 +69,7 @@ export type WaocBrainAction =
 
 export type WaocBrainPriority = "low" | "medium" | "high";
 export type WaocBrainSurface = "none" | "public" | "private" | "human_review";
+export type WaocBrainEvidenceLevel = "weak" | "medium" | "strong";
 
 export type WaocBrainInput = {
   communityId?: string;
@@ -130,11 +131,25 @@ export type WaocBrainData = {
   missionType: WaocBrainMissionType;
   action: WaocBrainAction;
   confidence: number;
+  evidenceLevel: WaocBrainEvidenceLevel;
   summary: string;
   reasons: string[];
   riskNotes: string[];
   targetUserIds: number[];
   draftMessage: string;
+  expectedOutcome: string;
+  successSignal: string;
+  failureSignal: string;
+  observeWindowMinutes: number;
+  cooldownMinutes: number;
+  dedupeKey: string;
+  managerPolicy: {
+    allowRewriteDraft: boolean;
+    mustUsePrivateIfTargeted: boolean;
+    requiresHumanReview: boolean;
+    skipIfSimilarActionRecentlyExecuted: boolean;
+    maxDraftEdits: number;
+  };
   executionHints: {
     priority: WaocBrainPriority;
     timing: string;
@@ -151,18 +166,26 @@ type Ctx = WorkflowContext<WaocBrainInput, WaocBrainData> & {
 const REFINE_INSTRUCTION = [
   "Return ONLY valid JSON matching the waocBrain output schema.",
   "Do not add extra fields.",
-  "The action field must be EXACTLY one of these enum values:",
+  "Use EXACT enum values only.",
+  "The action field must be EXACTLY one of:",
   "stay_quiet, welcome_new_member, ask_open_question, summarize_thread, nudge_core_member, connect_members, launch_micro_mission, amplify_builder_signal, elevate_civilization_narrative, cool_down_thread, escalate_to_human.",
-  "Do not invent synonyms, paraphrases, combined actions, or alternative labels for action.",
-  "The missionType field must be EXACTLY one of these enum values:",
+  "The missionType field must be EXACTLY one of:",
   "activate, connect, retain, guide, cool_down, mission_launch, observe.",
-  "If the previous action is invalid or unjustified, replace it with the single closest valid enum value.",
-  "Prefer conservative valid actions when uncertain.",
-  "Ensure action, missionType, targetUserIds, draftMessage, and executionHints are internally consistent.",
+  "The evidenceLevel field must be EXACTLY one of:",
+  "weak, medium, strong.",
   "For stay_quiet and escalate_to_human, draftMessage must be empty.",
   "For nudge_core_member and connect_members, targetUserIds must be present and valid.",
-  "For public actions, executionHints.surface must be public.",
-  "For targeted actions, executionHints.surface must be private.",
+  "For nudge_core_member executionHints.surface must be private.",
+  "For connect_members executionHints.surface must be private.",
+  "For welcome_new_member, ask_open_question, summarize_thread, launch_micro_mission, amplify_builder_signal, elevate_civilization_narrative, cool_down_thread executionHints.surface must be public.",
+  "For stay_quiet executionHints.surface must be none.",
+  "For escalate_to_human executionHints.surface must be human_review.",
+  "managerPolicy must always be present and internally consistent with action and surface.",
+  "expectedOutcome, successSignal, failureSignal, observeWindowMinutes, cooldownMinutes, and dedupeKey are required.",
+  "Do not invent synonyms, combined actions, or alternative labels.",
+  "If a previous action is invalid or unjustified, replace it with the closest conservative valid action.",
+  "Prefer stay_quiet over speculative or repetitive intervention.",
+  "Ensure action, missionType, targetUserIds, draftMessage, managerPolicy, and executionHints are internally consistent."
 ].join(" ");
 
 export const waocBrainWorkflowDef: WorkflowDefinition<Ctx> = {
@@ -171,7 +194,7 @@ export const waocBrainWorkflowDef: WorkflowDefinition<Ctx> = {
   steps: [
     preparePromptStep<WaocBrainInput, WaocBrainData>({
       task: "waoc_brain",
-      templateVersion: 1,
+      templateVersion: 2,
       variables: (input) => ({
         input: JSON.stringify(input, null, 2),
       }),

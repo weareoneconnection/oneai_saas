@@ -10,11 +10,19 @@
     "missionType",
     "action",
     "confidence",
+    "evidenceLevel",
     "summary",
     "reasons",
     "riskNotes",
     "targetUserIds",
     "draftMessage",
+    "expectedOutcome",
+    "successSignal",
+    "failureSignal",
+    "observeWindowMinutes",
+    "cooldownMinutes",
+    "dedupeKey",
+    "managerPolicy",
     "executionHints"
   ],
   "properties": {
@@ -33,19 +41,46 @@
     },
     "momentum": {
       "type": "string",
-      "enum": ["rising", "stable", "weakening", "dormant", "fake_active"]
+      "enum": [
+        "rising",
+        "stable",
+        "weakening",
+        "dormant",
+        "fake_active"
+      ]
     },
     "posture": {
       "type": "string",
-      "enum": ["silent_watch", "gentle_activation", "mission_push", "social_repair", "safe_mode"]
+      "enum": [
+        "silent_watch",
+        "gentle_activation",
+        "mission_push",
+        "social_repair",
+        "safe_mode"
+      ]
     },
     "emotion": {
       "type": "string",
-      "enum": ["calm", "curious", "focused", "excited", "confused", "conflict"]
+      "enum": [
+        "calm",
+        "curious",
+        "focused",
+        "excited",
+        "confused",
+        "conflict"
+      ]
     },
     "missionType": {
       "type": "string",
-      "enum": ["activate", "connect", "retain", "guide", "cool_down", "mission_launch", "observe"]
+      "enum": [
+        "activate",
+        "connect",
+        "retain",
+        "guide",
+        "cool_down",
+        "mission_launch",
+        "observe"
+      ]
     },
     "action": {
       "type": "string",
@@ -68,6 +103,14 @@
       "minimum": 0,
       "maximum": 1
     },
+    "evidenceLevel": {
+      "type": "string",
+      "enum": [
+        "weak",
+        "medium",
+        "strong"
+      ]
+    },
     "summary": {
       "type": "string",
       "minLength": 1
@@ -89,19 +132,85 @@
     },
     "targetUserIds": {
       "type": "array",
-      "items": { "type": "integer" }
+      "items": {
+        "type": "integer"
+      }
     },
     "draftMessage": {
       "type": "string"
     },
+    "expectedOutcome": {
+      "type": "string",
+      "minLength": 1
+    },
+    "successSignal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "failureSignal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observeWindowMinutes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cooldownMinutes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "dedupeKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "managerPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowRewriteDraft",
+        "mustUsePrivateIfTargeted",
+        "requiresHumanReview",
+        "skipIfSimilarActionRecentlyExecuted",
+        "maxDraftEdits"
+      ],
+      "properties": {
+        "allowRewriteDraft": {
+          "type": "boolean"
+        },
+        "mustUsePrivateIfTargeted": {
+          "type": "boolean"
+        },
+        "requiresHumanReview": {
+          "type": "boolean"
+        },
+        "skipIfSimilarActionRecentlyExecuted": {
+          "type": "boolean"
+        },
+        "maxDraftEdits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        }
+      }
+    },
     "executionHints": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["priority", "timing", "surface", "style", "goal"],
+      "required": [
+        "priority",
+        "timing",
+        "surface",
+        "style",
+        "goal"
+      ],
       "properties": {
         "priority": {
           "type": "string",
-          "enum": ["low", "medium", "high"]
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
         },
         "timing": {
           "type": "string",
@@ -109,7 +218,12 @@
         },
         "surface": {
           "type": "string",
-          "enum": ["none", "public", "private", "human_review"]
+          "enum": [
+            "none",
+            "public",
+            "private",
+            "human_review"
+          ]
         },
         "style": {
           "type": "string",

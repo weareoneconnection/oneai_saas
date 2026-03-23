@@ -37,9 +37,9 @@
       "additionalProperties": false,
       "minProperties": 1,
       "properties": {
-        "messageCount": { "type": "number", "minimum": 0 },
-        "activeUserCount": { "type": "number", "minimum": 0 },
-        "newMemberCount": { "type": "number", "minimum": 0 },
+        "messageCount": { "type": "integer", "minimum": 0 },
+        "activeUserCount": { "type": "integer", "minimum": 0 },
+        "newMemberCount": { "type": "integer", "minimum": 0 },
         "builderDensity": { "type": "number", "minimum": 0, "maximum": 1 },
         "tensionLevel": { "type": "number", "minimum": 0, "maximum": 1 },
         "missionReadiness": { "type": "number", "minimum": 0, "maximum": 1 },
@@ -53,14 +53,17 @@
       "properties": {
         "targetUserIds": {
           "type": "array",
+          "uniqueItems": true,
           "items": { "type": "integer" }
         },
         "silentCoreUserIds": {
           "type": "array",
+          "uniqueItems": true,
           "items": { "type": "integer" }
         },
         "topContributorUserIds": {
           "type": "array",
+          "uniqueItems": true,
           "items": { "type": "integer" }
         }
       }
@@ -70,14 +73,26 @@
       "additionalProperties": false,
       "minProperties": 1,
       "properties": {
-        "recentThreadSummary": { "type": "string", "minLength": 1 },
+        "recentThreadSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 5000
+        },
         "notableTopics": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
         },
         "notes": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
         }
       }
     },
@@ -105,7 +120,12 @@
             ]
           },
           "ts": { "type": "integer", "minimum": 0 },
-          "outcome": { "type": "string", "minLength": 1 }
+          "outcome": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "dedupeKey": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "surface": {
+            "type": "string",
+            "enum": ["none", "public", "private", "human_review"]
+          }
         }
       }
     },
@@ -124,14 +144,18 @@
       "additionalProperties": false,
       "minProperties": 1,
       "properties": {
-        "windowLabel": { "type": "string", "minLength": 1 },
+        "windowLabel": { "type": "string", "minLength": 1, "maxLength": 100 },
         "recentWindowMs": { "type": "integer", "minimum": 0 },
         "comparisonWindowMs": { "type": "integer", "minimum": 0 }
       }
     },
     "notes": {
       "type": "array",
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
     }
   }
 }
