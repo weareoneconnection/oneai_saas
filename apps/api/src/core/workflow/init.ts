@@ -27,4 +27,8 @@ import "./studioLitePackWorkflow.js";
 /* -------------------------------
    OneAI Studio Lite workflows
 --------------------------------*/
-
+// 🔵 market intelligence
+import "./priceWorkflow.js";
+import "./newsWorkflow.js";
+import "./xWorkflow.js";
+import "./webWorkflow.js";

@@ -3,7 +3,7 @@ import "./core/workflow/init.js";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-
+import { listTasks } from "./core/workflow/registry.js";
 import generateRoute from "./routes/generate.js";
 import adminRoute from "./routes/admin.js";
 import adminDashboardRouter from "./routes/admin_dashboard.js";
@@ -41,7 +41,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 const PORT = process.env.PORT || 4000;
-
+console.log("Registered workflows:", listTasks());
 app.listen(PORT, () => {
   console.log(`🚀 OneAI API running on http://localhost:${PORT}`);
 });

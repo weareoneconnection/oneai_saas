@@ -71,11 +71,53 @@ function splitLines(s: string) {
     .filter(Boolean);
 }
 
-function trimReplyLines(reply: string, minLines = 2, maxLines = 5) {
+function makeNaturalPaddingLine(first: string, lang: "en" | "zh" = "en") {
+  const f = lower(first);
+
+  if (lang === "zh") {
+    if (/价格|币价|市值|行情/.test(f)) return "如果要实时数据，还需要接价格源。";
+    if (/新闻|动态|公告/.test(f)) return "如果要最新动态，还需要接新闻源。";
+    if (/推特|账号|推文|x/.test(f)) return "如果要继续分析，最好直接读取该账号内容。";
+    if (/网页|文章|链接|网站/.test(f)) return "如果要更准确总结，最好先抓取正文。";
+    if (/任务|mission/.test(f)) return "这个方向可以继续收敛成一个更具体的任务。";
+    if (/builder|构建|开发/.test(f)) return "这类进展通常值得继续往下一步推进。";
+    return "这个方向可以继续往下展开。";
+  }
+
+  if (/price|market cap|chart|valuation/.test(f)) {
+    return "A live price source would make this more useful.";
+  }
+  if (/news|update|announcement/.test(f)) {
+    return "A live news source would make this more reliable.";
+  }
+  if (/twitter|x|tweet|account/.test(f)) {
+    return "Reading the actual account content would make this stronger.";
+  }
+  if (/website|web|article|link/.test(f)) {
+    return "Fetching the page content would make this more accurate.";
+  }
+  if (/mission|task/.test(f)) {
+    return "This could be narrowed into a more concrete task.";
+  }
+  if (/builder|build|developer|dev/.test(f)) {
+    return "That is usually worth pushing one step further.";
+  }
+
+  return "This could be taken one step further.";
+}
+
+function trimReplyLines(
+  reply: string,
+  minLines = 2,
+  maxLines = 5,
+  lang: "en" | "zh" = "en"
+) {
   const lines = splitLines(reply);
 
   if (lines.length === 0) {
-    return "Got it.\nKeeping this clear.\nThat is the main direction.";
+    return lang === "zh"
+      ? "收到。\n这个方向可以继续往下展开。"
+      : "Got it.\nThis could be taken one step further.";
   }
 
   if (lines.length > maxLines) {
@@ -88,9 +130,7 @@ function trimReplyLines(reply: string, minLines = 2, maxLines = 5) {
 
   if (lines.length === 1) {
     const first = lines[0];
-    return [first, "Keeping the next step clear.", "That is the main direction."].join(
-      "\n"
-    );
+    return [first, makeNaturalPaddingLine(first, lang)].join("\n");
   }
 
   return lines.join("\n");
@@ -120,7 +160,7 @@ function sanitizeReply(reply: any, lang: "en" | "zh" = "en") {
     r = r.slice(0, 800).trim();
   }
 
-  r = trimReplyLines(r, 2, 5);
+  r = trimReplyLines(r, 2, 5, lang);
 
   if (!r) {
     r =

@@ -447,6 +447,7 @@ function looksLikeXQuestion(msgLower: string) {
     /\btwitter\b/.test(msgLower) ||
     /\btweet\b/.test(msgLower) ||
     /\baccount\b/.test(msgLower) ||
+    /@[a-z0-9_]{1,15}\b/i.test(msgLower) ||
     /推特|账号|推文|X账号|X 帐号/.test(msgLower)
   );
 }
@@ -1899,14 +1900,68 @@ function shouldOverrideWithMinimalReply(args: {
   return null;
 }
 
-function finalizeReplyLines(reply: string): string {
+function makeWorkflowPaddingLine(first: string, lang: "en" | "zh" | "mixed" = "en") {
+  const f = lower(first);
+
+  if (lang === "zh") {
+    if (/价格|币价|市值|行情/.test(f)) return "如果要实时数据，还需要接价格源。";
+    if (/新闻|动态|公告/.test(f)) return "如果要最新动态，还需要接新闻源。";
+    if (/推特|账号|推文|x/.test(f)) return "如果要继续分析，最好直接读取该账号内容。";
+    if (/网页|文章|链接|网站/.test(f)) return "如果要更准确总结，最好先抓取正文。";
+    if (/任务|mission/.test(f)) return "这个方向可以继续收敛成一个更具体的任务。";
+    return "这个方向可以继续往下展开。";
+  }
+
+  if (lang === "mixed") {
+    if (/price|market cap|chart|valuation|价格|币价|市值|行情/.test(f)) {
+      return "A live price source would make this more useful.\n如果要实时数据，还需要接价格源。";
+    }
+    if (/news|update|announcement|新闻|动态|公告/.test(f)) {
+      return "A live news source would make this more reliable.\n如果要最新动态，还需要接新闻源。";
+    }
+    if (/twitter|x|tweet|account|推特|账号|推文/.test(f)) {
+      return "Reading the actual account content would make this stronger.\n如果要继续分析，最好直接读取该账号内容。";
+    }
+    if (/website|web|article|link|网页|文章|链接|网站/.test(f)) {
+      return "Fetching the page content would make this more accurate.\n如果要更准确总结，最好先抓取正文。";
+    }
+    return "This could be taken one step further.\n这个方向可以继续往下展开。";
+  }
+
+  if (/price|market cap|chart|valuation/.test(f)) {
+    return "A live price source would make this more useful.";
+  }
+  if (/news|update|announcement/.test(f)) {
+    return "A live news source would make this more reliable.";
+  }
+  if (/twitter|x|tweet|account/.test(f)) {
+    return "Reading the actual account content would make this stronger.";
+  }
+  if (/website|web|article|link/.test(f)) {
+    return "Fetching the page content would make this more accurate.";
+  }
+  if (/mission|task/.test(f)) {
+    return "This could be narrowed into a more concrete task.";
+  }
+
+  return "This could be taken one step further.";
+}
+
+function finalizeReplyLines(
+  reply: string,
+  lang: "en" | "zh" | "mixed" = "en"
+): string {
   const lines = norm(reply)
     .split("\n")
     .map((x) => x.trim())
     .filter(Boolean);
 
   if (!lines.length) {
-    return "Got it.\nKeeping this simple.\nWe can refine it from here.";
+    return lang === "zh"
+      ? "收到。\n这个方向可以继续往下展开。"
+      : lang === "mixed"
+      ? "Got it.\n这个方向可以继续往下展开。"
+      : "Got it.\nThis could be taken one step further.";
   }
 
   const clipped = lines.slice(0, 5);
@@ -1914,7 +1969,7 @@ function finalizeReplyLines(reply: string): string {
   if (clipped.length >= 2) return clipped.join("\n");
 
   const one = clipped[0];
-  return [one, "Keeping the next step clear.", "That is the main direction."].join("\n");
+  return [one, makeWorkflowPaddingLine(one, lang)].join("\n");
 }
 
 /* =========================
@@ -1943,7 +1998,7 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
           data: quick,
           input: ctx.input,
         }).data;
-        ctx.data.reply = finalizeReplyLines(ctx.data.reply);
+        ctx.data.reply = finalizeReplyLines(ctx.data.reply, lang);
         return { ok: true, stop: true } as any;
       }
 
@@ -2632,14 +2687,14 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
         // ignore
       }
 
-      ctx.data.reply = finalizeReplyLines(ctx.data.reply);
+      ctx.data.reply = finalizeReplyLines(ctx.data.reply, lang);
 
       ctx.data = applyConstraintsOrFallback({
         data: ctx.data,
         input: ctx.input,
       }).data;
 
-      ctx.data.reply = finalizeReplyLines(ctx.data.reply);
+      ctx.data.reply = finalizeReplyLines(ctx.data.reply, lang);
       ctx.data.suggestedAction = ensureAllowedAction(ctx.data.suggestedAction ?? "none");
 
       return { ok: true };
