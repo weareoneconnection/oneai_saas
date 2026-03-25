@@ -2306,7 +2306,8 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
       const match = routes.find((r) =>
         r.hit(msg, signals, network, intelligence, community)
       );
-
+      console.log("match task =", match?.task);
+      
       if (match) {
         try {
           const r = await runTask(match.task, match.mapInput(), {
