@@ -14,6 +14,7 @@
       "enum": [
         "none",
         "/links",
+        "/help",
         "/mission",
         "/rank",
         "/report",
@@ -21,6 +22,8 @@
         "/knowledge",
         "/growth",
         "/news",
+        "/events",
+        "/tools",
         "/price",
         "/x",
         "/web"

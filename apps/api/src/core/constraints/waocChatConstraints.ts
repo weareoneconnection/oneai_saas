@@ -3,6 +3,7 @@
 export type WaocSuggestedAction =
   | "none"
   | "/links"
+  | "/help"
   | "/mission"
   | "/rank"
   | "/report"
@@ -10,6 +11,8 @@ export type WaocSuggestedAction =
   | "/knowledge"
   | "/growth"
   | "/news"
+  | "/events"
+  | "/tools"
   | "/price"
   | "/x"
   | "/web";
@@ -32,6 +35,7 @@ type CheckResult =
 const ACTIONS: WaocSuggestedAction[] = [
   "none",
   "/links",
+  "/help",
   "/mission",
   "/rank",
   "/report",
@@ -39,193 +43,72 @@ const ACTIONS: WaocSuggestedAction[] = [
   "/knowledge",
   "/growth",
   "/news",
+  "/events",
+  "/tools",
   "/price",
   "/x",
   "/web",
 ];
 
-/* -------------------------
-helpers
-------------------------- */
+/* =========================
+   helpers
+========================= */
 
-function norm(s: any) {
-  return String(s ?? "").trim();
+function norm(v: unknown): string {
+  return String(v ?? "").trim();
 }
 
-function lower(s: any) {
-  return norm(s).toLowerCase();
+function lower(v: unknown): string {
+  return norm(v).toLowerCase();
 }
 
-function normalizeBlankLines(s: string) {
+function normalizeBlankLines(s: string): string {
   return s.replace(/\n{3,}/g, "\n\n").trim();
 }
 
-function removeCodeFences(s: string) {
+function stripCodeFences(s: string): string {
   return s.replace(/```[\s\S]*?```/g, "").trim();
 }
 
-function splitLines(s: string) {
-  return normalizeBlankLines(s)
-    .split("\n")
-    .map((x) => x.trim())
-    .filter(Boolean);
-}
-
-function makeNaturalPaddingLine(first: string, lang: "en" | "zh" = "en") {
-  const f = lower(first);
-
-  if (lang === "zh") {
-    if (/价格|币价|市值|行情/.test(f)) return "如果要实时数据，还需要接价格源。";
-    if (/新闻|动态|公告/.test(f)) return "如果要最新动态，还需要接新闻源。";
-    if (/推特|账号|推文|x/.test(f)) return "如果要继续分析，最好直接读取该账号内容。";
-    if (/网页|文章|链接|网站/.test(f)) return "如果要更准确总结，最好先抓取正文。";
-    if (/任务|mission/.test(f)) return "这个方向可以继续收敛成一个更具体的任务。";
-    if (/builder|构建|开发/.test(f)) return "这类进展通常值得继续往下一步推进。";
-    return "这个方向可以继续往下展开。";
-  }
-
-  if (/price|market cap|chart|valuation/.test(f)) {
-    return "A live price source would make this more useful.";
-  }
-  if (/news|update|announcement/.test(f)) {
-    return "A live news source would make this more reliable.";
-  }
-  if (/twitter|x|tweet|account/.test(f)) {
-    return "Reading the actual account content would make this stronger.";
-  }
-  if (/website|web|article|link/.test(f)) {
-    return "Fetching the page content would make this more accurate.";
-  }
-  if (/mission|task/.test(f)) {
-    return "This could be narrowed into a more concrete task.";
-  }
-  if (/builder|build|developer|dev/.test(f)) {
-    return "That is usually worth pushing one step further.";
-  }
-
-  return "This could be taken one step further.";
-}
-
-function trimReplyLines(
-  reply: string,
-  minLines = 2,
-  maxLines = 5,
-  lang: "en" | "zh" = "en"
-) {
-  const lines = splitLines(reply);
-
-  if (lines.length === 0) {
-    return lang === "zh"
-      ? "收到。\n这个方向可以继续往下展开。"
-      : "Got it.\nThis could be taken one step further.";
-  }
-
-  if (lines.length > maxLines) {
-    return lines.slice(0, maxLines).join("\n");
-  }
-
-  if (lines.length >= minLines) {
-    return lines.join("\n");
-  }
-
-  if (lines.length === 1) {
-    const first = lines[0];
-    return [first, makeNaturalPaddingLine(first, lang)].join("\n");
-  }
-
-  return lines.join("\n");
-}
-
-function sanitizeReply(reply: any, lang: "en" | "zh" = "en") {
+function sanitizeReply(reply: unknown, lang: "en" | "zh" = "en"): string {
   let r = norm(reply);
-
-  if (!r) {
-    r =
-      lang === "zh"
-        ? "收到。\n先保留这个方向。\n后面再继续推进。"
-        : "Got it.\nKeeping this direction noted.\nWe can refine it from here.";
-  }
-
-  r = removeCodeFences(r);
+  r = stripCodeFences(r);
   r = normalizeBlankLines(r);
 
   if (!r) {
-    r =
-      lang === "zh"
-        ? "收到。\n先保留这个方向。\n后面再继续推进。"
-        : "Got it.\nKeeping this direction noted.\nWe can refine it from here.";
+    return lang === "zh" ? "收到。" : "Got it.";
   }
 
-  if (r.length > 800) {
-    r = r.slice(0, 800).trim();
+  // 只做长度保护，不强行补句、不强行凑行数
+  if (r.length > 900) {
+    r = r.slice(0, 900).trim();
   }
 
-  r = trimReplyLines(r, 2, 5, lang);
-
-  if (!r) {
-    r =
-      lang === "zh"
-        ? "收到。\n先保留这个方向。\n后面再继续推进。"
-        : "Got it.\nKeeping this direction noted.\nWe can refine it from here.";
-  }
-
-  return r;
+  return r || (lang === "zh" ? "收到。" : "Got it.");
 }
 
-function normalizeAction(a: any): WaocSuggestedAction {
-  const v = norm(a) as WaocSuggestedAction;
-  return ACTIONS.includes(v) ? v : "none";
+function normalizeAction(action: unknown): WaocSuggestedAction {
+  const a = norm(action) as WaocSuggestedAction;
+  return ACTIONS.includes(a) ? a : "none";
 }
 
-/* -------------------------
-meaning detection
-------------------------- */
+/* =========================
+   intent detection
+========================= */
 
-function userExplicitlyAsksMeaning(msgLower: string) {
+function userExplicitlyAsksMeaning(msgLower: string): boolean {
   return (
-    /\bwaoc\b.*(\bmeaning\b|\bmean\b|\bmeans\b|\bacronym\b|\bfull\s*form\b|\bexpand(ed)?\b|\bstands?\s+for\b)/.test(
+    /\bwaoc\b.*(\bmeaning\b|\bmean\b|\bmeans\b|\bacronym\b|\bfull\s*form\b|\bstands?\s+for\b)/.test(
       msgLower
     ) ||
     /\bwhat\s+does\s+waoc\s+(mean|stand\s+for)\b/.test(msgLower) ||
     /\bwhat\s+(is|’s|'s)\s+waoc\b/.test(msgLower) ||
     /^\s*waoc\s*\?\s*$/.test(msgLower) ||
-    /全称|什么意思|含义|缩写|代表什么|展开|啥意思/.test(msgLower)
+    /全称|什么意思|含义|缩写|代表什么|啥意思/.test(msgLower)
   );
 }
 
-function ensureFirstLineFullForm(reply: string, lang: "en" | "zh") {
-  const required =
-    lang === "zh"
-      ? "WAOC = We Are One Connection。"
-      : "WAOC = We Are One Connection.";
-
-  const cleaned = sanitizeReply(reply, lang)
-    .replace(/^WAOC\s*=\s*We\s+Are\s+One\s+Connection[。.]?\s*/i, "")
-    .trim();
-
-  const merged = cleaned ? `${required}\n${cleaned}` : required;
-  return sanitizeReply(merged, lang);
-}
-
-function stripUnnecessaryMeaning(reply: string, lang: "en" | "zh") {
-  const stripped = reply
-    .replace(/^WAOC\s*=\s*We\s+Are\s+One\s+Connection[。.]?\s*/i, "")
-    .trim();
-
-  return sanitizeReply(
-    stripped ||
-      (lang === "zh"
-        ? "收到。\n先保留这个方向。\n后面再继续推进。"
-        : "Got it.\nKeeping this direction noted.\nWe can refine it from here."),
-    lang
-  );
-}
-
-/* -------------------------
-intent detection
-------------------------- */
-
-function looksLikeCAQuestion(msgLower: string) {
+function looksLikeCAQuestion(msgLower: string): boolean {
   return (
     /\bca\b/.test(msgLower) ||
     msgLower.includes("contract") ||
@@ -235,7 +118,7 @@ function looksLikeCAQuestion(msgLower: string) {
   );
 }
 
-function looksLikeNewsQuestion(msgLower: string) {
+function looksLikeNewsQuestion(msgLower: string): boolean {
   return (
     msgLower.includes("news") ||
     msgLower.includes("latest") ||
@@ -251,7 +134,7 @@ function looksLikeNewsQuestion(msgLower: string) {
   );
 }
 
-function looksLikePriceQuestion(msgLower: string) {
+function looksLikePriceQuestion(msgLower: string): boolean {
   return (
     /\bprice\b/.test(msgLower) ||
     /\bmarket cap\b/.test(msgLower) ||
@@ -262,17 +145,16 @@ function looksLikePriceQuestion(msgLower: string) {
   );
 }
 
-function looksLikeXQuestion(msgLower: string) {
+function looksLikeXQuestion(msgLower: string): boolean {
   return (
     /\bx\.com\b/.test(msgLower) ||
     /\btwitter\b/.test(msgLower) ||
     /\btweet\b/.test(msgLower) ||
-    /\baccount\b/.test(msgLower) ||
-    /推特|账号|推文|X账号|X 帐号/.test(msgLower)
+    /推特|推文|x账号|x 帐号/.test(msgLower)
   );
 }
 
-function looksLikeWebQuestion(msgLower: string) {
+function looksLikeWebQuestion(msgLower: string): boolean {
   return (
     /\bhttps?:\/\//.test(msgLower) ||
     /\bwebsite\b/.test(msgLower) ||
@@ -283,9 +165,51 @@ function looksLikeWebQuestion(msgLower: string) {
   );
 }
 
-function looksLikeExternalVerification(msgLower: string) {
+function looksLikeHelpQuestion(msgLower: string): boolean {
+  return (
+    msgLower === "/help" ||
+    /\bhelp\b/.test(msgLower) ||
+    /how to use|what can i do|commands|帮助|怎么用|指令|功能/.test(msgLower)
+  );
+}
+
+function looksLikeMissionIntent(msgLower: string): boolean {
+  return /mission|task|objective|deliver|execution|任务|目标|执行|交付|落地/.test(msgLower);
+}
+
+function looksLikeRankIntent(msgLower: string): boolean {
+  return /rank|ranking|leaderboard|score|points|排行榜|排名|积分/.test(msgLower);
+}
+
+function looksLikeReportIntent(msgLower: string): boolean {
+  return /report|summary|summarize|weekly|daily|报告|总结|日报|周报/.test(msgLower);
+}
+
+function looksLikeBuilderIntent(msgLower: string): boolean {
+  return /builder|developer|dev|contributor|开发者|构建者|贡献者/.test(msgLower);
+}
+
+function looksLikeKnowledgeIntent(msgLower: string): boolean {
+  return /knowledge|guide|faq|playbook|docs|documentation|知识|指南|文档|原理/.test(msgLower);
+}
+
+function looksLikeGrowthIntent(msgLower: string): boolean {
+  return /growth|marketing|promotion|campaign|增长|推广|传播/.test(msgLower);
+}
+
+function looksLikeEventsIntent(msgLower: string): boolean {
+  return /event|events|space|ama|meetup|workshop|活动|会议|日程/.test(msgLower);
+}
+
+function looksLikeToolsIntent(msgLower: string): boolean {
+  return /tools|tooling|stack|resources|工具|资源|工具栈/.test(msgLower);
+}
+
+function looksLikeExternalVerification(msgLower: string): boolean {
   return (
     looksLikeCAQuestion(msgLower) ||
+    looksLikeNewsQuestion(msgLower) ||
+    looksLikePriceQuestion(msgLower) ||
     msgLower.includes("listing") ||
     msgLower.includes("listed") ||
     msgLower.includes("partner") ||
@@ -301,11 +225,11 @@ function looksLikeExternalVerification(msgLower: string) {
   );
 }
 
-/* -------------------------
-fabrication detection
-------------------------- */
+/* =========================
+   fabrication guard
+========================= */
 
-function looksLikeFabricatedClaim(replyLower: string) {
+function looksLikeFabricatedClaim(replyLower: string): boolean {
   return (
     /\b(contract address|official contract|listed on|listed at|partnership with|partnered with|audit by|audited by)\b/.test(
       replyLower
@@ -316,79 +240,75 @@ function looksLikeFabricatedClaim(replyLower: string) {
   );
 }
 
-/* -------------------------
-fallback action inference
-------------------------- */
+/* =========================
+   waoc meaning handling
+========================= */
 
-function inferFallbackActionFromUserMessage(
-  msgLower: string
-): WaocSuggestedAction {
+function ensureFirstLineFullForm(reply: string, lang: "en" | "zh"): string {
+  const required =
+    lang === "zh"
+      ? "WAOC = We Are One Connection。"
+      : "WAOC = We Are One Connection.";
+
+  const cleaned = sanitizeReply(reply, lang)
+    .replace(/^WAOC\s*=\s*We\s+Are\s+One\s+Connection[。.]?\s*/i, "")
+    .trim();
+
+  return cleaned ? `${required}\n${cleaned}` : required;
+}
+
+/* =========================
+   fallback action inference
+========================= */
+
+function inferFallbackActionFromUserMessage(msgLower: string): WaocSuggestedAction {
+  if (looksLikeHelpQuestion(msgLower)) return "/help";
   if (looksLikeNewsQuestion(msgLower)) return "/news";
   if (looksLikePriceQuestion(msgLower)) return "/price";
   if (looksLikeXQuestion(msgLower)) return "/x";
   if (looksLikeWebQuestion(msgLower)) return "/web";
   if (looksLikeExternalVerification(msgLower)) return "/links";
-  if (/mission|task|objective|execute|execution|任务|目标|执行|交付/.test(msgLower))
-    return "/mission";
-  if (
-    /builder|developer|dev|build|building|repo|code|开发者|构建者|开发|代码/.test(
-      msgLower
-    )
-  )
-    return "/builders";
-  if (
-    /knowledge|guide|faq|playbook|lesson|strategy|insight|知识|指南|经验|方法|洞察|文档/.test(
-      msgLower
-    )
-  )
-    return "/knowledge";
-  if (/growth|campaign|retention|distribution|增长|传播|留存|活动/.test(msgLower))
-    return "/growth";
-  if (/report|summary|summarize|weekly|daily|总结|报告|周报|日报/.test(msgLower))
-    return "/report";
-  if (/rank|leaderboard|score|points|排行榜|排名|积分/.test(msgLower))
-    return "/rank";
+  if (looksLikeMissionIntent(msgLower)) return "/mission";
+  if (looksLikeRankIntent(msgLower)) return "/rank";
+  if (looksLikeReportIntent(msgLower)) return "/report";
+  if (looksLikeBuilderIntent(msgLower)) return "/builders";
+  if (looksLikeKnowledgeIntent(msgLower)) return "/knowledge";
+  if (looksLikeGrowthIntent(msgLower)) return "/growth";
+  if (looksLikeEventsIntent(msgLower)) return "/events";
+  if (looksLikeToolsIntent(msgLower)) return "/tools";
   return "none";
 }
 
-/* -------------------------
-core check
-------------------------- */
+/* =========================
+   core check
+========================= */
 
 export function checkWaocChatConstraints(args: CheckArgs): CheckResult {
-  const data = args?.data ?? ({ reply: "" } as any);
+  const input = args?.data ?? ({ reply: "" } as WaocChatData);
   const userMessage = norm(args?.userMessage);
   const msgLower = lower(userMessage);
   const lang: "en" | "zh" = args?.lang === "zh" ? "zh" : "en";
 
   const fixed: WaocChatData = {
-    reply: sanitizeReply(data.reply, lang),
-    suggestedAction: normalizeAction(data.suggestedAction ?? "none"),
+    reply: sanitizeReply(input.reply, lang),
+    suggestedAction: normalizeAction(input.suggestedAction ?? "none"),
   };
 
-  /* enforce or strip WAOC acronym line */
-
+  // 仅在“明确问 WAOC 含义”时才强制首行
   if (userMessage && userExplicitlyAsksMeaning(msgLower)) {
     fixed.reply = ensureFirstLineFullForm(fixed.reply, lang);
-  } else {
-    fixed.reply = stripUnnecessaryMeaning(fixed.reply, lang);
   }
 
-  /* strict fabricated external claims guard */
-
-  const replyLower = lower(fixed.reply);
-
-  if (looksLikeExternalVerification(msgLower) && looksLikeFabricatedClaim(replyLower)) {
+  // 外部验证型问题：如果回复里像在乱报事实，就强制回退
+  if (looksLikeExternalVerification(msgLower) && looksLikeFabricatedClaim(lower(fixed.reply))) {
     fixed.reply =
       lang === "zh"
-        ? "这类外部信息我无法在这里直接验证。\n建议只以官方渠道为准。\n先看官方链接入口。"
-        : "I cannot verify that external information here.\nUse official sources only.\nStart from the official links.";
-
+        ? "这类外部信息我无法在这里直接验证。\n建议只以官方渠道为准。"
+        : "I can’t verify that external information here.\nUse official sources only.";
     fixed.suggestedAction = "/links";
   }
 
-  /* route news / price / x / web first */
-
+  // 优先路由外部 agent 类动作
   if (looksLikeNewsQuestion(msgLower)) {
     fixed.suggestedAction = "/news";
   } else if (looksLikePriceQuestion(msgLower)) {
@@ -397,39 +317,33 @@ export function checkWaocChatConstraints(args: CheckArgs): CheckResult {
     fixed.suggestedAction = "/x";
   } else if (looksLikeWebQuestion(msgLower)) {
     fixed.suggestedAction = "/web";
+  } else if (looksLikeHelpQuestion(msgLower)) {
+    fixed.suggestedAction = "/help";
   } else if (looksLikeExternalVerification(msgLower)) {
     fixed.suggestedAction = "/links";
   }
-
-  /* fallback action inference */
 
   if (fixed.suggestedAction === "none") {
     fixed.suggestedAction = inferFallbackActionFromUserMessage(msgLower);
   }
 
-  /* final sanitize */
-
   fixed.reply = sanitizeReply(fixed.reply, lang);
-  fixed.suggestedAction = normalizeAction(fixed.suggestedAction ?? "none");
-
-  /* hard guarantee: 2–5 lines */
-
-  fixed.reply = trimReplyLines(fixed.reply, 2, 5);
+  fixed.suggestedAction = normalizeAction(fixed.suggestedAction);
 
   if (!fixed.reply) {
     return { ok: false, reason: "empty_reply", data: fixed };
   }
 
-  if (!ACTIONS.includes(fixed.suggestedAction ?? "none")) {
+  if (!ACTIONS.includes(fixed.suggestedAction)) {
     return { ok: false, reason: "bad_action", data: fixed };
   }
 
   return { ok: true, data: fixed };
 }
 
-/* -------------------------
-safe wrapper
-------------------------- */
+/* =========================
+   safe wrapper
+========================= */
 
 export function checkWaocChatConstraintsSafe(
   args: CheckArgs
@@ -445,10 +359,7 @@ export function checkWaocChatConstraintsSafe(
   return {
     ok: true,
     data: {
-      reply:
-        lang === "zh"
-          ? "收到。\n先保留这个方向。\n后面再继续推进。"
-          : "Got it.\nKeeping this direction noted.\nWe can refine it from here.",
+      reply: lang === "zh" ? "收到。" : "Got it.",
       suggestedAction: "none",
     },
   };
