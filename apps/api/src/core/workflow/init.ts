@@ -33,4 +33,4 @@ import "./newsWorkflow.js";
 import "./xWorkflow.js";
 import "./webWorkflow.js";
 
-import "./oneclaw_execute.workflow.ts";
+import "./oneclaw_execute.workflow.js";
