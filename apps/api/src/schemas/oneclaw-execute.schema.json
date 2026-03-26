@@ -1,0 +1,70 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reply", "shouldExecute", "oneclawTask"],
+  "properties": {
+    "reply": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 3000
+    },
+    "shouldExecute": {
+      "type": "boolean"
+    },
+    "oneclawTask": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["taskName", "steps"],
+          "properties": {
+            "taskName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "steps": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "action", "input"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "api.request",
+                      "browser.open",
+                      "browser.screenshot",
+                      "file.read",
+                      "file.write",
+                      "message.send",
+                      "social.post"
+                    ]
+                  },
+                  "input": {
+                    "type": "object"
+                  },
+                  "dependsOn": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

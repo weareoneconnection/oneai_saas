@@ -32,3 +32,5 @@ import "./priceWorkflow.js";
 import "./newsWorkflow.js";
 import "./xWorkflow.js";
 import "./webWorkflow.js";
+
+import "./oneclaw_execute.workflow.ts";
