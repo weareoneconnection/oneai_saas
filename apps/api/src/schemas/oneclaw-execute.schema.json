@@ -1,5 +1,5 @@
 {
-  "$id": "oneclawExecuteV3",
+  "$id": "oneclawExecuteV4",
   "type": "object",
   "additionalProperties": false,
   "required": ["reply", "shouldExecute", "oneclawTask"],
@@ -42,18 +42,8 @@
                   },
                   "action": {
                     "type": "string",
-                    "enum": [
-                      "content.generate",
-                      "content.transform",
-                      "api.request",
-                      "browser.open",
-                      "browser.screenshot",
-                      "file.read",
-                      "file.write",
-                      "message.send",
-                      "social.post",
-                      "result.compose"
-                    ]
+                    "minLength": 1,
+                    "maxLength": 120
                   },
                   "input": {
                     "type": "object",
@@ -74,5 +64,71 @@
         }
       ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "shouldExecute": { "const": true }
+        },
+        "required": ["shouldExecute"]
+      },
+      "then": {
+        "properties": {
+          "oneclawTask": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["taskName", "steps"],
+            "properties": {
+              "taskName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "steps": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 30,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "action", "input"],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9_-]{2,80}$"
+                    },
+                    "action": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    },
+                    "input": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "dependsOn": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z0-9_-]{2,80}$"
+                      },
+                      "uniqueItems": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "oneclawTask": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
 }
