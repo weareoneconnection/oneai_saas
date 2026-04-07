@@ -50,11 +50,11 @@ function SectionTitle({
           {eyebrow}
         </div>
       ) : null}
-      <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-black leading-tight md:text-4xl">
+      <h2 className="mt-2 text-2xl font-extrabold leading-tight tracking-tight text-black md:text-4xl">
         {title}
       </h2>
       {desc ? (
-        <p className="mt-4 text-sm md:text-base text-black/65 leading-relaxed">
+        <p className="mt-4 text-sm leading-relaxed text-black/65 md:text-base">
           {desc}
         </p>
       ) : null}
@@ -79,7 +79,7 @@ function Card({
       )}
     >
       <div className="text-sm font-extrabold text-black">{title}</div>
-      <div className="mt-2 text-sm text-black/65 leading-relaxed">{desc}</div>
+      <div className="mt-2 text-sm leading-relaxed text-black/65">{desc}</div>
     </div>
   );
 }
@@ -93,8 +93,10 @@ function MetricCard({
 }) {
   return (
     <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-      <div className="text-lg font-extrabold tracking-tight text-black">{title}</div>
-      <div className="mt-2 text-sm text-black/65 leading-relaxed">{desc}</div>
+      <div className="text-lg font-extrabold tracking-tight text-black">
+        {title}
+      </div>
+      <div className="mt-2 text-sm leading-relaxed text-black/65">{desc}</div>
     </div>
   );
 }
@@ -124,7 +126,7 @@ function MiniFeature({
   return (
     <div className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
       <div className="text-sm font-extrabold text-black">{title}</div>
-      <div className="mt-2 text-sm text-black/65 leading-relaxed">{desc}</div>
+      <div className="mt-2 text-sm leading-relaxed text-black/65">{desc}</div>
     </div>
   );
 }
@@ -134,7 +136,7 @@ export default function HomePage() {
     <main className="relative overflow-hidden bg-white">
       {/* background */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-48 -right-48 h-[560px] w-[560px] rounded-full bg-black/[0.04]" />
+        <div className="absolute -right-48 -top-48 h-[560px] w-[560px] rounded-full bg-black/[0.04]" />
         <div className="absolute -bottom-48 -left-48 h-[560px] w-[560px] rounded-full bg-black/[0.03]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(0,0,0,0.05),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(0,0,0,0.04),transparent_45%)]" />
       </div>
@@ -152,7 +154,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-black/70">
+          <nav className="hidden items-center gap-6 text-sm font-semibold text-black/70 md:flex">
             <Link href="/studio-lite" className="hover:text-black">
               Product
             </Link>
@@ -173,13 +175,13 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard"
-              className="hidden sm:inline-flex rounded-full border border-black/15 bg-white px-4 py-2 text-sm font-bold text-black hover:bg-black/[0.04] transition"
+              className="hidden rounded-full border border-black/15 bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-black/[0.04] sm:inline-flex"
             >
               Console
             </Link>
             <Link
               href="/studio-lite"
-              className="inline-flex rounded-full bg-black px-4 sm:px-5 py-2 text-sm font-extrabold text-white shadow-lg hover:bg-neutral-900 transition"
+              className="inline-flex rounded-full bg-black px-4 py-2 text-sm font-extrabold text-white shadow-lg transition hover:bg-neutral-900 sm:px-5"
             >
               Try Studio
             </Link>
@@ -189,86 +191,95 @@ export default function HomePage() {
         {/* Hero */}
         <section className="pt-10 pb-12 md:pt-20 md:pb-20">
           <div className="flex flex-wrap gap-2">
-            <Pill>Agent OS</Pill>
-            <Pill>AI-native coordination</Pill>
-            <Pill>Execution systems</Pill>
+            <Pill>WAOC network</Pill>
+            <Pill>OneAI Agent OS</Pill>
+            <Pill>Intelligence + Interface + Execution</Pill>
             <Pill>Workflow-ready</Pill>
           </div>
 
           <div className="mt-8 grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr]">
             <div>
               <div className="text-sm font-bold tracking-wide text-black/50">
-                AI tools generate text. OneAI generates execution systems.
+                WAOC provides the network. OneAI, OneAI Bot, and OneClaw form the operating system.
               </div>
 
-              <h1 className="mt-5 max-w-4xl text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.02] text-black">
-                OneAI —
+              <h1 className="mt-5 max-w-4xl text-4xl font-extrabold tracking-tight leading-[1.02] text-black sm:text-5xl md:text-6xl">
+                WAOC —
                 <br />
-                The Agent OS
-                <br />
-                for execution.
+                OneAI Agent OS
               </h1>
 
-              <p className="mt-6 max-w-2xl text-base sm:text-lg text-black/70 leading-relaxed">
-                Most AI tools stop at text.
-                <br className="hidden sm:block" />
-                OneAI turns intent into structured systems that can drive growth,
-                workflows, execution, and verifiable outcomes.
+              <div className="mt-4 text-base font-semibold text-black/60 sm:text-lg">
+                OneAI + OneAI Bot + OneClaw
+              </div>
+
+              <p className="mt-6 max-w-2xl text-base leading-relaxed text-black/70 sm:text-lg">
+                An AI-native operating system for planning, interaction, execution,
+                and verifiable outcomes.
               </p>
 
-              <div className="mt-10 flex flex-col sm:flex-row flex-wrap gap-3">
-                <Link
-                  href="/studio-lite"
-                  className="inline-flex items-center justify-center rounded-full bg-black px-6 sm:px-8 py-4 text-white font-extrabold shadow-lg hover:bg-neutral-900 transition"
-                >
-                  Launch AI Growth OS
-                </Link>
+              <div className="mt-4 max-w-2xl text-sm leading-relaxed text-black/55 sm:text-base">
+                OneAI provides intelligence.
+                <br />
+                OneAI Bot provides the live interface.
+                <br />
+                OneClaw provides execution.
+                <br />
+                Together, they turn intent into real systems.
+              </div>
 
-                <Link
-                  href="/studio/os"
-                  className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-6 sm:px-8 py-4 font-extrabold text-black hover:bg-black/[0.04] transition"
-                >
-                  Explore Builder OS →
-                </Link>
-
+              <div className="mt-10 flex flex-col flex-wrap gap-3 sm:flex-row">
                 <Link
                   href="https://t.me/WAOCOneAIBot"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-6 sm:px-8 py-4 font-extrabold text-black hover:bg-black/[0.04] transition"
+                  className="inline-flex items-center justify-center rounded-full bg-black px-6 py-4 font-extrabold text-white shadow-lg transition hover:bg-neutral-900 sm:px-8"
                 >
-                  Try OneAI Bot →
+                  Open OneAI Bot →
+                </Link>
+
+                <Link
+                  href="/studio-lite"
+                  className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-6 py-4 font-extrabold text-black transition hover:bg-black/[0.04] sm:px-8"
+                >
+                  Launch AI Growth OS
                 </Link>
               </div>
 
-              <div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              <div className="mt-4 flex flex-col flex-wrap gap-3 sm:flex-row sm:items-center">
                 <Link
                   href="https://oneai-xlayer-hackathon.vercel.app"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center text-sm font-semibold text-black/70 hover:text-black transition"
+                  className="inline-flex items-center text-sm font-semibold text-black/70 transition hover:text-black"
                 >
                   View Live Demo →
                 </Link>
 
                 <Link
+                  href="/studio/os"
+                  className="inline-flex items-center text-sm font-semibold text-black/70 transition hover:text-black"
+                >
+                  Explore Builder OS →
+                </Link>
+
+                <Link
                   href="/whitepaper"
-                  className="inline-flex items-center text-sm font-semibold text-black/70 hover:text-black transition"
+                  className="inline-flex items-center text-sm font-semibold text-black/70 transition hover:text-black"
                 >
                   Read Whitepaper →
                 </Link>
               </div>
 
-              <div className="mt-5 text-sm text-black/50 max-w-2xl">
-                OneAI is the operating layer. Studio Lite is the AI Growth OS.
-                OneAI Bot is the simplest way to access the system.
+              <div className="mt-5 max-w-2xl text-sm text-black/50">
+                WAOC is the network layer. OneAI Agent OS is the operating system.
+                Studio Lite is the AI Growth OS for launch systems and campaign execution.
               </div>
             </div>
 
             {/* Hero visual */}
-            <div className="rounded-[28px] border border-black/10 bg-white p-3 sm:p-4 shadow-[0_20px_80px_rgba(0,0,0,0.08)]">
+            <div className="rounded-[28px] border border-black/10 bg-white p-3 shadow-[0_20px_80px_rgba(0,0,0,0.08)] sm:p-4">
               <div className="overflow-hidden rounded-[24px] border border-black/10 bg-[#0B0B0C] text-white">
-                {/* top bar */}
                 <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="flex gap-1.5">
@@ -277,66 +288,64 @@ export default function HomePage() {
                       <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
                     </div>
                     <div className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">
-                      OneAI Studio Lite
+                      OneAI Agent OS
                     </div>
                   </div>
 
                   <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/70">
-                    AI Growth OS
+                    Live system
                   </div>
                 </div>
 
-                {/* body */}
-                <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
-                  {/* left */}
-                  <div className="border-b border-white/10 p-4 sm:p-5 lg:border-b-0 lg:border-r lg:border-r-white/10">
+                <div className="grid gap-0 lg:grid-cols-[1.02fr_0.98fr]">
+                  <div className="border-b border-white/10 p-4 lg:border-r lg:border-b-0 lg:border-r-white/10 sm:p-5">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/40">
-                            Input
+                            Layers
                           </div>
                           <div className="mt-1 text-sm font-semibold text-white/90">
-                            Viral launch pack. Founders.
+                            Intelligence → Interface → Execution
                           </div>
                         </div>
 
                         <div className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/60">
-                          Ready
+                          Active
                         </div>
                       </div>
 
                       <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-3">
-                        <div className="text-[11px] text-white/40">Prompt</div>
+                        <div className="text-[11px] text-white/40">System</div>
                         <div className="mt-2 text-sm leading-relaxed text-white/85">
-                          Goal: 100 waitlist
+                          OneAI plans.
                           <br />
-                          Topic: AI workflows
+                          OneAI Bot interacts.
                           <br />
-                          Tone: Contrarian
+                          OneClaw executes.
                         </div>
                       </div>
 
                       <div className="mt-4 grid grid-cols-3 gap-2">
                         <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
                           <div className="text-[10px] uppercase tracking-wide text-white/40">
-                            Pack
+                            OneAI
                           </div>
                           <div className="mt-1 text-xs font-semibold text-white/85">
-                            Growth
+                            Intelligence
                           </div>
                         </div>
                         <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
                           <div className="text-[10px] uppercase tracking-wide text-white/40">
-                            Audience
+                            Bot
                           </div>
                           <div className="mt-1 text-xs font-semibold text-white/85">
-                            Founders
+                            Interface
                           </div>
                         </div>
                         <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
                           <div className="text-[10px] uppercase tracking-wide text-white/40">
-                            Output
+                            OneClaw
                           </div>
                           <div className="mt-1 text-xs font-semibold text-white/85">
                             Execution
@@ -346,21 +355,20 @@ export default function HomePage() {
 
                       <div className="mt-4 flex items-center gap-2">
                         <div className="flex h-9 flex-1 items-center justify-center rounded-full bg-white text-sm font-extrabold text-black">
-                          Generate pack
+                          Run system
                         </div>
                         <div className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/70">
-                          Export
+                          Output
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* right */}
                   <div className="p-4 sm:p-5">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                       <div className="flex items-center justify-between">
                         <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/40">
-                          Output Pack
+                          Core loop
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-white/50">
                           <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -368,55 +376,50 @@ export default function HomePage() {
                         </div>
                       </div>
 
-                      <div className="mt-4 max-h-[360px] space-y-3 overflow-y-auto pr-1">
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                      <div className="mt-4 grid gap-2">
+                        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
                           <div className="text-[11px] font-semibold text-white/45">
-                            Best Hook
+                            Planning
                           </div>
-                          <div className="mt-2 text-sm font-semibold leading-relaxed text-white/92">
-                            Most founders think AI tools replace teams.
-                            <br />
-                            The real shift is replacing workflows.
+                          <div className="mt-1 text-sm text-white/88">
+                            Strategy, reasoning, action graphs, and structured outputs.
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
                           <div className="text-[11px] font-semibold text-white/45">
-                            Hooks
+                            Interaction
                           </div>
-                          <div className="mt-2 space-y-2 text-sm text-white/85">
-                            <div>1. AI tools generate content.</div>
-                            <div>2. Growth systems generate leverage.</div>
-                            <div>3. Builders who execute win.</div>
+                          <div className="mt-1 text-sm text-white/88">
+                            Real-time access through the Bot as the live system interface.
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
                           <div className="text-[11px] font-semibold text-white/45">
-                            Tweets
+                            Execution
                           </div>
-                          <div className="mt-2 text-sm leading-relaxed text-white/82">
-                            Most AI startups fail because prompts never become
-                            workflows.
+                          <div className="mt-1 text-sm text-white/88">
+                            Tasks, workflows, actions, and verifiable outcomes across systems.
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                        <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3">
                           <div className="text-[11px] font-semibold text-white/45">
-                            CTA
+                            Network
                           </div>
-                          <div className="mt-2 text-sm font-semibold text-white/88">
-                            Join the waitlist →
+                          <div className="mt-1 text-sm text-white/88">
+                            WAOC provides the coordination context and long-term network layer.
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
                         <div className="text-[11px] text-white/45">
-                          Validation → Export → Workflow
+                          Intent → System → Outcome
                         </div>
                         <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/70">
-                          Ready to ship
+                          Agent OS
                         </div>
                       </div>
                     </div>
@@ -427,28 +430,26 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Bot entry */}
+        {/* Bot flagship */}
         <section className="border-t border-black/10 py-14 md:py-16">
           <SectionTitle
-            eyebrow="Interface"
-            title="Use OneAI directly through the Bot."
-            desc="The Bot is the simplest way to access OneAI. Generate plans, launch campaign structures, and interact with the system in real-time."
+            eyebrow="Flagship interface"
+            title="OneAI Bot is the live interface of the system."
+            desc="OneAI Bot is not the whole operating system. It is the fastest interface into OneAI Agent OS — giving users direct access to planning, coordination, detection, narrative, and execution."
           />
 
           <div className="mt-10 grid gap-4 lg:grid-cols-[1fr_1fr]">
             <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-              <div className="text-sm font-extrabold text-black">
-                OneAI Bot
-              </div>
-              <div className="mt-2 text-sm text-black/65 leading-relaxed">
-                The fastest interface for using OneAI without needing to open a
-                full console. Ideal for direct prompts, quick planning, and
-                interactive execution flows.
+              <div className="text-sm font-extrabold text-black">OneAI Bot</div>
+              <div className="mt-2 text-sm leading-relaxed text-black/65">
+                The primary user interface for OneAI Agent OS. It turns direct
+                interaction into analysis, decisions, and execution-ready outputs
+                across live environments.
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                <Pill>Direct interaction</Pill>
-                <Pill>Fast planning</Pill>
+                <Pill>Live interface</Pill>
+                <Pill>Community-aware AI</Pill>
                 <Pill>Execution entry</Pill>
               </div>
 
@@ -457,7 +458,7 @@ export default function HomePage() {
                   href="https://t.me/WAOCOneAIBot"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex rounded-full bg-black px-5 py-3 text-sm font-extrabold text-white hover:bg-neutral-900 transition"
+                  className="inline-flex rounded-full bg-black px-5 py-3 text-sm font-extrabold text-white transition hover:bg-neutral-900"
                 >
                   Open Bot →
                 </Link>
@@ -467,20 +468,28 @@ export default function HomePage() {
             <div className="rounded-3xl border border-black/10 bg-black/[0.02] p-6 shadow-sm">
               <div className="grid gap-3 sm:grid-cols-2">
                 <MiniFeature
-                  title="Chat → plan"
-                  desc="Turn a single message into structured outputs and execution-ready directions."
+                  title="Builder detection"
+                  desc="Identify active builders, track activity, and surface reputation signals."
                 />
                 <MiniFeature
-                  title="Real-time use"
-                  desc="Access OneAI as a product interface, not just a backend capability."
+                  title="Mission activation"
+                  desc="Create missions, assign tasks, and coordinate progress in real time."
                 />
                 <MiniFeature
-                  title="Growth workflows"
-                  desc="Use the Bot to access launch packs, hooks, and campaign structures fast."
+                  title="Narrative engine"
+                  desc="Generate summaries, posts, storytelling, and growth narratives dynamically."
                 />
                 <MiniFeature
-                  title="System entry"
-                  desc="The Bot becomes the most direct way to enter the Agent OS."
+                  title="Emotion analysis"
+                  desc="Read community mood, detect risk, and stabilize coordination loops."
+                />
+                <MiniFeature
+                  title="Graph awareness"
+                  desc="Understand relationships, influence, and network structure."
+                />
+                <MiniFeature
+                  title="Multi-platform execution"
+                  desc="Operate across Telegram, X, Discord, web, and connected systems."
                 />
               </div>
             </div>
@@ -491,7 +500,7 @@ export default function HomePage() {
         <section className="border-t border-black/10 py-14 md:py-16">
           <SectionTitle
             eyebrow="Live demo"
-            title="See OneAI execute in real-time."
+            title="See the full system execute in real-time."
             desc="The live system shows visible reasoning, execution logs, real-world actions, and verifiable proof — not just AI output."
           />
 
@@ -500,7 +509,7 @@ export default function HomePage() {
               <div className="text-sm font-extrabold text-black">
                 WAOC OneAI Agent OS demo
               </div>
-              <div className="mt-2 text-sm text-black/65 leading-relaxed">
+              <div className="mt-2 text-sm leading-relaxed text-black/65">
                 Watch the full loop:
                 <br />
                 intent → reasoning → execution → real-world action → proof.
@@ -518,7 +527,7 @@ export default function HomePage() {
                   href="https://oneai-xlayer-hackathon.vercel.app"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex rounded-full bg-black px-5 py-3 text-sm font-extrabold text-white hover:bg-neutral-900 transition"
+                  className="inline-flex rounded-full bg-black px-5 py-3 text-sm font-extrabold text-white transition hover:bg-neutral-900"
                 >
                   Open Live Demo →
                 </Link>
@@ -612,16 +621,16 @@ export default function HomePage() {
           <SectionTitle
             eyebrow="Architecture"
             title="AI needs an execution architecture."
-            desc="OneAI connects generation with real execution systems — from intent and prompts to validated artifacts, workflows, actions, and verifiable outcomes."
+            desc="OneAI Agent OS connects intelligence, interface, and execution — from intent and prompts to validated artifacts, workflows, actions, and verifiable outcomes."
           />
 
           <div className="mt-10 rounded-[28px] border border-black/10 bg-black/[0.02] p-4 sm:p-6">
             <div className="grid gap-3 md:grid-cols-6">
               <FlowNode title="Intent" desc="Topic, goal, context, constraints." />
-              <FlowNode title="Prompt" desc="Templates and structured generation rules." />
-              <FlowNode title="Output" desc="Predictable artifacts, not random text." />
+              <FlowNode title="OneAI" desc="Planning, reasoning, structured outputs." />
+              <FlowNode title="Bot" desc="Live interaction and system access." />
+              <FlowNode title="OneClaw" desc="Execution, workflows, and actions." />
               <FlowNode title="Validation" desc="Schemas, retries, and reliability checks." />
-              <FlowNode title="Execution" desc="Connected to workflows and actions." />
               <FlowNode title="Proof" desc="Verifiable outcomes and trust layers." />
             </div>
 
@@ -631,11 +640,11 @@ export default function HomePage() {
                   System logic
                 </div>
                 <div className="mt-3 text-lg font-extrabold tracking-tight text-black">
-                  Generation is only step one.
+                  Intelligence alone is not enough.
                 </div>
-                <p className="mt-3 text-sm text-black/65 leading-relaxed">
-                  The real value appears when outputs become stable enough to validate,
-                  export, and use inside repeatable execution systems.
+                <p className="mt-3 text-sm leading-relaxed text-black/65">
+                  Real systems need planning, interaction, execution, and trustworthy
+                  outcomes working together.
                 </p>
               </div>
 
@@ -644,11 +653,11 @@ export default function HomePage() {
                   Why it matters
                 </div>
                 <div className="mt-3 text-lg font-extrabold tracking-tight text-black">
-                  More than AI output. A path to execution.
+                  More than AI output. A complete operating loop.
                 </div>
-                <p className="mt-3 text-sm text-black/65 leading-relaxed">
-                  OneAI sits in the gap between prompts and execution — the layer most AI
-                  products ignore, but teams actually need.
+                <p className="mt-3 text-sm leading-relaxed text-black/65">
+                  OneAI Agent OS sits between intent and outcomes — the layer most AI
+                  products ignore, but real systems require.
                 </p>
               </div>
             </div>
@@ -660,78 +669,81 @@ export default function HomePage() {
           <SectionTitle
             eyebrow="Products"
             title="The OneAI product stack"
-            desc="OneAI is the Agent OS. Studio Lite is the AI Growth OS. Builder OS and API extend the system into full execution infrastructure."
+            desc="WAOC is the network layer. OneAI Agent OS is the system. OneAI Bot is the flagship interface. Studio Lite is the AI Growth OS. Builder OS and API extend the system into full execution infrastructure."
           />
 
-          <div className="mt-10 grid gap-4 lg:grid-cols-3">
+          <div className="mt-10 grid gap-4 lg:grid-cols-5">
+            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+              <div className="text-sm font-extrabold text-black">WAOC</div>
+              <div className="mt-1 text-xs font-bold uppercase tracking-[0.18em] text-black/40">
+                Network Layer
+              </div>
+              <div className="mt-3 text-sm leading-relaxed text-black/65">
+                Coordination context, ecosystem narrative, and long-term network foundation.
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+              <div className="text-sm font-extrabold text-black">OneAI</div>
+              <div className="mt-1 text-xs font-bold uppercase tracking-[0.18em] text-black/40">
+                Intelligence Layer
+              </div>
+              <div className="mt-3 text-sm leading-relaxed text-black/65">
+                Planning, reasoning, structured outputs, and system intelligence.
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+              <div className="text-sm font-extrabold text-black">OneAI Bot</div>
+              <div className="mt-1 text-xs font-bold uppercase tracking-[0.18em] text-black/40">
+                Flagship Interface
+              </div>
+              <div className="mt-3 text-sm leading-relaxed text-black/65">
+                The real-time entry point to OneAI Agent OS for planning,
+                coordination, and execution.
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Pill>Detect</Pill>
+                <Pill>Decide</Pill>
+                <Pill>Act</Pill>
+              </div>
+              <div className="mt-5">
+                <Link
+                  href="https://t.me/WAOCOneAIBot"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex rounded-full bg-black px-4 py-2 text-xs font-extrabold text-white transition hover:bg-neutral-900"
+                >
+                  Open Bot →
+                </Link>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+              <div className="text-sm font-extrabold text-black">OneClaw</div>
+              <div className="mt-1 text-xs font-bold uppercase tracking-[0.18em] text-black/40">
+                Execution Layer
+              </div>
+              <div className="mt-3 text-sm leading-relaxed text-black/65">
+                Tasks, workflows, action routing, and execution across connected systems.
+              </div>
+            </div>
+
             <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
               <div className="text-sm font-extrabold text-black">Studio Lite</div>
               <div className="mt-1 text-xs font-bold uppercase tracking-[0.18em] text-black/40">
                 AI Growth OS
               </div>
-              <div className="mt-3 text-sm text-black/65 leading-relaxed">
+              <div className="mt-3 text-sm leading-relaxed text-black/65">
                 Turns one idea into hooks, threads, launch packs, viral campaigns,
                 and execution-ready growth outputs.
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Pill>Growth packs</Pill>
-                <Pill>Hooks</Pill>
-                <Pill>Launch systems</Pill>
               </div>
               <div className="mt-5">
                 <Link
                   href="/studio-lite"
-                  className="inline-flex rounded-full bg-black px-4 py-2 text-xs font-extrabold text-white hover:bg-neutral-900 transition"
+                  className="inline-flex rounded-full border border-black/15 bg-white px-4 py-2 text-xs font-extrabold transition hover:bg-black/[0.04]"
                 >
-                  Launch AI Growth OS →
-                </Link>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-              <div className="text-sm font-extrabold text-black">Builder OS</div>
-              <div className="mt-1 text-xs font-bold uppercase tracking-[0.18em] text-black/40">
-                Execution OS
-              </div>
-              <div className="mt-3 text-sm text-black/65 leading-relaxed">
-                Execution infrastructure for builders: projects, workflows, keys,
-                structured generation, and system-level coordination.
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Pill>Projects</Pill>
-                <Pill>Workflows</Pill>
-                <Pill>Execution</Pill>
-              </div>
-              <div className="mt-5">
-                <Link
-                  href="/studio/os"
-                  className="inline-flex rounded-full border border-black/15 bg-white px-4 py-2 text-xs font-extrabold hover:bg-black/[0.04] transition"
-                >
-                  Explore Builder OS →
-                </Link>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
-              <div className="text-sm font-extrabold text-black">OneAI API</div>
-              <div className="mt-1 text-xs font-bold uppercase tracking-[0.18em] text-black/40">
-                Coordination API
-              </div>
-              <div className="mt-3 text-sm text-black/65 leading-relaxed">
-                Coordination APIs for structured generation, validation, execution,
-                and system-level integration inside your own products.
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Pill>Generate</Pill>
-                <Pill>Validate</Pill>
-                <Pill>Execute</Pill>
-              </div>
-              <div className="mt-5">
-                <Link
-                  href="/developers"
-                  className="inline-flex rounded-full border border-black/15 bg-white px-4 py-2 text-xs font-extrabold hover:bg-black/[0.04] transition"
-                >
-                  For developers →
+                  Launch →
                 </Link>
               </div>
             </div>
@@ -743,7 +755,7 @@ export default function HomePage() {
           <SectionTitle
             eyebrow="Use cases"
             title="Built for builders who ship."
-            desc="Use OneAI to produce outputs that move work forward — growth, docs, commands, workflows, launch systems, and operating layers."
+            desc="Use OneAI to produce outputs that move work forward — growth, docs, commands, workflows, launch systems, community coordination, and operating layers."
           />
 
           <div className="mt-10 grid gap-4 md:grid-cols-2">
@@ -754,8 +766,8 @@ export default function HomePage() {
             />
             <Card
               subtle
-              title="Product & docs"
-              desc="Create PRDs, specs, checklists, and structured exports that teams can actually reuse."
+              title="Community coordination"
+              desc="Detect builders, activate missions, summarize narratives, and manage engagement loops."
             />
             <Card
               subtle
@@ -795,50 +807,51 @@ export default function HomePage() {
         </section>
 
         {/* Final CTA */}
-        <section className="border-t border-black/10 py-16 md:py-20 text-center">
+        <section className="border-t border-black/10 py-16 text-center md:py-20">
           <SectionTitle
             eyebrow="Get started"
-            title="Start with growth. Expand into execution."
-            desc="Launch Studio Lite for AI Growth OS. Move into Builder OS when you need full execution workflows and system-level coordination."
+            title="Start with the interface. Expand into the system."
+            desc="Open OneAI Bot for the fastest interface. Launch Studio Lite for AI Growth OS. Move into Builder OS when you need full execution workflows."
             center
           />
 
-          <div className="mt-8 flex justify-center gap-3 flex-col sm:flex-row flex-wrap">
+          <div className="mt-8 flex flex-col flex-wrap justify-center gap-3 sm:flex-row">
+            <Link
+              href="https://t.me/WAOCOneAIBot"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center rounded-full bg-black px-6 py-4 font-extrabold text-white shadow-lg transition hover:bg-neutral-900 sm:px-8"
+            >
+              Open OneAI Bot →
+            </Link>
+
             <Link
               href="/studio-lite"
-              className="inline-flex items-center justify-center rounded-full bg-black px-6 sm:px-8 py-4 text-white font-extrabold shadow-lg hover:bg-neutral-900 transition"
+              className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-6 py-4 font-extrabold text-black transition hover:bg-black/[0.04] sm:px-8"
             >
               Launch AI Growth OS
             </Link>
 
             <Link
-              href="/studio/os"
-              className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-6 sm:px-8 py-4 font-extrabold text-black hover:bg-black/[0.04] transition"
-            >
-              Explore Builder OS →
-            </Link>
-
-            <Link
-              href="https://t.me/WAOCOneAIBot"
+              href="https://oneai-xlayer-hackathon.vercel.app"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-6 sm:px-8 py-4 font-extrabold text-black hover:bg-black/[0.04] transition"
+              className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-6 py-4 font-extrabold text-black transition hover:bg-black/[0.04] sm:px-8"
             >
-              Open OneAI Bot →
+              View Live Demo →
             </Link>
           </div>
 
           <div className="mt-5 text-sm text-black/50">
-            OneAI is the Agent OS. Studio Lite is the AI Growth OS.
+            WAOC is the network. OneAI Agent OS is the system. OneAI Bot is the flagship interface.
           </div>
         </section>
 
         {/* Footer */}
         <footer className="py-10 text-sm text-black/50">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t border-black/10 pt-6">
+          <div className="flex flex-col gap-3 border-t border-black/10 pt-6 md:flex-row md:items-center md:justify-between">
             <div>
-              © {new Date().getFullYear()} OneAI — Agent operating system for
-              execution.
+              © {new Date().getFullYear()} OneAI — Agent operating system for execution.
             </div>
             <div className="flex flex-wrap gap-4">
               <Link className="hover:text-black" href="/security">
