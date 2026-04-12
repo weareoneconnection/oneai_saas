@@ -1,0 +1,43 @@
+{
+  "$id": "oneFieldOutput",
+  "type": "object",
+  "required": ["pulse", "summary", "insights"],
+  "properties": {
+    "pulse": {
+      "type": "string",
+      "enum": ["building", "active", "fragmented", "under-connected"]
+    },
+    "summary": { "type": "string" },
+
+    "insights": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["type", "title", "body", "confidence"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["opportunity", "match", "warning", "pulse", "summary"]
+          },
+          "title": { "type": "string" },
+          "body": { "type": "string" },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "relatedBuilderIds": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "relatedCircleSlugs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
