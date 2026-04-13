@@ -1,0 +1,14 @@
+{
+  "$id": "oneMirrorInput",
+  "type": "object",
+  "required": ["input"],
+  "properties": {
+    "input": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 280,
+      "description": "User's belief, instinct, mindset, or behavioral pattern. Supports any language."
+    }
+  },
+  "additionalProperties": false
+}

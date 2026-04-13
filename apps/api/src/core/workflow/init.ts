@@ -38,3 +38,5 @@ import "./oneclaw_execute.workflow.js";
 import "./agentPlanWorkflow.js";
 // 🧠 One Field Intelligence（核心）
 import "./onefield_intelligence_workflow.js";
+
+import "./oneMirrorWorkflow.js";

@@ -1,0 +1,69 @@
+{
+  "$id": "oneMirrorOutput",
+  "type": "object",
+  "required": ["worldType", "summary", "shockLine", "consequences", "scores"],
+  "properties": {
+    "worldType": {
+      "type": "string",
+      "enum": [
+        "fragmented-collapse",
+        "guarded-tribalism",
+        "cold-efficiency-state",
+        "extractive-economy",
+        "hyper-competitive-order",
+        "cooperative-civilization",
+        "compassion-network",
+        "resilient-open-world"
+      ]
+    },
+
+    "summary": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 320
+    },
+
+    "shockLine": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 180
+    },
+
+    "consequences": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 120
+      }
+    },
+
+    "scores": {
+      "type": "object",
+      "required": [
+        "trust",
+        "cooperation",
+        "empathy",
+        "stability",
+        "conflict",
+        "openness",
+        "extraction",
+        "longTermism"
+      ],
+      "properties": {
+        "trust": { "type": "number", "minimum": 0, "maximum": 100 },
+        "cooperation": { "type": "number", "minimum": 0, "maximum": 100 },
+        "empathy": { "type": "number", "minimum": 0, "maximum": 100 },
+        "stability": { "type": "number", "minimum": 0, "maximum": 100 },
+        "conflict": { "type": "number", "minimum": 0, "maximum": 100 },
+        "openness": { "type": "number", "minimum": 0, "maximum": 100 },
+        "extraction": { "type": "number", "minimum": 0, "maximum": 100 },
+        "longTermism": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
