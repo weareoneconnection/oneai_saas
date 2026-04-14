@@ -32,12 +32,20 @@ export function checkMarketIntelligenceConstraints(data: any) {
   }
 
   if (!Array.isArray(data?.sectorAnalysis)) {
-    errors.push("sectorAnalysis required");
+    errors.push("sectorAnalysis must be an array");
   }
 
-  if (!Array.isArray(data?.keyDrivers) || data.keyDrivers.length === 0) {
-    errors.push("keyDrivers required");
-  }
+ if (!Array.isArray(data?.keyDrivers)) {
+  errors.push("keyDrivers must be an array");
+}
+
+if (!Array.isArray(data?.risks)) {
+  errors.push("risks must be an array");
+}
+
+if (!Array.isArray(data?.insights)) {
+  errors.push("insights must be an array");
+}
 
   if (!Array.isArray(data?.risks) || data.risks.length === 0) {
     errors.push("risks required");
@@ -58,9 +66,7 @@ export function checkMarketIntelligenceConstraints(data: any) {
 
     if (typeof i.confidence !== "number") {
       errors.push("insight confidence must be number");
-    }
-
-    if (i.confidence < 0 || i.confidence > 1) {
+    } else if (i.confidence < 0 || i.confidence > 1) {
       errors.push("insight confidence must be 0-1");
     }
   }
