@@ -1,0 +1,282 @@
+{
+  "$id": "marketDecisionInput",
+  "type": "object",
+  "required": [
+    "marketIntelligence",
+    "assetAnalysis",
+    "account",
+    "risk",
+    "executionContext"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "marketIntelligence": {
+      "type": "object",
+      "required": ["marketRegime", "tradability", "outlook"],
+      "additionalProperties": true,
+      "properties": {
+        "marketRegime": {
+          "type": "object",
+          "required": [
+            "regime",
+            "structure",
+            "volatility",
+            "liquidity",
+            "riskEnvironment",
+            "confidence"
+          ],
+          "additionalProperties": true,
+          "properties": {
+            "regime": {
+              "type": "string",
+              "enum": ["bull", "bear", "range", "transition"]
+            },
+            "structure": { "type": "string" },
+            "volatility": { "type": "string" },
+            "liquidity": { "type": "string" },
+            "riskEnvironment": {
+              "type": "string",
+              "enum": ["risk_on", "risk_off", "neutral"]
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "tradability": {
+          "type": "object",
+          "required": ["isTradeable", "condition", "reason", "confidence"],
+          "additionalProperties": false,
+          "properties": {
+            "isTradeable": { "type": "boolean" },
+            "condition": {
+              "type": "string",
+              "enum": ["favorable", "mixed", "unfavorable"]
+            },
+            "reason": { "type": "string" },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "outlook": {
+          "type": "object",
+          "required": ["bias", "scenario", "invalidation", "confidence"],
+          "additionalProperties": false,
+          "properties": {
+            "bias": {
+              "type": "string",
+              "enum": ["bullish", "bearish", "neutral", "mixed"]
+            },
+            "scenario": { "type": "string" },
+            "invalidation": { "type": "string" },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+
+    "assetAnalysis": {
+      "type": "object",
+      "required": ["marketState", "levels", "setup"],
+      "additionalProperties": true,
+      "properties": {
+        "marketState": {
+          "type": "object",
+          "required": ["trend", "structure", "volatility", "bias", "confidence"],
+          "additionalProperties": true,
+          "properties": {
+            "trend": {
+              "type": "string",
+              "enum": ["bullish", "bearish", "neutral", "mixed"]
+            },
+            "structure": { "type": "string" },
+            "volatility": { "type": "string" },
+            "bias": {
+              "type": "string",
+              "enum": ["long", "short", "wait"]
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "levels": {
+          "type": "object",
+          "required": ["support", "resistance", "invalidation", "triggerZone"],
+          "additionalProperties": false,
+          "properties": {
+            "support": {
+              "type": "array",
+              "items": { "type": "number" }
+            },
+            "resistance": {
+              "type": "array",
+              "items": { "type": "number" }
+            },
+            "invalidation": {
+              "type": "number"
+            },
+            "triggerZone": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "type": "number" }
+            }
+          }
+        },
+        "setup": {
+          "type": "object",
+          "required": [
+            "type",
+            "direction",
+            "entryLogic",
+            "stopLogic",
+            "takeProfitLogic",
+            "timeHorizon",
+            "confidence"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "trend_follow",
+                "breakout",
+                "pullback",
+                "mean_reversion",
+                "no_trade"
+              ]
+            },
+            "direction": {
+              "type": "string",
+              "enum": ["long", "short", "neutral"]
+            },
+            "entryLogic": { "type": "string" },
+            "stopLogic": { "type": "string" },
+            "takeProfitLogic": { "type": "string" },
+            "timeHorizon": {
+              "type": "string",
+              "enum": ["scalp", "intraday", "swing"]
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+
+    "account": {
+      "type": "object",
+      "required": ["equity", "freeBalance", "accountMode"],
+      "additionalProperties": false,
+      "properties": {
+        "equity": {
+          "type": "number",
+          "minimum": 0
+        },
+        "freeBalance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "accountMode": {
+          "type": "string",
+          "enum": ["spot", "margin", "futures"]
+        },
+        "preferredSizeMode": {
+          "type": "string",
+          "enum": ["quote", "base"]
+        },
+        "maxPositionSize": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+
+    "risk": {
+      "type": "object",
+      "required": ["maxRiskPerTrade", "dailyLossLimit"],
+      "additionalProperties": false,
+      "properties": {
+        "maxRiskPerTrade": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "dailyLossLimit": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "currentExposure": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxExposure": {
+          "type": "number",
+          "minimum": 0
+        },
+        "blockedSymbols": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "blockedDirections": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["BUY", "SELL"]
+          }
+        }
+      }
+    },
+
+    "executionContext": {
+      "type": "object",
+      "required": ["symbol", "exchange"],
+      "additionalProperties": false,
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exchange": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowedOrderTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["MARKET", "LIMIT"]
+          }
+        },
+        "minOrderSize": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxOrderSize": {
+          "type": "number",
+          "minimum": 0
+        },
+        "preferredTimeHorizon": {
+          "type": "string",
+          "enum": ["scalp", "intraday", "swing"]
+        }
+      }
+    }
+  }
+}

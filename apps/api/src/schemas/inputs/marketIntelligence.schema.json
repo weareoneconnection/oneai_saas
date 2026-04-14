@@ -1,0 +1,178 @@
+{
+  "$id": "marketIntelligenceInput",
+  "type": "object",
+  "required": [
+    "market",
+    "benchmarks",
+    "topAssets",
+    "flows",
+    "macro",
+    "context"
+  ],
+  "additionalProperties": false,
+
+  "properties": {
+    "market": {
+      "type": "object",
+      "required": ["regime", "volatility", "liquidityCondition"],
+      "properties": {
+        "regime": {
+          "type": "string",
+          "enum": ["bull", "bear", "range", "transition"]
+        },
+        "volatility": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "expansion"]
+        },
+        "liquidityCondition": {
+          "type": "string",
+          "enum": ["tight", "normal", "loose"]
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "benchmarks": {
+      "type": "object",
+      "required": ["BTC", "ETH"],
+      "properties": {
+        "BTC": { "$ref": "#/$defs/benchmark" },
+        "ETH": { "$ref": "#/$defs/benchmark" }
+      }
+    },
+
+    "sectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "performance24h", "volumeChange"],
+        "properties": {
+          "name": { "type": "string" },
+          "performance24h": { "type": "number" },
+          "volumeChange": { "type": "number" },
+          "leadingAssets": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "topAssets": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/topAsset" }
+    },
+
+    "flows": {
+      "type": "object",
+      "required": ["stablecoinInflow", "exchangeNetflow"],
+      "properties": {
+        "stablecoinInflow": { "type": "number" },
+        "stablecoinOutflow": { "type": "number" },
+        "exchangeNetflow": { "type": "number" },
+        "openInterest": { "type": "number" },
+        "oiChange": { "type": "number" },
+        "fundingRateAvg": { "type": "number" }
+      }
+    },
+
+    "derivatives": {
+      "type": "object",
+      "properties": {
+        "longShortRatio": { "type": "number" },
+        "takerImbalance": { "type": "number" }
+      }
+    },
+
+    "dominance": {
+      "type": "object",
+      "properties": {
+        "btcDominance": { "type": "number" },
+        "ethDominance": { "type": "number" },
+        "altDominance": { "type": "number" }
+      }
+    },
+
+    "macro": {
+      "type": "object",
+      "required": ["riskSentiment"],
+      "properties": {
+        "dxy": { "type": "number" },
+        "yields": { "type": "number" },
+        "riskSentiment": {
+          "type": "string",
+          "enum": ["risk_on", "risk_off", "neutral"]
+        }
+      }
+    },
+
+    "news": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "sentiment"],
+        "properties": {
+          "title": { "type": "string" },
+          "sentiment": {
+            "type": "string",
+            "enum": ["positive", "neutral", "negative"]
+          },
+          "impact": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
+        }
+      }
+    },
+
+    "context": {
+      "type": "object",
+      "required": ["session", "eventRisk"],
+      "properties": {
+        "session": {
+          "type": "string",
+          "enum": ["asia", "eu", "us"]
+        },
+        "eventRisk": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "benchmark": {
+      "type": "object",
+      "required": ["price", "trend"],
+      "properties": {
+        "price": { "type": "number" },
+        "trend": {
+          "type": "string",
+          "enum": ["up", "down", "flat"]
+        },
+        "rsi": { "type": "number" }
+      }
+    },
+
+    "topAsset": {
+      "type": "object",
+      "required": ["symbol", "price"],
+      "properties": {
+        "symbol": { "type": "string" },
+        "price": { "type": "number" },
+        "change24h": { "type": "number" },
+        "volume24h": { "type": "number" },
+        "trend": {
+          "type": "string",
+          "enum": ["up", "down", "flat"]
+        }
+      }
+    }
+  }
+}

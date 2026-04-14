@@ -1,0 +1,292 @@
+{
+  "$id": "marketIntelligenceOutput",
+  "type": "object",
+  "required": [
+    "marketRegime",
+    "tradability",
+    "observations",
+    "interpretation",
+    "sectorAnalysis",
+    "keyDrivers",
+    "risks",
+    "outlook",
+    "insights"
+  ],
+  "additionalProperties": false,
+
+  "properties": {
+    "marketRegime": {
+      "type": "object",
+      "required": [
+        "regime",
+        "structure",
+        "volatility",
+        "liquidity",
+        "riskEnvironment",
+        "confidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "regime": {
+          "type": "string",
+          "enum": ["bull", "bear", "range", "transition"]
+        },
+        "structure": {
+          "type": "string",
+          "enum": [
+            "trend_continuation",
+            "breakout",
+            "range",
+            "compression",
+            "distribution",
+            "accumulation",
+            "instability"
+          ]
+        },
+        "volatility": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "expanding"]
+        },
+        "liquidity": {
+          "type": "string",
+          "enum": ["expanding", "stable", "contracting"]
+        },
+        "riskEnvironment": {
+          "type": "string",
+          "enum": ["risk_on", "risk_off", "neutral"]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+
+    "tradability": {
+      "type": "object",
+      "required": ["isTradeable", "condition", "reason", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "isTradeable": {
+          "type": "boolean"
+        },
+        "condition": {
+          "type": "string",
+          "enum": ["favorable", "mixed", "unfavorable"]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 5
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+
+    "observations": {
+      "type": "object",
+      "required": [
+        "priceStructure",
+        "momentum",
+        "volume",
+        "flow",
+        "volatilityState"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "priceStructure": { "type": "string", "minLength": 5 },
+        "momentum": { "type": "string", "minLength": 5 },
+        "volume": { "type": "string", "minLength": 5 },
+        "flow": { "type": "string", "minLength": 5 },
+        "volatilityState": { "type": "string", "minLength": 5 }
+      }
+    },
+
+    "interpretation": {
+      "type": "object",
+      "required": [
+        "trendQuality",
+        "liquidityCondition",
+        "positioning",
+        "marketIntent",
+        "dominantForce"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "trendQuality": {
+          "type": "string",
+          "enum": ["strong", "moderate", "weak", "unstable"]
+        },
+        "liquidityCondition": {
+          "type": "string",
+          "enum": ["supportive", "weak", "mixed"]
+        },
+        "positioning": {
+          "type": "string",
+          "enum": [
+            "crowded_long",
+            "crowded_short",
+            "neutral",
+            "building"
+          ]
+        },
+        "marketIntent": {
+          "type": "string",
+          "minLength": 5
+        },
+        "dominantForce": {
+          "type": "string",
+          "enum": ["buyers", "sellers", "balance"]
+        }
+      }
+    },
+
+    "sectorAnalysis": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["sector", "status", "strength", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "sector": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": ["leading", "lagging", "rotating", "weakening"]
+          },
+          "strength": {
+            "type": "string",
+            "enum": ["strong", "moderate", "weak"]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 5
+          }
+        }
+      }
+    },
+
+    "keyDrivers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["type", "title", "body", "impact"],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["liquidity", "macro", "positioning", "technical"]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 3
+          },
+          "body": {
+            "type": "string",
+            "minLength": 10
+          },
+          "impact": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
+        }
+      }
+    },
+
+    "risks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["title", "body", "severity"],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 3
+          },
+          "body": {
+            "type": "string",
+            "minLength": 10
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
+        }
+      }
+    },
+
+    "outlook": {
+      "type": "object",
+      "required": ["bias", "scenario", "invalidation", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "bias": {
+          "type": "string",
+          "enum": ["bullish", "bearish", "neutral", "mixed"]
+        },
+        "scenario": {
+          "type": "string",
+          "minLength": 10
+        },
+        "invalidation": {
+          "type": "string",
+          "minLength": 5
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+
+    "insights": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["type", "title", "body", "confidence"],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "regime",
+              "liquidity",
+              "sector",
+              "risk",
+              "structure"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 3
+          },
+          "body": {
+            "type": "string",
+            "minLength": 10
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    }
+  }
+}

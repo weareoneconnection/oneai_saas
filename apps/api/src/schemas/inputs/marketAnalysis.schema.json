@@ -1,0 +1,290 @@
+{
+  "$id": "marketAnalysisInput",
+  "type": "object",
+  "required": ["market", "benchmarks", "topAssets", "flows", "macro", "context"],
+  "additionalProperties": false,
+  "properties": {
+    "market": {
+      "type": "object",
+      "required": ["regime", "volatility", "liquidityCondition"],
+      "additionalProperties": false,
+      "properties": {
+        "regime": {
+          "type": "string",
+          "enum": ["bull", "bear", "range", "transition"]
+        },
+        "volatility": {
+          "type": "string",
+          "enum": ["low", "normal", "high", "expansion"]
+        },
+        "liquidityCondition": {
+          "type": "string",
+          "enum": ["tight", "normal", "loose"]
+        }
+      }
+    },
+
+    "benchmarks": {
+      "type": "object",
+      "required": ["BTC", "ETH"],
+      "additionalProperties": false,
+      "properties": {
+        "BTC": {
+          "$ref": "#/$defs/benchmarkAsset"
+        },
+        "ETH": {
+          "$ref": "#/$defs/benchmarkAsset"
+        }
+      }
+    },
+
+    "sectors": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["name", "performance24h", "volumeChange", "leadingAssets"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "performance24h": {
+            "type": "number"
+          },
+          "volumeChange": {
+            "type": "number"
+          },
+          "leadingAssets": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20
+            }
+          }
+        }
+      }
+    },
+
+    "topAssets": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "$ref": "#/$defs/topAsset"
+      }
+    },
+
+    "flows": {
+      "type": "object",
+      "required": [
+        "stablecoinInflow",
+        "stablecoinOutflow",
+        "exchangeNetflow",
+        "openInterest",
+        "oiChange",
+        "fundingRateAvg"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stablecoinInflow": {
+          "type": "number"
+        },
+        "stablecoinOutflow": {
+          "type": "number"
+        },
+        "exchangeNetflow": {
+          "type": "number"
+        },
+        "openInterest": {
+          "type": "number"
+        },
+        "oiChange": {
+          "type": "number"
+        },
+        "fundingRateAvg": {
+          "type": "number"
+        }
+      }
+    },
+
+    "derivatives": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "longShortRatio": {
+          "type": "number"
+        },
+        "liquidationHeatmap": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/liquidationLevel"
+          }
+        },
+        "takerImbalance": {
+          "type": "number"
+        }
+      }
+    },
+
+    "dominance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "btcDominance": {
+          "type": "number"
+        },
+        "ethDominance": {
+          "type": "number"
+        },
+        "altDominance": {
+          "type": "number"
+        }
+      }
+    },
+
+    "macro": {
+      "type": "object",
+      "required": ["dxy", "yields", "riskSentiment"],
+      "additionalProperties": false,
+      "properties": {
+        "dxy": {
+          "type": "number"
+        },
+        "yields": {
+          "type": "number"
+        },
+        "riskSentiment": {
+          "type": "string",
+          "enum": ["risk_on", "risk_off", "neutral"]
+        }
+      }
+    },
+
+    "news": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "$ref": "#/$defs/newsItem"
+      }
+    },
+
+    "context": {
+      "type": "object",
+      "required": ["session", "eventRisk"],
+      "additionalProperties": false,
+      "properties": {
+        "session": {
+          "type": "string",
+          "enum": ["asia", "eu", "us", "weekend", "unknown"]
+        },
+        "eventRisk": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "notes": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "benchmarkAsset": {
+      "type": "object",
+      "required": ["price", "trend", "rsi", "volume"],
+      "additionalProperties": false,
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "trend": {
+          "type": "string",
+          "enum": ["up", "down", "flat"]
+        },
+        "rsi": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "volume": {
+          "type": "string",
+          "enum": ["low", "moderate", "high"]
+        }
+      }
+    },
+
+    "topAsset": {
+      "type": "object",
+      "required": ["symbol", "price", "change24h", "volume24h", "trend"],
+      "additionalProperties": false,
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "price": {
+          "type": "number"
+        },
+        "change24h": {
+          "type": "number"
+        },
+        "volume24h": {
+          "type": "number"
+        },
+        "trend": {
+          "type": "string",
+          "enum": ["up", "down", "flat"]
+        }
+      }
+    },
+
+    "liquidationLevel": {
+      "type": "object",
+      "required": ["price", "side"],
+      "additionalProperties": false,
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "side": {
+          "type": "string",
+          "enum": ["long", "short"]
+        }
+      }
+    },
+
+    "newsItem": {
+      "type": "object",
+      "required": ["title", "sentiment", "impact"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 300
+        },
+        "sentiment": {
+          "type": "string",
+          "enum": ["positive", "neutral", "negative"]
+        },
+        "impact": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        }
+      }
+    }
+  }
+}
