@@ -14,17 +14,29 @@
           "enum": ["bullish", "bearish", "neutral", "mixed"]
         },
         "structure": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "breakout",
+            "trend_continuation",
+            "range",
+            "compression",
+            "reversal_watch",
+            "distribution",
+            "accumulation"
+          ]
         },
         "volatility": {
-          "type": "string"
+          "type": "string",
+          "enum": ["low", "normal", "high", "expanding"]
         },
         "bias": {
           "type": "string",
           "enum": ["long", "short", "wait"]
         },
         "confidence": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         }
       }
     },
@@ -45,11 +57,26 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "trendStrength": { "type": "string" },
-        "momentum": { "type": "string" },
-        "volumeCondition": { "type": "string" },
-        "flowCondition": { "type": "string" },
-        "riskCondition": { "type": "string" }
+        "trendStrength": {
+          "type": "string",
+          "enum": ["strong", "moderate", "weak"]
+        },
+        "momentum": {
+          "type": "string",
+          "enum": ["bullish", "bearish", "fading", "mixed"]
+        },
+        "volumeCondition": {
+          "type": "string",
+          "enum": ["supportive", "weak", "elevated", "abnormal"]
+        },
+        "flowCondition": {
+          "type": "string",
+          "enum": ["bullish", "bearish", "neutral", "mixed"]
+        },
+        "riskCondition": {
+          "type": "string",
+          "enum": ["low", "moderate", "high"]
+        }
       }
     },
 
@@ -94,26 +121,40 @@
       "additionalProperties": false,
       "properties": {
         "type": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "trend_follow",
+            "breakout",
+            "pullback",
+            "mean_reversion",
+            "early_trend",
+            "no_trade"
+          ]
         },
         "direction": {
           "type": "string",
           "enum": ["long", "short", "neutral"]
         },
         "entryLogic": {
-          "type": "string"
+          "type": "string",
+          "minLength": 3
         },
         "stopLogic": {
-          "type": "string"
+          "type": "string",
+          "minLength": 3
         },
         "takeProfitLogic": {
-          "type": "string"
+          "type": "string",
+          "minLength": 3
         },
         "timeHorizon": {
-          "type": "string"
+          "type": "string",
+          "enum": ["scalp", "intraday", "swing"]
         },
         "confidence": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
         }
       }
     },
@@ -129,7 +170,10 @@
         "properties": {
           "title": { "type": "string" },
           "body": { "type": "string" },
-          "severity": { "type": "string" }
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
         }
       }
     },
@@ -143,11 +187,16 @@
         "required": ["type", "title", "body", "confidence"],
         "additionalProperties": false,
         "properties": {
-          "type": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["structure", "momentum", "liquidity", "risk", "setup"]
+          },
           "title": { "type": "string" },
           "body": { "type": "string" },
           "confidence": {
-            "type": "number"
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
           }
         }
       }
