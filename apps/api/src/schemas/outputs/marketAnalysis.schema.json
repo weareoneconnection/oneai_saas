@@ -1,46 +1,39 @@
 {
   "$id": "marketAnalysisOutput",
   "type": "object",
-  "required": ["marketState", "summary", "signals", "levels", "setup", "risks", "insights"],
+  "required": ["marketState", "summary", "signals", "levels", "setup"],
+  "additionalProperties": false,
   "properties": {
     "marketState": {
       "type": "object",
       "required": ["trend", "structure", "volatility", "bias", "confidence"],
+      "additionalProperties": false,
       "properties": {
         "trend": {
           "type": "string",
           "enum": ["bullish", "bearish", "neutral", "mixed"]
         },
         "structure": {
-          "type": "string",
-          "enum": [
-            "breakout",
-            "trend_continuation",
-            "range",
-            "compression",
-            "reversal_watch",
-            "distribution",
-            "accumulation"
-          ]
+          "type": "string"
         },
         "volatility": {
-          "type": "string",
-          "enum": ["low", "normal", "high", "expanding"]
+          "type": "string"
         },
         "bias": {
           "type": "string",
           "enum": ["long", "short", "wait"]
         },
         "confidence": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "type": "number"
         }
       }
     },
+
     "summary": {
-      "type": "string"
+      "type": "string",
+      "minLength": 5
     },
+
     "signals": {
       "type": "object",
       "required": [
@@ -50,41 +43,29 @@
         "flowCondition",
         "riskCondition"
       ],
+      "additionalProperties": false,
       "properties": {
-        "trendStrength": {
-          "type": "string",
-          "enum": ["strong", "moderate", "weak"]
-        },
-        "momentum": {
-          "type": "string",
-          "enum": ["bullish", "bearish", "fading", "mixed"]
-        },
-        "volumeCondition": {
-          "type": "string",
-          "enum": ["supportive", "weak", "elevated", "abnormal"]
-        },
-        "flowCondition": {
-          "type": "string",
-          "enum": ["bullish", "bearish", "neutral", "mixed"]
-        },
-        "riskCondition": {
-          "type": "string",
-          "enum": ["low", "moderate", "high"]
-        }
+        "trendStrength": { "type": "string" },
+        "momentum": { "type": "string" },
+        "volumeCondition": { "type": "string" },
+        "flowCondition": { "type": "string" },
+        "riskCondition": { "type": "string" }
       }
     },
+
     "levels": {
       "type": "object",
       "required": ["support", "resistance", "invalidation", "triggerZone"],
+      "additionalProperties": false,
       "properties": {
         "support": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "items": { "type": "number" }
         },
         "resistance": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "items": { "type": "number" }
         },
         "invalidation": {
@@ -92,12 +73,13 @@
         },
         "triggerZone": {
           "type": "array",
-          "minItems": 2,
+          "minItems": 0,
           "maxItems": 2,
           "items": { "type": "number" }
         }
       }
     },
+
     "setup": {
       "type": "object",
       "required": [
@@ -109,16 +91,10 @@
         "timeHorizon",
         "confidence"
       ],
+      "additionalProperties": false,
       "properties": {
         "type": {
-          "type": "string",
-          "enum": [
-            "trend_follow",
-            "breakout",
-            "pullback",
-            "mean_reversion",
-            "no_trade"
-          ]
+          "type": "string"
         },
         "direction": {
           "type": "string",
@@ -134,51 +110,44 @@
           "type": "string"
         },
         "timeHorizon": {
-          "type": "string",
-          "enum": ["scalp", "intraday", "swing"]
+          "type": "string"
         },
         "confidence": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
+          "type": "number"
         }
       }
     },
+
     "risks": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "maxItems": 6,
       "items": {
         "type": "object",
         "required": ["title", "body", "severity"],
+        "additionalProperties": false,
         "properties": {
           "title": { "type": "string" },
           "body": { "type": "string" },
-          "severity": {
-            "type": "string",
-            "enum": ["low", "medium", "high"]
-          }
+          "severity": { "type": "string" }
         }
       }
     },
+
     "insights": {
       "type": "array",
-      "minItems": 2,
+      "minItems": 0,
       "maxItems": 8,
       "items": {
         "type": "object",
         "required": ["type", "title", "body", "confidence"],
+        "additionalProperties": false,
         "properties": {
-          "type": {
-            "type": "string",
-            "enum": ["structure", "momentum", "liquidity", "risk", "setup"]
-          },
+          "type": { "type": "string" },
           "title": { "type": "string" },
           "body": { "type": "string" },
           "confidence": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1
+            "type": "number"
           }
         }
       }
