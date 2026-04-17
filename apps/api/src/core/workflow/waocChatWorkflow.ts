@@ -5,13 +5,12 @@ import type { WorkflowDefinition } from "./engine.js";
 
 import { preparePromptStep } from "./steps/preparePromptStep.js";
 import { generateLLMStep } from "./steps/generateLLMStep.js";
-import { validateSchemaStep } from "./steps/validateSchemaStep.js";
 import { refineJsonStep } from "./steps/refineJsonStep.js";
 
 import { waocChatValidator } from "../validators/waocChatValidator.js";
 import { checkWaocChatConstraintsSafe } from "../constraints/waocChatConstraints.js";
 
-const WAOC_CHAT_TEMPLATE_VERSION = 6;
+const WAOC_CHAT_TEMPLATE_VERSION = 7;
 
 export type WaocSuggestedAction =
   | "none"
@@ -69,10 +68,7 @@ export type WaocChatInput = {
   lang?: "en" | "zh" | "mixed";
   recentMessages?: string;
   memory?: string;
-
-  // injected by caller / storage
   threadMemory?: ThreadMemory | string | null;
-
   communityName?: string;
   communityIdentity?: string;
   communityNarrative?: string;
@@ -87,6 +83,7 @@ type WaocChatCtx = WorkflowContext<WaocChatInput, WaocChatData> & {
   __community?: CommunityContext;
   __signals?: CommunitySignals;
   __route?: RouteDecision;
+  __rawOutput?: string;
 };
 
 type CommunityContext = {
@@ -191,10 +188,10 @@ function finalizeReply(reply: string, lang: "en" | "zh" | "mixed") {
     .split("\n")
     .map((x) => x.trim())
     .filter(Boolean)
-    .slice(0, 6);
+    .slice(0, 8);
 
   if (lines.length) return lines.join("\n");
-  return lang === "zh" ? "收到。" : "Got it.";
+  return lang === "zh" ? "我在。" : "I’m here.";
 }
 
 function inferCommunityContext(input: WaocChatInput): CommunityContext {
@@ -206,11 +203,7 @@ function inferCommunityContext(input: WaocChatInput): CommunityContext {
   const officialLinks = norm(input.officialLinks);
 
   const hasCommunityContext = Boolean(
-    communityName ||
-      communityIdentity ||
-      communityNarrative ||
-      communityFocus ||
-      ecosystemContext
+    communityName || communityIdentity || communityNarrative || communityFocus || ecosystemContext
   );
 
   const isWAOC =
@@ -263,67 +256,48 @@ function looksLikeHelpQuestion(msg: string) {
 function looksLikeMissionIntent(msg: string) {
   return /mission|task|objective|执行|任务|落地|next step|owner|具体一点/.test(msg);
 }
-
 function looksLikeRankIntent(msg: string) {
   return /rank|ranking|leaderboard|score|points|排行榜|排名|积分/.test(msg);
 }
-
 function looksLikeReportIntent(msg: string) {
   return /report|summary|summarize|weekly|daily|报告|总结|日报|周报/.test(msg);
 }
-
 function looksLikeBuilderIntent(msg: string) {
   return /builder|developer|dev|contributors?|who is building|开发者|构建者|谁在构建/.test(msg);
 }
-
 function looksLikeKnowledgeIntent(msg: string) {
   return /knowledge|guide|faq|playbook|docs|documentation|strategy|文档|指南|知识|原理/.test(msg);
 }
-
 function looksLikeGrowthIntent(msg: string) {
   return /growth|marketing|promotion|campaign|retention|adoption|增长|推广|传播|活动/.test(msg);
 }
-
 function looksLikeNewsIntent(msg: string) {
   return /news|latest|update|announcement|最新|新闻|动态|公告|更新/.test(msg);
 }
-
 function looksLikeEventsIntent(msg: string) {
   return /event|events|space|ama|meetup|workshop|hackathon|活动|日程|会议|space/.test(msg);
 }
-
 function looksLikeToolsIntent(msg: string) {
   return /tools|tooling|stack|resources|resource|工具|资源|工具栈/.test(msg);
 }
-
 function looksLikePriceIntent(msg: string) {
   return /price|market cap|chart|valuation|token price|价格|币价|市值|估值|行情/.test(msg);
 }
-
 function looksLikeXIntent(msg: string) {
   return /\bx\.com\b|\btwitter\b|\btweet\b|@[a-z0-9_]{1,15}\b/i.test(msg) || /推文|推特|x账号|x 帐号/.test(msg);
 }
-
 function looksLikeWebIntent(msg: string) {
-  return (
-    /\bhttps?:\/\//.test(msg) ||
-    /\bwebsite\b|\bweb page\b|\barticle\b|\blink\b/.test(msg) ||
-    /网页|文章|网址|网站|链接/.test(msg)
-  );
+  return /\bhttps?:\/\//.test(msg) || /\bwebsite\b|\bweb page\b|\barticle\b|\blink\b/.test(msg) || /网页|文章|网址|网站|链接/.test(msg);
 }
-
 function looksLikeCapabilityQuestion(msg: string) {
   return /what can you do|who are you|how can you help|你的作用|你能做什么|你是谁/.test(msg);
 }
-
 function looksLikeCommunityIdentityQuestion(msg: string) {
   return /what is this community|what is this project|这个社区是干什么的|这个项目是做什么的/.test(msg);
 }
-
 function looksLikeSystemQuestion(msg: string) {
   return /how does this work|how does oneai work|这个系统怎么运作|这个系统怎么工作/.test(msg);
 }
-
 function looksLikeDirectQuestion(raw: string) {
   const msg = norm(raw);
   const m = lower(raw);
@@ -437,8 +411,8 @@ function quickAutoReply(args: {
     return {
       reply:
         lang === "zh"
-          ? "WAOC = We Are One Connection。\n它更像一个围绕协作、贡献、builder、mission 和长期生态增长展开的网络。"
-          : "WAOC = We Are One Connection.\nIt is a network centered on coordination, contribution, builders, missions, and long-term ecosystem growth.",
+          ? "WAOC = We Are One Connection。它是一个围绕协作、贡献、builder、mission 和长期生态增长展开的网络。"
+          : "WAOC = We Are One Connection. It is a network centered on coordination, contribution, builders, missions, and long-term ecosystem growth.",
       suggestedAction: "none",
     };
   }
@@ -447,8 +421,8 @@ function quickAutoReply(args: {
     return {
       reply:
         lang === "zh"
-          ? "你可以直接问我：项目是什么、怎么开始、有哪些链接、builder / mission / rank / report，也可以问新闻、价格、X、网页。"
-          : "You can ask what the project is, how to start, official links, builder/mission/rank/report, or ask about news, price, X, and web content.",
+          ? "你可以直接问我项目、链接、builder、mission、rank、report，也可以问新闻、价格、X、网页。"
+          : "You can ask about the project, links, builders, mission, rank, report, or news, price, X, and web.",
       suggestedAction: "/help",
     };
   }
@@ -459,7 +433,6 @@ function quickAutoReply(args: {
 function parseThreadMemory(value: unknown): ThreadMemory {
   if (!value) return {};
   if (typeof value === "object") return value as ThreadMemory;
-
   try {
     return JSON.parse(String(value)) as ThreadMemory;
   } catch {
@@ -496,26 +469,42 @@ function extractJsonObject(output: string): string | null {
   return null;
 }
 
-function safeParse(output: string): any {
-  const raw = String(output ?? "");
+function adaptFreeformOutput(raw: string): WaocChatData {
+  const text = norm(raw);
+
+  if (!text) {
+    return { reply: "I’m here.", suggestedAction: "none" };
+  }
+
+  return {
+    reply: text.slice(0, 1200),
+    suggestedAction: "none",
+  };
+}
+
+function safeParse(output: string): WaocChatData {
+  const raw = String(output ?? "").trim();
+
+  if (!raw) {
+    return { reply: "I’m here.", suggestedAction: "none" };
+  }
 
   try {
-    return JSON.parse(raw);
+    return normalizeWaocChatData(JSON.parse(raw));
   } catch {
-    const extracted = extractJsonObject(raw);
-    if (extracted) {
-      try {
-        return JSON.parse(extracted);
-      } catch {
-        // continue
-      }
-    }
-
-    return {
-      reply: raw.trim().slice(0, 500) || "I’m here.",
-      suggestedAction: "none",
-    };
+    // keep going
   }
+
+  const extracted = extractJsonObject(raw);
+  if (extracted) {
+    try {
+      return normalizeWaocChatData(JSON.parse(extracted));
+    } catch {
+      // keep going
+    }
+  }
+
+  return adaptFreeformOutput(raw);
 }
 
 function normalizeWaocChatData(value: any): WaocChatData {
@@ -530,10 +519,7 @@ function normalizeWaocChatData(value: any): WaocChatData {
     typeof value?.suggestedAction === "string" ? value.suggestedAction : "none"
   );
 
-  return {
-    reply,
-    suggestedAction,
-  };
+  return { reply, suggestedAction };
 }
 
 function buildThreadMemory(args: {
@@ -547,44 +533,22 @@ function buildThreadMemory(args: {
   const raw = norm(message);
   const lines = summarizeRecentForTopic(recentMessages, 6);
   const recentTail = lines.join(" | ");
-
   const next: ThreadMemory = { ...previous };
 
-  if (route.intent === "mission") {
-    next.topic = next.topic || "mission planning";
-  } else if (route.intent === "builder") {
-    next.topic = next.topic || "builder coordination";
-  } else if (route.intent === "growth") {
-    next.topic = next.topic || "growth discussion";
-  } else if (route.intent === "knowledge") {
-    next.topic = next.topic || "knowledge explanation";
-  } else if (route.intent === "report") {
-    next.topic = next.topic || "report / summary";
-  } else if (route.intent === "news") {
-    next.topic = next.topic || "latest updates";
-  } else if (route.intent === "price") {
-    next.topic = next.topic || "market / price";
-  } else if (route.intent === "x") {
-    next.topic = next.topic || "x / twitter analysis";
-  } else if (route.intent === "web") {
-    next.topic = next.topic || "web content analysis";
-  }
+  if (route.intent === "mission") next.topic = next.topic || "mission planning";
+  else if (route.intent === "builder") next.topic = next.topic || "builder coordination";
+  else if (route.intent === "growth") next.topic = next.topic || "growth discussion";
+  else if (route.intent === "knowledge") next.topic = next.topic || "knowledge explanation";
+  else if (route.intent === "report") next.topic = next.topic || "report / summary";
+  else if (route.intent === "news") next.topic = next.topic || "latest updates";
+  else if (route.intent === "price") next.topic = next.topic || "market / price";
+  else if (route.intent === "x") next.topic = next.topic || "x / twitter analysis";
+  else if (route.intent === "web") next.topic = next.topic || "web content analysis";
 
-  if (signals.directQuestionSignal) {
-    next.currentQuestion = raw;
-  }
-
-  if (/goal|objective|target|目标|目的/.test(lower(raw))) {
-    next.currentGoal = raw;
-  }
-
-  if (/next step|下一步|怎么执行|落地|owner|谁来做|who should own/.test(lower(raw))) {
-    next.mood = "deciding";
-  }
-
-  if (!next.topic && recentTail) {
-    next.topic = recentTail.slice(0, 160);
-  }
+  if (signals.directQuestionSignal) next.currentQuestion = raw;
+  if (/goal|objective|target|目标|目的/.test(lower(raw))) next.currentGoal = raw;
+  if (/next step|下一步|怎么执行|落地|owner|谁来做|who should own/.test(lower(raw))) next.mood = "deciding";
+  if (!next.topic && recentTail) next.topic = recentTail.slice(0, 160);
 
   return next;
 }
@@ -601,41 +565,29 @@ function updateThreadMemoryFromReply(args: {
   const msg = lower(message);
 
   if (cleanReply) {
-    next.latestConclusion =
-      cleanReply.split("\n")[0]?.slice(0, 240) || next.latestConclusion;
+    next.latestConclusion = cleanReply.split("\n")[0]?.slice(0, 240) || next.latestConclusion;
   }
 
-  if (
-    route.intent === "mission" ||
-    /next step|owner|deliverable|任务|执行|落地/.test(msg)
-  ) {
+  if (route.intent === "mission" || /next step|owner|deliverable|任务|执行|落地/.test(msg)) {
     next.mood = "executing";
   }
 
   const lowerReply = lower(cleanReply);
 
   if (/owner|由.+负责|谁来做|谁负责/.test(lowerReply)) {
-    next.ownerHint =
-      cleanReply.split("\n")[0]?.slice(0, 160) || next.ownerHint;
+    next.ownerHint = cleanReply.split("\n")[0]?.slice(0, 160) || next.ownerHint;
   }
 
   if (/next step|下一步|first step|先做/.test(lowerReply)) {
-    next.nextStep =
-      cleanReply.split("\n")[0]?.slice(0, 180) || next.nextStep;
+    next.nextStep = cleanReply.split("\n")[0]?.slice(0, 180) || next.nextStep;
   }
 
   return next;
 }
 
-async function persistThreadMemory(args: {
-  ctx: WaocChatCtx;
-  memory: ThreadMemory;
-}) {
+async function persistThreadMemory(args: { ctx: WaocChatCtx; memory: ThreadMemory }) {
   const { ctx, memory } = args;
-  const chatId =
-    (ctx as any)?.meta?.chatId ||
-    (ctx as any)?.chatId ||
-    (ctx as any)?.input?.chatId;
+  const chatId = (ctx as any)?.meta?.chatId || (ctx as any)?.chatId || (ctx as any)?.input?.chatId;
   if (!chatId) return;
 
   try {
@@ -645,17 +597,12 @@ async function persistThreadMemory(args: {
       value: safeJson(memory),
     });
   } catch {
-    // optional persistence
+    // ignore
   }
 }
 
-async function readThreadMemory(args: {
-  ctx: WaocChatCtx;
-}): Promise<ThreadMemory> {
-  const chatId =
-    (args.ctx as any)?.meta?.chatId ||
-    (args.ctx as any)?.chatId ||
-    (args.ctx as any)?.input?.chatId;
+async function readThreadMemory(args: { ctx: WaocChatCtx }): Promise<ThreadMemory> {
+  const chatId = (args.ctx as any)?.meta?.chatId || (args.ctx as any)?.chatId || (args.ctx as any)?.input?.chatId;
   if (!chatId) return {};
 
   try {
@@ -663,7 +610,6 @@ async function readThreadMemory(args: {
       namespace: "waoc_chat_thread_memory",
       key: String(chatId),
     });
-
     return parseThreadMemory(res?.data?.value ?? "");
   } catch {
     return {};
@@ -671,7 +617,7 @@ async function readThreadMemory(args: {
 }
 
 function safeParseStep<I, O>() {
-  return async (ctx: WorkflowContext<I, O> & { output?: unknown; rawOutput?: unknown; data?: any }) => {
+  return async (ctx: WorkflowContext<I, O> & { output?: unknown; rawOutput?: unknown; data?: any; result?: unknown }) => {
     const rawOutput =
       (ctx as any)?.output ??
       (ctx as any)?.rawOutput ??
@@ -679,14 +625,13 @@ function safeParseStep<I, O>() {
       (ctx as any)?.result ??
       "";
 
-    const parsed = safeParse(String(rawOutput ?? ""));
-    (ctx as any).data = normalizeWaocChatData(parsed);
-
+    (ctx as any).__rawOutput = String(rawOutput ?? "");
+    (ctx as any).data = safeParse(String(rawOutput ?? ""));
     return { ok: true };
   };
 }
 
-function safeValidateStep<I, O>() {
+function softValidateStep<I, O>() {
   return async (ctx: WorkflowContext<I, O> & { data?: any }) => {
     try {
       const maybe =
@@ -705,7 +650,23 @@ function safeValidateStep<I, O>() {
     } catch {
       ctx.data = normalizeWaocChatData(ctx.data);
     }
+    return { ok: true };
+  };
+}
 
+function safeRefineStep<I, O>() {
+  return async (ctx: WorkflowContext<I, O> & { data?: any; input?: any }) => {
+    try {
+      const normalized = normalizeWaocChatData(ctx.data);
+      const checked = checkWaocChatConstraintsSafe({
+        data: normalized,
+        userMessage: ctx.input?.message,
+        lang: toConstraintLang(ctx.input?.lang),
+      });
+      ctx.data = normalizeWaocChatData(checked.data);
+    } catch {
+      ctx.data = normalizeWaocChatData(ctx.data);
+    }
     return { ok: true };
   };
 }
@@ -714,16 +675,11 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
   name: "waoc_chat_workflow",
   maxAttempts: 3,
   steps: [
-    // step 1: quick reply
     async (ctx: WaocChatCtx) => {
       const raw = norm(ctx.input?.message);
       const msg = lower(raw);
       const lang: "en" | "zh" | "mixed" =
-        ctx.input?.lang === "zh"
-          ? "zh"
-          : ctx.input?.lang === "mixed"
-            ? "mixed"
-            : "en";
+        ctx.input?.lang === "zh" ? "zh" : ctx.input?.lang === "mixed" ? "mixed" : "en";
 
       const community = inferCommunityContext(ctx.input);
       ctx.__community = community;
@@ -737,16 +693,13 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
         }).data;
 
         ctx.data.reply = finalizeReply(ctx.data.reply, lang);
-        ctx.data.suggestedAction = ensureAllowedAction(
-          ctx.data.suggestedAction ?? "none"
-        );
+        ctx.data.suggestedAction = ensureAllowedAction(ctx.data.suggestedAction ?? "none");
         return { ok: true, stop: true } as any;
       }
 
       return { ok: true };
     },
 
-    // step 2: build lightweight thread memory
     async (ctx: WaocChatCtx) => {
       const raw = norm(ctx.input?.message);
       const previous =
@@ -775,7 +728,6 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
       return { ok: true };
     },
 
-    // step 3: prompt
     preparePromptStep<WaocChatInput, WaocChatData>({
       task: "waoc_chat",
       templateVersion: WAOC_CHAT_TEMPLATE_VERSION,
@@ -792,8 +744,7 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
             community,
           });
 
-        const threadMemory =
-          c?.__threadMemory ?? parseThreadMemory(input.threadMemory);
+        const threadMemory = c?.__threadMemory ?? parseThreadMemory(input.threadMemory);
 
         return {
           lang: norm(input.lang ?? "en"),
@@ -808,38 +759,40 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
       },
     }),
 
-    // step 4-8: llm chain
     generateLLMStep<WaocChatInput, WaocChatData>(),
+
     safeParseStep<WaocChatInput, WaocChatData>(),
-    safeValidateStep<WaocChatInput, WaocChatData>(),
+    softValidateStep<WaocChatInput, WaocChatData>(),
 
     refineJsonStep<WaocChatInput, WaocChatData>({
       check: (ctx) => {
-        const normalized = normalizeWaocChatData(ctx.data);
-        const checked = checkWaocChatConstraintsSafe({
-          data: normalized,
-          userMessage: ctx.input?.message,
-          lang: toConstraintLang(ctx.input?.lang),
-        });
-
-        ctx.data = normalizeWaocChatData(checked.data);
-        return { ok: true, errors: [] };
+        try {
+          const normalized = normalizeWaocChatData(ctx.data);
+          const checked = checkWaocChatConstraintsSafe({
+            data: normalized,
+            userMessage: ctx.input?.message,
+            lang: toConstraintLang(ctx.input?.lang),
+          });
+          ctx.data = normalizeWaocChatData(checked.data);
+          return { ok: true, errors: [] };
+        } catch {
+          ctx.data = normalizeWaocChatData(ctx.data);
+          return { ok: true, errors: [] };
+        }
       },
       extraInstruction:
-        'Return ONLY valid JSON: {"reply":"...","suggestedAction":"..."}.\n' +
-        '- suggestedAction MUST be one of: "none", "/links", "/help", "/mission", "/rank", "/report", "/builders", "/knowledge", "/growth", "/news", "/events", "/tools", "/price", "/x", "/web".\n' +
-        "- reply is required and must directly answer the current message.\n" +
-        "- Keep reply concise and natural.\n" +
-        "- Use threadMemory to avoid repeating already-set conclusions.\n" +
-        "- Do not auto-ask generic follow-up questions unless truly necessary.\n" +
-        "- Do not fabricate price/news/X/web facts.\n" +
-        "- In WAOC scope, WAOC MUST mean only 'We Are One Connection'.\n",
+        "Reply naturally like a capable human operator.\n" +
+        "You may answer freely in natural language.\n" +
+        "If possible, provide JSON with keys reply and suggestedAction.\n" +
+        "If not, a plain natural reply is also acceptable.\n" +
+        "Do not over-explain unless the user asks.\n" +
+        "Use threadMemory when useful.\n",
     }),
 
     safeParseStep<WaocChatInput, WaocChatData>(),
-    safeValidateStep<WaocChatInput, WaocChatData>(),
+    softValidateStep<WaocChatInput, WaocChatData>(),
+    safeRefineStep<WaocChatInput, WaocChatData>(),
 
-    // step 9: agent routing
     async (ctx: WaocChatCtx) => {
       if (!ctx.data) {
         ctx.data = { reply: "", suggestedAction: "none" };
@@ -849,11 +802,7 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
 
       const raw = norm(ctx.input.message);
       const lang: "en" | "zh" | "mixed" =
-        ctx.input.lang === "zh"
-          ? "zh"
-          : ctx.input.lang === "mixed"
-            ? "mixed"
-            : "en";
+        ctx.input.lang === "zh" ? "zh" : ctx.input.lang === "mixed" ? "mixed" : "en";
 
       const community = ctx.__community ?? inferCommunityContext(ctx.input);
       const route =
@@ -914,22 +863,24 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
         ctx.data.suggestedAction = route.suggestedAction;
       }
 
-      const checked = checkWaocChatConstraintsSafe({
-        data: normalizeWaocChatData(ctx.data),
-        userMessage: ctx.input.message,
-        lang: toConstraintLang(ctx.input.lang),
-      });
+      try {
+        const checked = checkWaocChatConstraintsSafe({
+          data: normalizeWaocChatData(ctx.data),
+          userMessage: ctx.input.message,
+          lang: toConstraintLang(ctx.input.lang),
+        });
 
-      ctx.data = normalizeWaocChatData(checked.data);
+        ctx.data = normalizeWaocChatData(checked.data);
+      } catch {
+        ctx.data = normalizeWaocChatData(ctx.data);
+      }
+
       ctx.data.reply = finalizeReply(ctx.data.reply, lang);
-      ctx.data.suggestedAction = ensureAllowedAction(
-        ctx.data.suggestedAction ?? "none"
-      );
+      ctx.data.suggestedAction = ensureAllowedAction(ctx.data.suggestedAction ?? "none");
 
       return { ok: true };
     },
 
-    // step 10: save thread memory
     async (ctx: WaocChatCtx) => {
       const updated = updateThreadMemoryFromReply({
         previous: ctx.__threadMemory ?? {},
@@ -946,7 +897,6 @@ export const waocChatWorkflowDef: WorkflowDefinition<WaocChatCtx> = {
 
       ctx.__threadMemory = updated;
       await persistThreadMemory({ ctx, memory: updated });
-
       return { ok: true };
     },
   ],
