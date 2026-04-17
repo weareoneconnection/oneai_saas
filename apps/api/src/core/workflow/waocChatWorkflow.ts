@@ -7,7 +7,6 @@ import { preparePromptStep } from "./steps/preparePromptStep.js";
 import { generateLLMStep } from "./steps/generateLLMStep.js";
 import { validateSchemaStep } from "./steps/validateSchemaStep.js";
 import { refineJsonStep } from "./steps/refineJsonStep.js";
-import { parseJsonStep } from "./steps/parseJsonStep.js";
 
 import { waocChatValidator } from "../validators/waocChatValidator.js";
 import { checkWaocChatConstraintsSafe } from "../constraints/waocChatConstraints.js";
@@ -70,7 +69,10 @@ export type WaocChatInput = {
   lang?: "en" | "zh" | "mixed";
   recentMessages?: string;
   memory?: string;
+
+  // injected by caller / storage
   threadMemory?: ThreadMemory | string | null;
+
   communityName?: string;
   communityIdentity?: string;
   communityNarrative?: string;
@@ -114,7 +116,6 @@ type CommunitySignals = {
   pricingSignal: boolean;
   xSignal: boolean;
   webSignal: boolean;
-  browseSignal: boolean;
   capabilityQuestionSignal: boolean;
   communityIdentityQuestionSignal: boolean;
   systemQuestionSignal: boolean;
@@ -190,10 +191,10 @@ function finalizeReply(reply: string, lang: "en" | "zh" | "mixed") {
     .split("\n")
     .map((x) => x.trim())
     .filter(Boolean)
-    .slice(0, 12);
+    .slice(0, 6);
 
   if (lines.length) return lines.join("\n");
-  return lang === "zh" ? "刚刚那条没处理好。" : "That one didn’t go through cleanly.";
+  return lang === "zh" ? "收到。" : "Got it.";
 }
 
 function inferCommunityContext(input: WaocChatInput): CommunityContext {
@@ -311,24 +312,6 @@ function looksLikeWebIntent(msg: string) {
   );
 }
 
-function looksLikeBrowseIntent(raw: string) {
-  const text = norm(raw);
-  const msg = lower(raw);
-
-  const hasUrl =
-    /https?:\/\/\S+/i.test(text) ||
-    /\bwww\.\S+/i.test(text);
-
-  const explicitBrowseIntent =
-    /浏览网页|打开网页|访问网页|看看这个网页|看看这个网站|分析这个网页|分析这个链接|读取网页|抓取网页|看一下这个网站|看一下这个网页|打开这个页面|分析这个页面/.test(text) ||
-    /open (this )?(page|site|website|link)/i.test(text) ||
-    /browse (this )?(page|site|website|link)/i.test(text) ||
-    /analyze (this )?(page|site|website|link)/i.test(text) ||
-    /read (this )?(page|site|website|link)/i.test(text);
-
-  return explicitBrowseIntent || hasUrl;
-}
-
 function looksLikeCapabilityQuestion(msg: string) {
   return /what can you do|who are you|how can you help|你的作用|你能做什么|你是谁/.test(msg);
 }
@@ -370,7 +353,6 @@ function detectSignals(messageRaw: string): CommunitySignals {
     pricingSignal: looksLikePriceIntent(msg),
     xSignal: looksLikeXIntent(msg),
     webSignal: looksLikeWebIntent(msg),
-    browseSignal: looksLikeBrowseIntent(messageRaw),
     capabilityQuestionSignal: looksLikeCapabilityQuestion(msg),
     communityIdentityQuestionSignal: looksLikeCommunityIdentityQuestion(msg),
     systemQuestionSignal: looksLikeSystemQuestion(msg),
@@ -385,16 +367,6 @@ function inferRouteDecision(args: {
   community: CommunityContext;
 }): RouteDecision {
   const { signals, community } = args;
-
-  if (signals.browseSignal) {
-    return {
-      intent: "web",
-      confidence: 0.99,
-      task: "oneclaw_execute",
-      suggestedAction: "/web",
-      reason: "oneclaw_execute_route",
-    };
-  }
 
   if (signals.meaningSignal && community.isWAOC) {
     return { intent: "meaning", confidence: 0.99, suggestedAction: "none", reason: "waoc_meaning" };
@@ -540,7 +512,7 @@ function safeParse(output: string): any {
     }
 
     return {
-      reply: raw.trim().slice(0, 500) || "That one didn’t go through cleanly.",
+      reply: raw.trim().slice(0, 500) || "I’m here.",
       suggestedAction: "none",
     };
   }
@@ -550,15 +522,9 @@ function normalizeWaocChatData(value: any): WaocChatData {
   const reply =
     typeof value?.reply === "string" && value.reply.trim()
       ? value.reply.trim()
-      : typeof value?.text === "string" && value.text.trim()
-        ? value.text.trim()
-        : typeof value?.answer === "string" && value.answer.trim()
-          ? value.answer.trim()
-          : typeof value?.content === "string" && value.content.trim()
-            ? value.content.trim()
-            : typeof value === "string" && value.trim()
-              ? value.trim()
-              : "That one didn’t go through cleanly.";
+      : typeof value === "string" && value.trim()
+        ? value.trim()
+        : "I’m here.";
 
   const suggestedAction = ensureAllowedAction(
     typeof value?.suggestedAction === "string" ? value.suggestedAction : "none"
