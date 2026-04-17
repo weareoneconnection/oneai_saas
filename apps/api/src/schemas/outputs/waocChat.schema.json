@@ -1,7 +1,6 @@
 {
   "$id": "waocChatOutput",
   "type": "object",
-  "additionalProperties": false,
   "required": ["reply"],
   "properties": {
     "reply": {
@@ -10,24 +9,8 @@
       "maxLength": 50000
     },
     "suggestedAction": {
-      "type": "string",
-      "enum": [
-        "none",
-        "/links",
-        "/help",
-        "/mission",
-        "/rank",
-        "/report",
-        "/builders",
-        "/knowledge",
-        "/growth",
-        "/news",
-        "/events",
-        "/tools",
-        "/price",
-        "/x",
-        "/web"
-      ]
+      "type": "string"
     }
-  }
+  },
+  "additionalProperties": true
 }
