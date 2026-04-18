@@ -14,21 +14,35 @@ import { registerWorkflow } from "./registry.js";
 type MarketIntelligenceInput = {
   market: {
     regime: "bull" | "bear" | "range" | "transition";
-    volatility: "low" | "normal" | "high" | "expansion";
+    volatility: "low" | "normal" | "high" | "expanding";
     liquidityCondition: "tight" | "normal" | "loose";
   };
   benchmarks: {
-    BTC: any;
-    ETH: any;
+    BTC: Record<string, unknown>;
+    ETH: Record<string, unknown>;
   };
-  sectors?: any[];
-  topAssets: any[];
-  flows: any;
-  derivatives?: any;
-  dominance?: any;
-  macro: any;
-  news?: any[];
-  context: any;
+  sectors?: Array<Record<string, unknown>>;
+  topAssets: Array<Record<string, unknown>>;
+  flows: {
+    stablecoinFlow?: "inflow" | "outflow" | "neutral" | "unknown";
+    crossExchangeBias?: "risk_on" | "risk_off" | "neutral" | "unknown";
+    breadth?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+  derivatives?: {
+    fundingRegime?: "positive" | "negative" | "neutral" | "unknown";
+    openInterestTrend?: "rising" | "falling" | "flat" | "unknown";
+    liquidationsBias?: "longs_hit" | "shorts_hit" | "balanced" | "unknown";
+    [key: string]: unknown;
+  };
+  dominance?: {
+    btcDominancePct?: number;
+    altRotation?: "active" | "early" | "late" | "none" | "mixed" | "unknown";
+    [key: string]: unknown;
+  };
+  macro: Record<string, unknown>;
+  news?: Array<Record<string, unknown>>;
+  context: Record<string, unknown>;
 };
 
 type Ctx = WorkflowContext<MarketIntelligenceInput, any>;
@@ -46,13 +60,26 @@ export const marketIntelligenceWorkflowDef: WorkflowDefinition<Ctx> = {
         benchmarks: JSON.stringify(input.benchmarks ?? {}),
         sectors: JSON.stringify(input.sectors ?? []),
         topAssets: JSON.stringify(input.topAssets ?? []),
-        flows: JSON.stringify(input.flows ?? {}),
-        derivatives: JSON.stringify(input.derivatives ?? {}),
-        dominance: JSON.stringify(input.dominance ?? {}),
+        flows: JSON.stringify(
+          input.flows ?? {
+            stablecoinFlow: "neutral",
+          }
+        ),
+        derivatives: JSON.stringify(
+          input.derivatives ?? {
+            fundingRegime: "neutral",
+            openInterestTrend: "flat",
+          }
+        ),
+        dominance: JSON.stringify(
+          input.dominance ?? {
+            altRotation: "mixed",
+          }
+        ),
         macro: JSON.stringify(input.macro ?? {}),
         news: JSON.stringify(input.news ?? []),
-        context: JSON.stringify(input.context ?? {})
-      })
+        context: JSON.stringify(input.context ?? {}),
+      }),
     }),
 
     generateLLMStep(),
@@ -64,16 +91,16 @@ export const marketIntelligenceWorkflowDef: WorkflowDefinition<Ctx> = {
     refineJsonStep({
       check: (ctx) => checkMarketIntelligenceConstraints(ctx.data),
       extraInstruction:
-        "Fix all validation errors. Ensure outputs are market-level, grounded in the full crypto market context, and not single-asset commentary. Keep observations distinct from interpretation and avoid generic statements."
+        "Fix all validation errors. Ensure outputs are market-level, grounded in full crypto market context, and not single-asset commentary. Keep observations distinct from interpretation, avoid generic statements, and preserve strict JSON shape."
     }),
 
     parseJsonStep(),
 
-    validateSchemaStep(marketIntelligenceValidator)
-  ]
+    validateSchemaStep(marketIntelligenceValidator),
+  ],
 };
 
 registerWorkflow({
   task: "market_intelligence",
-  def: marketIntelligenceWorkflowDef as any
+  def: marketIntelligenceWorkflowDef as any,
 });
