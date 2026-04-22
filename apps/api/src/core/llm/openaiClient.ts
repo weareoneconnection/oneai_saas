@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 
+console.log("🔥 OPENAI CLIENT FILE LOADED");
 let client: OpenAI | null = null;
 let cachedKey: string | null = null;
 
