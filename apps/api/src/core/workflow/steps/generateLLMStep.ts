@@ -44,14 +44,14 @@ export function generateLLMStep<TInput, TData>(): WorkflowStep<
 
       return { ok: true };
     } catch (e: any) {
-      console.error("[generateLLMStep][OpenAI RAW ERROR]", {
-        name: e?.name,
-        message: e?.message,
-        status: e?.status,
-        code: e?.code,
-        type: e?.type,
-        param: e?.param,
-        stack: e?.stack,
+      console.error("[OPENAI RAW ERROR]", {
+      name: (e as any)?.name,
+      message: (e as any)?.message,
+      status: (e as any)?.status,
+      code: (e as any)?.code,
+      type: (e as any)?.type,
+      param: (e as any)?.param,
+      stack: (e as any)?.stack,
       });
 
       return {
