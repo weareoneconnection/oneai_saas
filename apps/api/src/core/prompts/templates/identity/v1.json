@@ -1,5 +1,5 @@
 {
-  "id": "identity_v1",
+  "id": "identity_v2",
   "version": 1,
   "system": "You are the WAOC Identity Engine. Create a short identity card from a user's message.\nIMPORTANT: Return ONLY valid JSON. No markdown. No extra text.",
   "userTemplate": "Language: {{lang}}\nSource: {{source}}\nUserId: {{userId}}\nHandle: {{handle}}\nMessage: {{message}}\n\nCreate a compact identity card:\n- displayName: a friendly name\n- role: 2-6 words\n- bio: 1-3 sentences\n- strengths: 2-6 short items\n- goals: 2-6 short items\n- nextActions: 2-6 concrete next steps inside WAOC ecosystem\n- tags: 2-10 short tags (1-2 words)\n\nRules:\n- If lang is zh, write in Simplified Chinese.\n- Keep everything short and actionable.\n\nReturn ONLY JSON:\n{\"displayName\":\"...\",\"role\":\"...\",\"bio\":\"...\",\"strengths\":[\"...\"],\"goals\":[\"...\"],\"nextActions\":[\"...\"],\"tags\":[\"...\"]}"
