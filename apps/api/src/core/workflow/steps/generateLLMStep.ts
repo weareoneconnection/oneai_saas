@@ -45,14 +45,41 @@ export function generateLLMStep<TInput, TData>(): WorkflowStep<
       return { ok: true };
     } catch (e: any) {
       console.error("[OPENAI RAW ERROR]", {
-      name: (e as any)?.name,
-      message: (e as any)?.message,
-      status: (e as any)?.status,
-      code: (e as any)?.code,
-      type: (e as any)?.type,
-      param: (e as any)?.param,
-      stack: (e as any)?.stack,
+        name: e?.name,
+        message: e?.message,
+        status: e?.status,
+        code: e?.code,
+        type: e?.type,
+        param: e?.param,
+        stack: e?.stack,
       });
+
+      const isLaunchMode = process.env.ONEAI_LAUNCH_MODE === "1";
+      const message = String(e?.message ?? "");
+      const lower = message.toLowerCase();
+
+      const isQuotaError =
+        lower.includes("compute time quota") ||
+        lower.includes("exceeded the compute time") ||
+        lower.includes("quota exhausted");
+
+      if (isLaunchMode && isQuotaError) {
+        console.warn("[generateLLMStep] launch mode quota bypass triggered");
+
+        ctx.usage = {
+          model: ctx.model,
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          estimatedCostUsd: 0,
+        } as any;
+
+        ctx.rawText = JSON.stringify({
+          reply: "OneAI is temporarily in launch mode fallback. Please try again shortly."
+        });
+
+        return { ok: true };
+      }
 
       return {
         ok: false,
