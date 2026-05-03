@@ -1,25 +1,9 @@
 // apps/web/src/app/api/usage/route.ts
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/auth";
+import { oneAIAdminKey, oneAIBaseURL, requireConsoleEmail } from "@/lib/consoleIdentity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function apiBase() {
-  // ✅ 兼容两个 env 名称，避免你在 Vercel 配了一个、代码读另一个
-  const raw =
-    process.env.ONEAI_API_BASE_URL ||
-    process.env.ONEAI_BASE_URL ||
-    "https://oneai-api-production.up.railway.app";
-
-  return String(raw).replace(/\/$/, "");
-}
-
-function adminKey() {
-  // ✅ 兼容两个 env 名称
-  return String(process.env.ONEAI_ADMIN_API_KEY || process.env.ONEAI_ADMIN_KEY || "");
-}
 
 async function safeJson(res: Response) {
   const ct = res.headers.get("content-type") || "";
@@ -32,22 +16,15 @@ async function safeJson(res: Response) {
 
 export async function GET(req: Request) {
   try {
-    // 1) 必须登录
-    const session = await getServerSession(authOptions);
-    const email = session?.user?.email;
-    if (!email) {
-      return NextResponse.json(
-        { success: false, error: "unauthorized" },
-        { status: 401 }
-      );
-    }
+    const identity = await requireConsoleEmail();
+    if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
 
     // 2) 解析 range
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "30d";
 
     // 3) 必须有 admin key（否则后端 /v1/admin/usage 会 403）
-    const key = adminKey();
+    const key = oneAIAdminKey();
     if (!key) {
       return NextResponse.json(
         {
@@ -61,8 +38,8 @@ export async function GET(req: Request) {
     }
 
     // 4) 调后端
-    const url = `${apiBase()}/v1/admin/usage?userEmail=${encodeURIComponent(
-      email
+    const url = `${oneAIBaseURL()}/v1/admin/usage?userEmail=${encodeURIComponent(
+      identity.email
     )}&range=${encodeURIComponent(range)}`;
 
     const r = await fetch(url, {

@@ -28,6 +28,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function LoginPageContent() {
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") || "/dashboard";
 
@@ -40,6 +41,16 @@ function LoginPageContent() {
     if (!email.trim()) return;
     setLoading("email");
     await signIn("email", { email: email.trim(), callbackUrl });
+  }
+
+  async function handleConsolePassword() {
+    if (!email.trim() || !password) return;
+    setLoading("email");
+    await signIn("credentials", {
+      email: email.trim(),
+      password,
+      callbackUrl,
+    });
   }
 
   return (
@@ -141,6 +152,25 @@ function LoginPageContent() {
               disabled={loading !== null || !email.trim()}
             >
               {loading === "email" ? "Sending link..." : "Send sign-in link"}
+            </Button>
+
+            <label className="block">
+              <div className="mb-1 text-xs text-black/50">Console password</div>
+              <Input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Production console password"
+                type="password"
+              />
+            </label>
+
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={handleConsolePassword}
+              disabled={loading !== null || !email.trim() || !password}
+            >
+              {loading === "email" ? "Signing in..." : "Sign in with password"}
             </Button>
           </div>
 

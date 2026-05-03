@@ -1,9 +1,16 @@
 // apps/web/src/app/api/generate/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_RAW = process.env.ONEAI_API_BASE_URL || "";
+const API_BASE_RAW =
+  process.env.ONEAI_API_BASE_URL ||
+  process.env.ONEAI_BASE_URL ||
+  "https://oneai-saas-api-production.up.railway.app";
 const API_BASE = API_BASE_RAW.replace(/\/$/, "");
-const API_KEY = process.env.ONEAI_API_KEY || "";
+const API_KEY =
+  process.env.ONEAI_API_KEY ||
+  process.env.ONEAI_ADMIN_API_KEY ||
+  process.env.ONEAI_ADMIN_KEY ||
+  "";
 
 export async function POST(req: NextRequest) {
   try {

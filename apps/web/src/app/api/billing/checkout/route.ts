@@ -1,22 +1,16 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/auth";
+import { oneAIAdminKey, oneAIBaseURL, requireConsoleEmail } from "@/lib/consoleIdentity";
 
-function apiBase() {
-  return (process.env.ONEAI_API_BASE_URL || "http://localhost:4000").replace(/\/$/, "");
-}
-function adminKey() {
-  return process.env.ONEAI_ADMIN_API_KEY || "";
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 function isPlaceholder(value?: string | null) {
   return !value || /xxx|yyy|placeholder|replace|your_/i.test(String(value));
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  const email = session?.user?.email;
-  if (!email) return NextResponse.json({ success: false, error: "unauthorized" }, { status: 401 });
+  const identity = await requireConsoleEmail();
+  if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
 
   const body = await req.json().catch(() => null);
   const priceId = String(body?.priceId || "");
@@ -31,7 +25,7 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-  if (!adminKey()) {
+  if (!oneAIAdminKey()) {
     return NextResponse.json(
       {
         success: false,
@@ -42,13 +36,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const r = await fetch(`${apiBase()}/v1/billing/checkout`, {
+  const r = await fetch(`${oneAIBaseURL()}/v1/billing/checkout`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-admin-key": adminKey(),
+      "x-admin-key": oneAIAdminKey(),
     },
-    body: JSON.stringify({ userEmail: email, priceId }),
+    body: JSON.stringify({ userEmail: identity.email, priceId }),
     cache: "no-store",
   });
 

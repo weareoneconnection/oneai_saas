@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/auth";
+import { oneAIAdminKey, oneAIBaseURL, requireConsoleEmail } from "@/lib/consoleIdentity";
 
-function apiBase() {
-  return (process.env.ONEAI_API_BASE_URL || "http://localhost:4000").replace(/\/$/, "");
-}
-function adminKey() {
-  return process.env.ONEAI_ADMIN_API_KEY || "";
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 async function safeReadJson(r: Response) {
   // 204/205 -> 没 body
@@ -24,18 +19,15 @@ async function safeReadJson(r: Response) {
 }
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json({ success: false, error: "unauthorized" }, { status: 401 });
-  }
+  const identity = await requireConsoleEmail();
+  if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
 
-  const url = `${apiBase()}/v1/billing/status?userEmail=${encodeURIComponent(email)}`;
+  const url = `${oneAIBaseURL()}/v1/billing/status?userEmail=${encodeURIComponent(identity.email)}`;
 
   let r: Response;
   try {
     r = await fetch(url, {
-      headers: { "x-admin-key": adminKey() },
+      headers: { "x-admin-key": oneAIAdminKey() },
       cache: "no-store",
     });
   } catch (e: any) {

@@ -1,7 +1,6 @@
 // apps/web/src/app/api/keys/route.ts
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/auth";
+import { getConsoleEmail } from "@/lib/consoleIdentity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +8,7 @@ export const dynamic = "force-dynamic";
 type Json = Record<string, any>;
 
 function normalizeBase(raw?: string) {
-  let v = String(raw || "https://oneai-api-production.up.railway.app").trim();
+  let v = String(raw || "https://oneai-saas-api-production.up.railway.app").trim();
   v = v.replace(/\/$/, "");
 
   // ✅ localhost 统一走 IPv4，避免某些环境解析到 ::1
@@ -22,7 +21,7 @@ function normalizeBase(raw?: string) {
 function env() {
   // ✅ 线上默认永远指向 production API（除非你显式配置）
   const base = normalizeBase(
-    process.env.ONEAI_API_BASE_URL || process.env.ONEAI_BASE_URL || "https://oneai-api-production.up.railway.app"
+    process.env.ONEAI_API_BASE_URL || process.env.ONEAI_BASE_URL || "https://oneai-saas-api-production.up.railway.app"
   );
 
   const key = String(process.env.ONEAI_ADMIN_API_KEY || "");
@@ -82,8 +81,7 @@ function fail(payload: Json, status = 500) {
 }
 
 async function requireEmail() {
-  const session = await getServerSession(authOptions);
-  const email = session?.user?.email;
+  const email = await getConsoleEmail();
   if (!email) return { ok: false as const, status: 401, error: "unauthorized" };
   return { ok: true as const, email };
 }

@@ -8,7 +8,7 @@ function apiBase() {
   const raw =
     process.env.ONEAI_API_BASE_URL ||
     process.env.ONEAI_BASE_URL ||
-    "http://localhost:4000";
+    "https://oneai-saas-api-production.up.railway.app";
   return raw.replace(/\/$/, "");
 }
 
