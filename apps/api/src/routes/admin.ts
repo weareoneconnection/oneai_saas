@@ -3,6 +3,7 @@ import { Router } from "express";
 import crypto from "crypto";
 import { requireAdminKey } from "../core/security/admin.js";
 import { prisma } from "../config/prisma.js";
+import { getOrCreateOrgForUserEmail } from "../core/orgs/ensureOrg.js";
 
 const router = Router();
 
@@ -22,36 +23,6 @@ function prefixOf(k: string) {
   return k.slice(0, 12);
 }
 
-/**
- * ✅ ApiKey 需要 org 关系：提供默认 org
- * 如果你的 Organization model 有额外必填字段，在 create 里补上即可
- */
-async function getOrCreateDefaultOrg() {
-  const bySlug = await prisma.organization.findUnique({
-    where: { slug: "default" },
-    select: { id: true, slug: true, name: true },
-  });
-  if (bySlug) return bySlug;
-
-  const any = await prisma.organization.findFirst({
-    orderBy: { createdAt: "asc" },
-    select: { id: true, slug: true, name: true },
-  });
-  if (any) return any;
-
-  const created = await prisma.organization.create({
-    data: {
-      slug: "default",
-      name: "Default Org",
-      // ⚠️ 如果 schema 还有必填字段，例如 ownerEmail，就加在这里：
-      // ownerEmail: "info@weareoneconncetion.com",
-    } as any,
-    select: { id: true, slug: true, name: true },
-  });
-
-  return created;
-}
-
 /** =========================
  * keys
  * ========================= */
@@ -60,8 +31,7 @@ router.get("/keys", requireAdminKey, async (req, res) => {
   const userEmail = String(req.query.userEmail || "").trim().toLowerCase();
   if (!userEmail) return res.status(400).json({ success: false, error: "userEmail required" });
 
-  // 当前先用 default org 策略（后面再做 user->org 归属）
-  const org = await getOrCreateDefaultOrg();
+  const org = await getOrCreateOrgForUserEmail(userEmail);
 
   const keys = await prisma.apiKey.findMany({
     where: { orgId: org.id, userEmail } as any,
@@ -85,7 +55,7 @@ router.post("/keys", requireAdminKey, async (req, res) => {
   const name = (req.body?.name ? String(req.body.name) : "default").slice(0, 60);
   if (!userEmail) return res.status(400).json({ success: false, error: "userEmail required" });
 
-  const org = await getOrCreateDefaultOrg();
+  const org = await getOrCreateOrgForUserEmail(userEmail);
 
   const plainKey = makeKey();
   const prefix = prefixOf(plainKey);
@@ -118,7 +88,7 @@ router.post("/keys/revoke", requireAdminKey, async (req, res) => {
   const id = String(req.body?.id || "").trim();
   if (!userEmail || !id) return res.status(400).json({ success: false, error: "userEmail & id required" });
 
-  const org = await getOrCreateDefaultOrg();
+  const org = await getOrCreateOrgForUserEmail(userEmail);
 
   const row = await prisma.apiKey.findFirst({
     where: { id, orgId: org.id, userEmail } as any,
@@ -144,7 +114,7 @@ router.get("/usage", requireAdminKey, async (req, res) => {
   const range = String(req.query.range || "30d");
   if (!userEmail) return res.status(400).json({ success: false, error: "userEmail required" });
 
-  const org = await getOrCreateDefaultOrg();
+  const org = await getOrCreateOrgForUserEmail(userEmail);
 
   let from: Date | null = null;
   if (range === "7d") from = new Date(Date.now() - 7 * 24 * 3600 * 1000);
@@ -160,14 +130,40 @@ router.get("/usage", requireAdminKey, async (req, res) => {
     _sum: { totalTokens: true, estimatedCostUsd: true },
   });
 
-  const byModelRaw = await prisma.request.groupBy({
-    by: ["model"],
+  const [byModelRaw, byTaskRaw] = await Promise.all([
+    prisma.request.groupBy({
+      by: ["provider", "model"],
+      where,
+      _count: { _all: true },
+      _sum: { totalTokens: true, estimatedCostUsd: true },
+      orderBy: { _count: { id: "desc" } },
+    } as any),
+    prisma.request.groupBy({
+      by: ["task"],
+      where,
+      _count: { _all: true },
+      _sum: { totalTokens: true, estimatedCostUsd: true },
+      orderBy: { _count: { id: "desc" } },
+    } as any),
+  ]);
+
+  const byKeyRaw = await prisma.request.groupBy({
+    by: ["apiKeyId"],
     where,
     _count: { _all: true },
     _sum: { totalTokens: true, estimatedCostUsd: true },
-    // ✅ FIX: Prisma 版本不支持 _count._all 排序，用 id 计数等价
     orderBy: { _count: { id: "desc" } },
-  });
+    take: 25,
+  } as any);
+
+  const keyIds = byKeyRaw.map((x: any) => x.apiKeyId).filter(Boolean);
+  const keyRows = keyIds.length
+    ? await prisma.apiKey.findMany({
+        where: { id: { in: keyIds } },
+        select: { id: true, name: true, prefix: true },
+      })
+    : [];
+  const keyById = new Map(keyRows.map((x) => [x.id, x]));
 
   const recent = await prisma.request.findMany({
     where,
@@ -175,7 +171,9 @@ router.get("/usage", requireAdminKey, async (req, res) => {
     take: 20,
     select: {
       id: true,
-      // ✅ FIX: 你的 Request model 没有 type 字段
+      requestId: true,
+      task: true,
+      provider: true,
       model: true,
       totalTokens: true,
       estimatedCostUsd: true,
@@ -188,14 +186,33 @@ router.get("/usage", requireAdminKey, async (req, res) => {
     totalTokens: total._sum.totalTokens || 0,
     totalCostUSD: Number(total._sum.estimatedCostUsd || 0),
     byModel: byModelRaw.map((m: any) => ({
+      provider: m.provider || "unknown",
       model: m.model || "(unknown)",
       requests: m._count._all,
       tokens: m._sum.totalTokens || 0,
       costUSD: Number(m._sum.estimatedCostUsd || 0),
     })),
+    byTask: byTaskRaw.map((m: any) => ({
+      task: m.task || "(unknown)",
+      requests: m._count._all,
+      tokens: m._sum.totalTokens || 0,
+      costUSD: Number(m._sum.estimatedCostUsd || 0),
+    })),
+    byKey: byKeyRaw.map((m: any) => {
+      const key = m.apiKeyId ? keyById.get(m.apiKeyId) : null;
+      return {
+        apiKeyId: m.apiKeyId || null,
+        name: key?.name || "unknown",
+        prefix: key?.prefix || null,
+        requests: m._count._all,
+        tokens: m._sum.totalTokens || 0,
+        costUSD: Number(m._sum.estimatedCostUsd || 0),
+      };
+    }),
     recent: recent.map((r: any) => ({
-      id: r.id,
-      // ✅ FIX: 不返回 type
+      id: r.requestId || r.id,
+      type: r.task,
+      provider: r.provider,
       model: r.model,
       tokens: r.totalTokens || 0,
       costUSD: Number(r.estimatedCostUsd || 0),

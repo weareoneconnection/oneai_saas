@@ -7,19 +7,18 @@ import { usePathname } from "next/navigation";
 
 type Item = { label: string; href: string; desc?: string };
 
-const builders: Item[] = [
-  { label: "Studio", href: "/studio/OS", desc: "Generate structured outputs" },
-  { label: "Templates", href: "/templates", desc: "Reusable blueprints" },
-  { label: "Projects", href: "/projects", desc: "Project spaces" },
-  { label: "Workflows", href: "/workflows", desc: "Automation chains" },
+const consoleItems: Item[] = [
+  { label: "Dashboard", href: "/dashboard", desc: "API health and cost" },
+  { label: "Playground", href: "/playground", desc: "Test generate calls" },
+  { label: "API Keys", href: "/keys", desc: "Create and rotate access" },
+  { label: "Usage", href: "/usage", desc: "Requests, tokens, spend" },
+  { label: "Billing", href: "/billing", desc: "Plan and subscription" },
 ];
 
-const consoleItems: Item[] = [
-  { label: "Dashboard", href: "/dashboard", desc: "Overview & status" },
-  { label: "Keys", href: "/keys", desc: "API keys & access" },
-  { label: "Usage", href: "/usage", desc: "Usage & cost" },
-  { label: "Billing", href: "/billing", desc: "Plans & invoices" },
-  { label: "Verify", href: "/verify", desc: "Requests & signatures" },
+const infrastructureItems: Item[] = [
+  { label: "Models", href: "/models", desc: "Provider registry" },
+  { label: "Tasks", href: "/tasks", desc: "Available workflows" },
+  { label: "Docs", href: "/docs", desc: "Quickstart and reference" },
 ];
 
 function isActive(pathname: string | null, href: string) {
@@ -41,7 +40,7 @@ function Group({
 
   return (
     <div className="p-3">
-      <div className="px-2 pb-2 text-xs font-semibold tracking-wide text-black/45">
+      <div className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-black/45">
         {title}
       </div>
 
@@ -55,10 +54,10 @@ function Group({
               href={it.href}
               onClick={() => onNavigate?.()}
               className={[
-                "block rounded-xl px-3 py-2 transition",
+                "block rounded-lg px-3 py-2 transition",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
                 active
-                  ? "bg-black text-white shadow-sm"
+                  ? "bg-black text-white"
                   : "text-black/80 hover:bg-black/5",
               ].join(" ")}
             >
@@ -84,22 +83,27 @@ function Group({
 export function SideNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="py-2">
-      <Group title="Builders" items={builders} onNavigate={onNavigate} />
-      <div className="mx-4 my-2 h-px bg-black/10" />
       <Group title="Console" items={consoleItems} onNavigate={onNavigate} />
+      <div className="mx-4 my-2 h-px bg-black/10" />
+      <Group
+        title="Infrastructure"
+        items={infrastructureItems}
+        onNavigate={onNavigate}
+      />
       <div className="mx-4 my-2 h-px bg-black/10" />
 
       <div className="p-3">
         <Link
           href="/login"
           onClick={() => onNavigate?.()}
-          className="block rounded-xl bg-black/5 px-3 py-2 text-sm font-medium text-black/70 hover:bg-black/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+          className="block rounded-lg bg-black/5 px-3 py-2 text-sm font-medium text-black/70 hover:bg-black/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
         >
           Account / Login
         </Link>
 
-        <div className="mt-3 rounded-xl border border-black/10 bg-white/60 p-3 text-xs text-black/55">
-          Tip: define project voice once — reuse everywhere.
+        <div className="mt-3 rounded-lg border border-black/10 bg-white p-3 text-xs leading-relaxed text-black/55">
+          OneAI handles model routing and structured intelligence. Execution
+          stays with OneClaw and bots.
         </div>
       </div>
     </div>

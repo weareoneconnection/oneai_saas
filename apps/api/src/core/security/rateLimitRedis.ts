@@ -73,14 +73,17 @@ export function rateLimitRedisTcp(options?: RateLimitOptions) {
 
       // 2) API Key 限流（有 key 才做，虽然你有 requireApiKey）
       if (apiKey) {
-        const k = `${prefix}:key:${apiKey}:${b}`;
+        const keyLimitRaw = Number(r.auth?.apiKey?.rateLimitRpm || maxPerKey);
+        const keyLimit = Number.isFinite(keyLimitRaw) && keyLimitRaw > 0 ? keyLimitRaw : maxPerKey;
+        const keyIdentity = r.auth?.apiKeyId || apiKey;
+        const k = `${prefix}:key:${keyIdentity}:${b}`;
         const { count, retryAfterSec } = await hit(k, windowMs);
-        if (count > maxPerKey) {
+        if (count > keyLimit) {
           res.setHeader("Retry-After", String(retryAfterSec));
           return res.status(429).json({
             success: false,
             error: "Rate limit exceeded (API key)",
-            limit: maxPerKey,
+            limit: keyLimit,
             windowMs,
             retryAfterSec
           });

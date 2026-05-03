@@ -119,17 +119,20 @@ model ApiKey {
 ///  * =========================
 model Request {
   id               String        @id @default(cuid())
+  requestId        String        @unique @default(cuid())
   createdAt        DateTime      @default(now())
   task             String
   success          Boolean       @default(true)
   attempts         Int           @default(1)
   error            String?
+  provider         String        @default("unknown")
   model            String
   promptTokens     Int           @default(0)
   completionTokens Int           @default(0)
   totalTokens      Int           @default(0)
   apiKeyId         String?
   estimatedCostUsd Float         @default(0)
+  idempotencyKey   String?
   inputJson        Json?
   latencyMs        Int?
   orgId            String?
@@ -140,6 +143,8 @@ model Request {
   @@index([createdAt])
   @@index([orgId, createdAt])
   @@index([apiKeyId, createdAt])
+  @@index([provider, model])
+  @@unique([orgId, apiKeyId, idempotencyKey])
 }
 
 /// * =========================
@@ -151,6 +156,7 @@ model UsageDaily {
   orgId            String
   apiKeyId         String?
   task             String
+  provider         String       @default("unknown")
   model            String
   requestCount     Int          @default(0)
   promptTokens     Int          @default(0)
@@ -162,8 +168,9 @@ model UsageDaily {
   apiKey           ApiKey?      @relation(fields: [apiKeyId], references: [id])
   org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  @@unique([day, orgId, apiKeyId, task, model])
+  @@unique([day, orgId, apiKeyId, task, provider, model])
   @@index([orgId, day])
+  @@index([provider, model])
 }
 
 model OrgBilling {

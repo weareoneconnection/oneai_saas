@@ -14,15 +14,22 @@ export function preparePromptStep<TInput, TData>(
 ): WorkflowStep<WorkflowContext<TInput, TData> & { templateVersion: number }> {
   return async (ctx) => {
     try {
-      const templateVersion = ctx.templateVersion ?? config.templateVersion ?? 1;
+      const templateVersion =
+        ctx.templateVersionOverride ?? config.templateVersion ?? ctx.templateVersion ?? 1;
       const template = loadTemplate(config.task, templateVersion);
 
       ctx.systemPrompt = template.system;
       ctx.userPrompt = compileTemplate(template.userTemplate, config.variables(ctx.input));
 
-      const { model, temperature } = resolveModel(config.task as any);
+      const { provider, model, temperature, maxTokens, baseURL, apiKeyEnv, fallbacks } =
+        resolveModel(config.task, ctx.llm);
+      ctx.provider = provider;
       ctx.model = model;
       ctx.temperature = temperature;
+      ctx.maxTokens = maxTokens;
+      ctx.baseURL = baseURL;
+      ctx.apiKeyEnv = apiKeyEnv;
+      ctx.fallbacks = fallbacks;
 
       return { ok: true };
     } catch (e) {

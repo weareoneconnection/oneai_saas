@@ -1,26 +1,22 @@
-# 🚀 WAOC — OneAI Agent OS
+# OneAI SaaS
 
-### Turn intent into real-world execution
+### Commercial full-model AI infrastructure for unified intelligence coordination
 
 ---
 
 ## 🌐 What This Is
 
-Most AI systems generate content.
-They do not execute.
+OneAI SaaS is the commercial API and SaaS layer for OneAI.
 
-**OneAI Agent OS is built to change that.**
+It focuses on the OneAI intelligence brain: model routing, structured generation, task coordination, usage tracking, plan policy, billing, and commercial API delivery.
 
-It is an AI-native coordination system that transforms a single human intent into:
+OneAI keeps the original coordination vision, but separates responsibility clearly:
 
-* Strategy
-* Structured plans
-* Executable workflows
-* Real-world actions
-* Observable results
+* OneAI coordinates intelligence.
+* OneAI Bot provides the interface.
+* OneClaw handles execution.
 
-This is not a tool.
-This is a system that **turns thinking into execution**.
+This repository is prepared as a commercial SaaS/API infrastructure project.
 
 ---
 

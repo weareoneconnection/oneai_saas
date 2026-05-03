@@ -1,9 +1,18 @@
 {
-  "name": "oneai",
+  "name": "oneai-saas",
   "version": "1.0.0",
-  "description": "",
+  "description": "OneAI SaaS commercial full-model AI infrastructure.",
   "main": "index.js",
   "scripts": {
+    "dev": "turbo dev",
+    "dev:web": "npm --prefix apps/web run dev",
+    "dev:web:webpack": "npm --prefix apps/web exec next -- dev --webpack -p 3000",
+    "dev:api": "npm --prefix apps/api run dev",
+    "build": "turbo build",
+    "build:web": "npm --prefix apps/web run build",
+    "build:api": "npm --prefix apps/api run build",
+    "keys:sync": "npm --prefix apps/api run keys:sync",
+    "launch:check": "npm --prefix apps/api run launch:check",
     "prisma:generate": "prisma generate --schema apps/api/prisma/schema.prisma",
     "postinstall": "pnpm -w prisma:generate"
   },

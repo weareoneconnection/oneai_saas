@@ -1,6 +1,5 @@
 import type { WorkflowContext, WorkflowStep } from "../types.js";
-import { getOpenAIClient } from "../../llm/openaiClient.js";
-import { logUsage } from "../../../utils/usageLogger.js";
+import { generateLLMText } from "../../llm/providerClient.js";
 import { addUsage } from "../../../utils/usageAggregate.js";
 
 export function generateLLMStep<TInput, TData>(): WorkflowStep<
@@ -18,29 +17,36 @@ export function generateLLMStep<TInput, TData>(): WorkflowStep<
         throw new Error("ctx.userPrompt is missing");
       }
 
-      const client = getOpenAIClient();
-
       console.log("[generateLLMStep] request", {
+        provider: ctx.provider ?? "openai",
         model: ctx.model,
         temperature: ctx.temperature ?? 0.7,
+        maxTokens: ctx.maxTokens,
         systemPromptLength: ctx.systemPrompt.length,
         userPromptLength: ctx.userPrompt.length,
       });
 
-      const completion = await client.chat.completions.create({
+      const result = await generateLLMText({
+        provider: ctx.provider ?? "openai",
         model: ctx.model,
+        temperature: ctx.temperature ?? 0.7,
+        ...(ctx.maxTokens ? { maxTokens: ctx.maxTokens } : {}),
+        ...(ctx.baseURL ? { baseURL: ctx.baseURL } : {}),
+        ...(ctx.apiKeyEnv ? { apiKeyEnv: ctx.apiKeyEnv } : {}),
+        ...(ctx.fallbacks ? { fallbacks: ctx.fallbacks } : {}),
         messages: [
           { role: "system", content: ctx.systemPrompt },
-          { role: "user", content: ctx.userPrompt }
+          { role: "user", content: ctx.userPrompt },
         ],
-        temperature: ctx.temperature ?? 0.7
       });
 
-      const u = logUsage(completion);
-      ctx.usage = u;
-      addUsage(ctx, u);
+      ctx.usage = result.usage;
+      addUsage(ctx, result.usage);
+      ctx.llmTrace = result.trace;
+      ctx.llmTraceSteps = ctx.llmTraceSteps ?? [];
+      ctx.llmTraceSteps.push(result.trace);
 
-      ctx.rawText = completion.choices[0]?.message?.content ?? "";
+      ctx.rawText = result.text;
 
       return { ok: true };
     } catch (e: any) {
@@ -67,11 +73,14 @@ export function generateLLMStep<TInput, TData>(): WorkflowStep<
         console.warn("[generateLLMStep] launch mode quota bypass triggered");
 
         ctx.usage = {
+          provider: ctx.provider ?? "openai",
           model: ctx.model,
           promptTokens: 0,
           completionTokens: 0,
           totalTokens: 0,
+          estimatedCostUSD: 0,
           estimatedCostUsd: 0,
+          createdAt: new Date().toISOString(),
         } as any;
 
         ctx.rawText = JSON.stringify({

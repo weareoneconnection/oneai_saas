@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../config/prisma.js";
 import { requireAdminKey } from "../core/security/admin.js";
+import { getOrCreateOrgForUserEmail } from "../core/orgs/ensureOrg.js";
 
 const router = Router();
 
@@ -41,26 +42,18 @@ function p95(values: number[]): number | undefined {
 router.get("/dashboard", requireAdminKey, async (req, res) => {
   try {
     const range = String(req.query.range || "24h");
+    const userEmail = String(req.query.userEmail || "").trim().toLowerCase();
+    if (!userEmail) {
+      return res.status(400).json({ success: false, error: "userEmail required" });
+    }
     // 当前先固定 24h（你前端就是 24h dashboard）
     const now = new Date();
     const toISO = now.toISOString();
     const from = new Date(now.getTime() - 24 * 3600 * 1000);
     const fromISO = from.toISOString();
 
-    // 如果你未来要按 org 做 RBAC，这里可以加 orgId
-    // 目前沿用你 admin.ts 的 default org 策略：直接聚合全库或按 org 过滤
-    // 为了保持一致，我们复用你 admin.ts 的 default org 策略（slug=default / first org）
-    const org =
-      (await prisma.organization.findUnique({
-        where: { slug: "default" },
-        select: { id: true },
-      })) ||
-      (await prisma.organization.findFirst({
-        orderBy: { createdAt: "asc" },
-        select: { id: true },
-      }));
-
-    const orgId = org?.id || null;
+    const org = await getOrCreateOrgForUserEmail(userEmail);
+    const orgId = org.id;
 
     const where24h: any = { createdAt: { gte: from } };
     if (orgId) where24h.orgId = orgId;

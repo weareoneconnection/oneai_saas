@@ -33,30 +33,23 @@ export function DocShell({
   next?: { href: string; label: string };
 }) {
   return (
-    <main className="relative overflow-hidden bg-white">
-      {/* Background */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-48 -right-48 h-[560px] w-[560px] rounded-full bg-black/[0.04]" />
-        <div className="absolute -bottom-48 -left-48 h-[560px] w-[560px] rounded-full bg-black/[0.03]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(0,0,0,0.05),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(0,0,0,0.04),transparent_45%)]" />
-      </div>
-
-      <div className="relative mx-auto max-w-6xl px-6">
-        {/* Top nav */}
+    <main className="bg-white text-black">
+      <div className="mx-auto max-w-6xl px-6">
         <header className="flex items-center justify-between py-6">
           <Link href="/" className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-2xl border border-black/10 bg-white shadow-sm" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 bg-white text-xs font-bold">
+              OA
+            </div>
             <div className="leading-tight">
-              <div className="text-sm font-extrabold tracking-tight">OneAI</div>
+              <div className="text-sm font-bold tracking-tight">OneAI API</div>
               <div className="text-xs text-black/55">Docs</div>
             </div>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-black/70">
-            <Link href="/studio" className="hover:text-black">Product</Link>
-            <Link href="/developers" className="hover:text-black">Developers</Link>
-            <Link href="/security" className="hover:text-black">Security</Link>
             <Link href="/pricing" className="hover:text-black">Pricing</Link>
+            <Link href="/security" className="hover:text-black">Security</Link>
+            <Link href="/docs/reference/generate" className="hover:text-black">API Reference</Link>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -67,10 +60,10 @@ export function DocShell({
               Console
             </Link>
             <Link
-              href="/studio"
-              className="inline-flex rounded-full bg-black px-5 py-2 text-sm font-extrabold text-white shadow-lg hover:bg-neutral-900 transition"
+              href="/keys"
+              className="inline-flex rounded-lg bg-black px-5 py-2 text-sm font-bold text-white transition hover:bg-neutral-900"
             >
-              Try Studio
+              Get API Key
             </Link>
           </div>
         </header>
@@ -83,7 +76,7 @@ export function DocShell({
             </div>
           ) : null}
 
-          <h1 className="mt-6 text-4xl md:text-5xl font-extrabold tracking-tight text-black">{title}</h1>
+          <h1 className="mt-6 text-4xl md:text-5xl font-bold tracking-tight text-black">{title}</h1>
           {description ? (
             <p className="mt-4 max-w-2xl text-black/70 leading-relaxed">{description}</p>
           ) : null}
@@ -102,7 +95,7 @@ export function DocShell({
                 {prev ? (
                   <Link
                     href={prev.href}
-                    className="block rounded-3xl border border-black/10 bg-white p-5 shadow-sm hover:border-black/25 hover:bg-black/[0.02]"
+                    className="block rounded-lg border border-black/10 bg-white p-5 hover:border-black/25 hover:bg-black/[0.02]"
                   >
                     <div className="text-xs font-bold text-black/50">Previous</div>
                     <div className="mt-1 text-sm font-extrabold text-black">{prev.label}</div>
@@ -113,7 +106,7 @@ export function DocShell({
                 {next ? (
                   <Link
                     href={next.href}
-                    className="block rounded-3xl border border-black/10 bg-white p-5 shadow-sm hover:border-black/25 hover:bg-black/[0.02]"
+                    className="block rounded-lg border border-black/10 bg-white p-5 hover:border-black/25 hover:bg-black/[0.02]"
                   >
                     <div className="text-xs font-bold text-black/50">Next</div>
                     <div className="mt-1 text-sm font-extrabold text-black">{next.label}</div>
@@ -128,9 +121,8 @@ export function DocShell({
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-t border-black/10 pt-6">
             <div>© {new Date().getFullYear()} OneAI — AI-native coordination infrastructure.</div>
             <div className="flex gap-4">
-              <Link className="hover:text-black" href="/developers">Developers</Link>
               <Link className="hover:text-black" href="/pricing">Pricing</Link>
-              <Link className="hover:text-black" href="/contact">Contact</Link>
+              <Link className="hover:text-black" href="/security">Security</Link>
             </div>
           </div>
         </footer>

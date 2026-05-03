@@ -2,6 +2,7 @@
 import type { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import { prisma } from "../../config/prisma.js";
+import { getPlanPolicy } from "../billing/planPolicy.js";
 
 export type AuthedRequest = Request & {
   auth?: {
@@ -40,6 +41,16 @@ export async function requireApiKey(req: AuthedRequest, res: Response, next: Nex
         prefix: true,
         name: true,
         userEmail: true,
+        org: {
+          select: {
+            billing: {
+              select: {
+                plan: true,
+                status: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -53,6 +64,17 @@ export async function requireApiKey(req: AuthedRequest, res: Response, next: Nex
 
     // isAdmin：用 scopes 控制（推荐）
     const isAdmin = Array.isArray(apiKey.scopes) && apiKey.scopes.includes("admin");
+    const effectivePlan =
+      ["active", "trialing"].includes(String(apiKey.org?.billing?.status))
+        ? apiKey.org?.billing?.plan || "free"
+        : "free";
+    const policy = getPlanPolicy(effectivePlan);
+    const effectiveApiKey = {
+      ...apiKey,
+      rateLimitRpm: apiKey.rateLimitRpm || policy.rateLimitRpm,
+      effectivePlan,
+      planPolicy: policy,
+    };
 
     // 记录 lastUsedAt（异步即可）
     prisma.apiKey
@@ -63,11 +85,31 @@ export async function requireApiKey(req: AuthedRequest, res: Response, next: Nex
       isAdmin,
       orgId: apiKey.orgId,
       apiKeyId: apiKey.id,
-      apiKey,
+      apiKey: effectiveApiKey,
     };
 
     return next();
   } catch (e: any) {
-    return res.status(500).json({ success: false, error: e?.message || "Auth failed" });
+    const message = String(e?.message || "");
+    const isMissingTable =
+      message.includes("does not exist in the current database") ||
+      message.includes("relation") ||
+      message.includes("does not exist");
+
+    if (isMissingTable) {
+      return res.status(503).json({
+        success: false,
+        error: "Database schema is not ready. Run Prisma migration or db push.",
+        code: "DATABASE_SCHEMA_NOT_READY",
+        retryable: false,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: "Authentication failed",
+      code: "AUTH_FAILED",
+      retryable: false,
+    });
   }
 }

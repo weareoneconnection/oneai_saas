@@ -1,281 +1,196 @@
+// apps/web/src/app/pricing/page.tsx
 import Link from "next/link";
 
-function cx(...xs: Array<string | false | null | undefined>) {
-  return xs.filter(Boolean).join(" ");
-}
+const plans = [
+  {
+    name: "Free",
+    price: "$0",
+    desc: "For local testing, early integration, and validating structured tasks.",
+    features: ["1,000 requests / month", "$10 model cost guard", "30 RPM", "Cheap + balanced modes"],
+  },
+  {
+    name: "Pro",
+    price: "$29/mo",
+    desc: "For builders selling or shipping apps on top of OneAI API.",
+    features: [
+      "50,000 requests / month",
+      "$500 model cost guard",
+      "120 RPM",
+      "Cheap, balanced, fast, auto modes",
+    ],
+  },
+  {
+    name: "Team",
+    price: "$99/mo",
+    desc: "For teams that need shared billing, policy, and commercial controls.",
+    features: [
+      "250,000 requests / month",
+      "$2,500 model cost guard",
+      "600 RPM",
+      "Premium mode, debug trace, model registry",
+    ],
+  },
+];
 
-function Pill({ children }: { children: React.ReactNode }) {
+const matrix = [
+  ["Monthly requests", "1,000", "50,000", "250,000"],
+  ["Monthly model-cost guard", "$10", "$500", "$2,500"],
+  ["API key rate limit", "30 RPM", "120 RPM", "600 RPM"],
+  ["Per-request maxCostUsd", "$0.05", "$1", "$5"],
+  ["Routing modes", "cheap, balanced", "cheap, balanced, fast, auto", "all modes"],
+  ["Task tiers", "free", "free + pro", "free + pro + team"],
+  ["Debug trace", "locked", "locked", "enabled"],
+  ["Explicit provider/model", "locked", "locked", "enabled"],
+  ["Model registry", "locked", "locked", "enabled"],
+];
+
+function Header() {
   return (
-    <span className="inline-flex items-center rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/70">
-      {children}
-    </span>
-  );
-}
-
-function Card({
-  title,
-  price,
-  desc,
-  highlights,
-  ctaLabel,
-  ctaHref,
-  featured,
-  footnote,
-}: {
-  title: string;
-  price: string;
-  desc: string;
-  highlights: string[];
-  ctaLabel: string;
-  ctaHref: string;
-  featured?: boolean;
-  footnote?: string;
-}) {
-  return (
-    <div
-      className={cx(
-        "relative rounded-3xl border bg-white p-6 shadow-sm",
-        featured ? "border-black shadow-md bg-black/[0.02]" : "border-black/10"
-      )}
-    >
-      {featured ? (
-        <div className="absolute -top-3 left-6">
-          <span className="rounded-full bg-black px-3 py-1 text-xs font-extrabold text-white">
-            Recommended
-          </span>
-        </div>
-      ) : null}
-
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-extrabold text-black">{title}</div>
-          <div className="mt-2 text-4xl font-extrabold tracking-tight text-black">{price}</div>
-          <div className="mt-2 text-sm text-black/65 leading-relaxed">{desc}</div>
-        </div>
-      </div>
-
-      <div className="mt-5 space-y-2">
-        {highlights.map((h) => (
-          <div key={h} className="flex gap-2 text-sm text-black/75">
-            <span className="mt-[2px] inline-block h-2 w-2 rounded-full bg-black" />
-            <span className="leading-relaxed">{h}</span>
+    <header className="border-b border-black/10">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 text-sm font-bold">
+            OA
           </div>
-        ))}
-      </div>
-
-      <div className="mt-6 flex flex-col gap-2">
-        <Link
-          href={ctaHref}
-          className={cx(
-            "inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-extrabold transition",
-            featured
-              ? "bg-black text-white shadow-lg hover:bg-neutral-900"
-              : "border border-black/15 bg-white text-black hover:bg-black/[0.04]"
-          )}
-        >
-          {ctaLabel}
+          <div className="leading-tight">
+            <div className="text-sm font-bold">OneAI API</div>
+            <div className="text-xs text-black/50">Pricing</div>
+          </div>
         </Link>
-
-        {footnote ? (
-          <div className="text-xs text-black/50 leading-relaxed">{footnote}</div>
-        ) : null}
+        <nav className="hidden items-center gap-6 text-sm font-medium text-black/65 md:flex">
+          <Link href="/docs" className="hover:text-black">
+            Docs
+          </Link>
+          <Link href="/security" className="hover:text-black">
+            Security
+          </Link>
+          <Link href="/dashboard" className="hover:text-black">
+            Console
+          </Link>
+        </nav>
       </div>
-    </div>
-  );
-}
-
-function FeatureRow({ name, items }: { name: string; items: Array<{ plan: string; text: string }> }) {
-  return (
-    <div className="grid gap-3 rounded-3xl border border-black/10 bg-white p-5 md:grid-cols-12">
-      <div className="md:col-span-4">
-        <div className="text-sm font-extrabold text-black">{name}</div>
-      </div>
-      <div className="md:col-span-8 grid gap-3 md:grid-cols-3">
-        {items.map((x) => (
-          <div key={x.plan} className="rounded-2xl border border-black/10 bg-black/[0.02] p-4">
-            <div className="text-[11px] font-extrabold text-black/50">{x.plan}</div>
-            <div className="mt-1 text-sm font-semibold text-black/80">{x.text}</div>
-          </div>
-        ))}
-      </div>
-    </div>
+    </header>
   );
 }
 
 export default function PricingPage() {
   return (
-    <main className="relative overflow-hidden bg-white">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-48 -right-48 h-[560px] w-[560px] rounded-full bg-black/[0.04]" />
-        <div className="absolute -bottom-48 -left-48 h-[560px] w-[560px] rounded-full bg-black/[0.03]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(0,0,0,0.05),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(0,0,0,0.04),transparent_45%)]" />
-      </div>
+    <main className="bg-white text-black">
+      <Header />
 
-      <div className="relative mx-auto max-w-6xl px-6">
-        <header className="flex items-center justify-between py-6">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-2xl border border-black/10 bg-white shadow-sm" />
-            <div className="leading-tight">
-              <div className="text-sm font-extrabold tracking-tight">OneAI</div>
-              <div className="text-xs text-black/55">AI-native coordination</div>
-            </div>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-black/70">
-            <Link href="/studio" className="hover:text-black">Product</Link>
-            <Link href="/developers" className="hover:text-black">Developers</Link>
-            <Link href="/security" className="hover:text-black">Security</Link>
-            <Link href="/pricing" className="text-black">Pricing</Link>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard"
-              className="hidden sm:inline-flex rounded-full border border-black/15 bg-white px-4 py-2 text-sm font-bold text-black hover:bg-black/[0.04] transition"
-            >
-              Console
-            </Link>
-            <Link
-              href="/studio"
-              className="inline-flex rounded-full bg-black px-5 py-2 text-sm font-extrabold text-white shadow-lg hover:bg-neutral-900 transition"
-            >
-              Try Studio
-            </Link>
+      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-20">
+        <div className="max-w-3xl">
+          <div className="text-xs font-bold uppercase tracking-wide text-black/45">
+            Commercial API pricing
           </div>
-        </header>
-
-        <section className="pt-12 pb-10 md:pt-16 md:pb-14">
-          <div className="flex flex-wrap gap-2">
-            <Pill>Templates-first</Pill>
-            <Pill>Structured outputs</Pill>
-            <Pill>Validation + retries</Pill>
-            <Pill>Export MD/JSON</Pill>
-          </div>
-
-          <h1 className="mt-8 text-4xl md:text-5xl font-extrabold tracking-tight text-black">
-            Pricing built for execution.
+          <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+            Sell full-model intelligence with cost controls built in.
           </h1>
-          <p className="mt-4 max-w-2xl text-black/70 leading-relaxed">
-            Start free. Upgrade when you need higher throughput, team workflows, and operational controls.
+          <p className="mt-5 text-base leading-relaxed text-black/65">
+            OneAI pricing is built around commercial API access: model routing,
+            structured outputs, customer usage, billing, and guardrails that
+            protect margin while supporting more providers.
           </p>
+        </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            <Card
-              title="Free"
-              price="$0"
-              desc="Try Studio Lite and structured outputs. No credit card."
-              highlights={[
-                "Studio Lite templates",
-                "Export Markdown / JSON",
-                "Basic validation + retries",
-                "Community templates",
-              ]}
-              ctaLabel="Start free"
-              ctaHref="/studio"
-              footnote="Best for exploring templates and quick outputs."
-            />
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className={[
+                "rounded-lg border p-6",
+                plan.name === "Pro" ? "border-black bg-black text-white" : "border-black/10 bg-white",
+              ].join(" ")}
+            >
+              <div className={plan.name === "Pro" ? "text-sm font-bold text-white" : "text-sm font-bold text-black"}>
+                {plan.name}
+              </div>
+              <div className={plan.name === "Pro" ? "mt-3 text-4xl font-bold text-white" : "mt-3 text-4xl font-bold text-black"}>
+                {plan.price}
+              </div>
+              <p className={plan.name === "Pro" ? "mt-3 text-sm leading-relaxed text-white/70" : "mt-3 text-sm leading-relaxed text-black/60"}>
+                {plan.desc}
+              </p>
+              <div className="mt-6 space-y-2">
+                {plan.features.map((feature) => (
+                  <div
+                    key={feature}
+                    className={plan.name === "Pro" ? "text-sm text-white/80" : "text-sm text-black/70"}
+                  >
+                    {feature}
+                  </div>
+                ))}
+              </div>
+              <Link
+                href={plan.name === "Free" ? "/keys" : "/billing"}
+                className={[
+                  "mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg text-sm font-semibold transition",
+                  plan.name === "Pro"
+                    ? "bg-white text-black hover:bg-white/90"
+                    : "bg-black text-white hover:bg-neutral-900",
+                ].join(" ")}
+              >
+                {plan.name === "Free" ? "Start free" : "Choose plan"}
+              </Link>
+            </div>
+          ))}
+        </div>
 
-            <Card
-              title="Pro"
-              price="$29/mo"
-              desc="For individual builders who ship daily."
-              highlights={[
-                "Higher rate limits",
-                "Priority models / routing (if enabled)",
-                "Saved templates + history",
-                "Usage tracking",
-              ]}
-              ctaLabel="Upgrade to Pro"
-              ctaHref="/dashboard/billing"
-              featured
-              footnote="Recommended for creators + solo founders."
-            />
-
-            <Card
-              title="Team"
-              price="Contact"
-              desc="For teams that need coordination infrastructure."
-              highlights={[
-                "Projects, keys, and roles",
-                "Workflow governance + templates",
-                "Audit-friendly usage reports",
-                "SLA / support options",
-              ]}
-              ctaLabel="Talk to us"
-              ctaHref="/contact"
-              footnote="Best for orgs running repeatable execution."
-            />
-          </div>
-        </section>
-
-        <section className="py-12 border-t border-black/10">
-          <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-black">
-            What you get (at a glance)
-          </h2>
-          <p className="mt-3 max-w-2xl text-black/65 leading-relaxed">
-            OneAI is designed for predictable outputs and operational reliability.
-          </p>
-
-          <div className="mt-8 grid gap-4">
-            <FeatureRow
-              name="Structured outputs"
-              items={[
-                { plan: "Free", text: "Core schemas + export" },
-                { plan: "Pro", text: "More templates + faster iteration" },
-                { plan: "Team", text: "Org-wide standards + governance" },
-              ]}
-            />
-            <FeatureRow
-              name="Reliability"
-              items={[
-                { plan: "Free", text: "Basic retries" },
-                { plan: "Pro", text: "Higher throughput + priority" },
-                { plan: "Team", text: "SLA options + reporting" },
-              ]}
-            />
-            <FeatureRow
-              name="Console"
-              items={[
-                { plan: "Free", text: "Basic usage" },
-                { plan: "Pro", text: "Projects + keys" },
-                { plan: "Team", text: "Roles + audit-friendly exports" },
-              ]}
-            />
+        <div className="mt-12">
+          <div className="max-w-2xl">
+            <div className="text-xs font-bold uppercase tracking-wide text-black/45">
+              Permission matrix
+            </div>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight">
+              The same limits are enforced by the API.
+            </h2>
           </div>
 
-          <div className="mt-10 rounded-3xl border border-black/10 bg-black/[0.02] p-6">
-            <div className="text-sm font-extrabold text-black">Need custom billing or enterprise setup?</div>
-            <p className="mt-2 text-sm text-black/65 leading-relaxed">
-              We can enable organization-level governance, higher limits, and tailored workflows.
+          <div className="mt-6 overflow-hidden rounded-lg border border-black/10">
+            <div className="grid grid-cols-4 bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
+              <div>Capability</div>
+              <div>Free</div>
+              <div>Pro</div>
+              <div>Team</div>
+            </div>
+            {matrix.map((row) => (
+              <div
+                key={row[0]}
+                className="grid grid-cols-4 border-t border-black/10 px-4 py-3 text-sm"
+              >
+                <div className="font-medium text-black">{row[0]}</div>
+                <div className="text-black/65">{row[1]}</div>
+                <div className="text-black/65">{row[2]}</div>
+                <div className="text-black/65">{row[3]}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
+            <div className="text-sm font-bold">Model costs</div>
+            <p className="mt-2 text-sm leading-relaxed text-black/60">
+              Provider costs are tracked per request and can be limited with
+              routing policy and maxCostUsd.
             </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link
-                href="/contact"
-                className="rounded-full bg-black px-6 py-3 text-white font-extrabold shadow-lg hover:bg-neutral-900 transition"
-              >
-                Contact Sales
-              </Link>
-              <Link
-                href="/security"
-                className="rounded-full border border-black/15 bg-white px-6 py-3 font-extrabold hover:bg-black/[0.04] transition"
-              >
-                Security →
-              </Link>
-            </div>
           </div>
-        </section>
-
-        <footer className="py-10 text-sm text-black/50">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-t border-black/10 pt-6">
-            <div>© {new Date().getFullYear()} OneAI — AI-native coordination infrastructure.</div>
-            <div className="flex gap-4">
-              <Link className="hover:text-black" href="/developers">Developers</Link>
-              <Link className="hover:text-black" href="/security">Security</Link>
-              <Link className="hover:text-black" href="/contact">Contact</Link>
-            </div>
+          <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
+            <div className="text-sm font-bold">Plan policy</div>
+            <p className="mt-2 text-sm leading-relaxed text-black/60">
+              Plans map to API key limits, provider allowlists, budgets, and
+              support level.
+            </p>
           </div>
-        </footer>
-      </div>
+          <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
+            <div className="text-sm font-bold">Commercial objective</div>
+            <p className="mt-2 text-sm leading-relaxed text-black/60">
+              The product is API revenue: reliable intelligence coordination
+              customers can build on.
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

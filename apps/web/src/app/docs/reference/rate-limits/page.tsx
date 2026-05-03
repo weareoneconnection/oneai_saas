@@ -4,17 +4,17 @@ export default function Page() {
   return (
     <DocShell
       title="Reference: Rate limits"
-      description="Quotas, limits, and best practices for stable production usage."
-      pills={["Quotas", "Burst control", "Backoff"]}
+      description="Quotas, API key limits, and cost controls for production usage."
+      pills={["rateLimitRpm", "monthlyBudgetUsd", "maxCostUsd"]}
       prev={{ href: "/docs/reference/errors", label: "Errors" }}
       next={{ href: "/docs", label: "Docs Home" }}
     >
-      <DocSectionTitle title="Best practices" desc="Avoid spikes; add backoff; cache stable outputs." />
-      <div className="mt-6 rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+      <DocSectionTitle title="Best practices" desc="Control spend and protect the gateway before expanding customer limits." />
+      <div className="mt-6 rounded-lg border border-black/10 bg-white p-6">
         <ul className="list-disc pl-5 text-sm text-black/70 space-y-2">
-          <li>Use client-side debounce for search and form typing</li>
-          <li>Retry with exponential backoff on network errors</li>
-          <li>Cache template outputs where acceptable</li>
+          <li>Set per-key rateLimitRpm for production keys</li>
+          <li>Set monthlyBudgetUsd where customer spend needs a hard guard</li>
+          <li>Use options.llm.maxCostUsd for expensive task classes</li>
         </ul>
       </div>
     </DocShell>

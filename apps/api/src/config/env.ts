@@ -6,7 +6,7 @@ import { z } from "zod";
 dotenv.config({ path: process.env.DOTENV_CONFIG_PATH || ".env" });
 
 const EnvSchema = z.object({
-  OPENAI_API_KEY: z.string().min(1),
+  OPENAI_API_KEY: z.string().min(1).optional(),
   API_KEYS: z.string().min(1),      // 逗号分隔：dev_key_1,dev_key_2
   ADMIN_API_KEY: z.string().min(1), // admin_key_1
   REDIS_URL: z.string().min(1),     // redis://127.0.0.1:6379

@@ -1,6 +1,5 @@
 import type { WorkflowContext, WorkflowStep } from "../types.js";
-import { getOpenAIClient } from "../../llm/openaiClient.js";
-import { logUsage } from "../../../utils/usageLogger.js";
+import { generateLLMText } from "../../llm/providerClient.js";
 import { addUsage } from "../../../utils/usageAggregate.js";
 
 export type RefineConfig<TInput, TData> = {
@@ -20,7 +19,6 @@ export function refineJsonStep<TInput, TData>(
         throw new Error("ctx.model is missing");
       }
 
-      const client = getOpenAIClient();
       const link = (ctx as any)?.input?.link ? String((ctx as any).input.link) : "";
 
       const repairPrompt = `
@@ -46,12 +44,19 @@ ${config.extraInstruction ? `\nExtra:\n${config.extraInstruction}\n` : ""}
 `;
 
       console.log("[refineJsonStep] request", {
+        provider: ctx.provider ?? "openai",
         model: ctx.model,
         repairPromptLength: repairPrompt.length,
       });
 
-      const completion = await client.chat.completions.create({
+      const result = await generateLLMText({
+        provider: ctx.provider ?? "openai",
         model: ctx.model,
+        temperature: 0.2,
+        ...(ctx.maxTokens ? { maxTokens: ctx.maxTokens } : {}),
+        ...(ctx.baseURL ? { baseURL: ctx.baseURL } : {}),
+        ...(ctx.apiKeyEnv ? { apiKeyEnv: ctx.apiKeyEnv } : {}),
+        ...(ctx.fallbacks ? { fallbacks: ctx.fallbacks } : {}),
         messages: [
           {
             role: "system",
@@ -59,14 +64,15 @@ ${config.extraInstruction ? `\nExtra:\n${config.extraInstruction}\n` : ""}
           },
           { role: "user", content: repairPrompt }
         ],
-        temperature: 0.2
       });
 
-      const u = logUsage(completion);
-      ctx.usage = u;
-      addUsage(ctx, u);
+      ctx.usage = result.usage;
+      addUsage(ctx, result.usage);
+      ctx.llmTrace = result.trace;
+      ctx.llmTraceSteps = ctx.llmTraceSteps ?? [];
+      ctx.llmTraceSteps.push(result.trace);
 
-      ctx.rawText = completion.choices[0]?.message?.content ?? "{}";
+      ctx.rawText = result.text || "{}";
 
       return { ok: true };
     } catch (e: any) {

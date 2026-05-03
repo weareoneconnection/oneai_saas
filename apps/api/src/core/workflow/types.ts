@@ -1,3 +1,5 @@
+import type { LLMOverrides, LLMTrace } from "../llm/types.js";
+
 export type WorkflowStepResult = {
   ok: boolean;
   error?: any;
@@ -20,10 +22,17 @@ export type WorkflowContext<TInput = any, TData = any> = {
 
   // prompt + model
   templateVersion: number;
+  templateVersionOverride?: number;
   systemPrompt?: string;
   userPrompt?: string;
+  provider?: string;
   model?: string;
   temperature?: number;
+  maxTokens?: number;
+  baseURL?: string;
+  apiKeyEnv?: string;
+  fallbacks?: LLMOverrides["fallbacks"];
+  llm?: LLMOverrides;
 
   // LLM result
   rawText?: string;
@@ -33,6 +42,8 @@ export type WorkflowContext<TInput = any, TData = any> = {
   usage?: any;          // last call usage
   usageSteps?: any[];   // per-call usages
   usageTotal?: UsageTotal; // aggregated usage
+  llmTrace?: LLMTrace;
+  llmTraceSteps?: LLMTrace[];
 
   // debug
   lastError?: any;

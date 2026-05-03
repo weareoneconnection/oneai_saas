@@ -9,6 +9,8 @@ import { listTasks } from "./core/workflow/registry.js";
 import generateRoute from "./routes/generate.js";
 import adminRoute from "./routes/admin.js";
 import adminDashboardRouter from "./routes/admin_dashboard.js";
+import tasksRoute from "./routes/tasks.js";
+import usageRoute from "./routes/usage.js";
 // ✅ billing
 import billingRoute, { handleStripeWebhook } from "./routes/billing.js";
 
@@ -42,6 +44,8 @@ app.get("/health", (_req, res) => {
 
 // ===== 核心 API =====
 app.use("/v1/generate", generateRoute);
+app.use("/v1/tasks", tasksRoute);
+app.use("/v1/usage", usageRoute);
 
 // ===== Admin =====
 app.use("/v1/admin", adminRoute);

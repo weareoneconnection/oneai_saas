@@ -1,84 +1,234 @@
+// apps/web/src/app/(app)/billing/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
 type BillingData = {
-  plan: "free" | "pro" | "team" | string;
-  status: "active" | "trialing" | "past_due" | "canceled" | "inactive" | string;
+  plan: "free" | "pro" | "team" | "business" | string;
+  status:
+    | "active"
+    | "trialing"
+    | "past_due"
+    | "canceled"
+    | "inactive"
+    | string;
   currentPeriodEnd?: string | null;
+  effectivePlan?: string;
+  policy?: {
+    monthlyRequestLimit: number;
+    monthlyCostLimitUsd: number;
+    rateLimitRpm: number;
+    maxCostPerRequestUsd: number;
+    allowedTiers: string[];
+    allowedModes: string[];
+    allowDebug: boolean;
+    allowExplicitModelSelection: boolean;
+    allowModelRegistry: boolean;
+  };
+  monthUsage?: {
+    fromISO: string;
+    requestCount: number;
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    costUsd: number;
+    activeKeys: number;
+  };
+  remaining?: {
+    requests: number;
+    costUsd: number;
+  };
+  stripeConfig?: {
+    secretKey: boolean;
+    webhookSecret: boolean;
+    pricePro: boolean;
+    priceTeam: boolean;
+  };
 };
 
 type Notice = { type: "success" | "warn" | "error"; text: string };
 
-function cx(...cls: Array<string | false | null | undefined>) {
-  return cls.filter(Boolean).join(" ");
+const plans = [
+  {
+    key: "free",
+    name: "Free",
+    price: "$0",
+    desc: "Validate the API, generate test outputs, and inspect usage.",
+    cta: "Current free access",
+    features: ["Developer API key", "Basic task access", "Usage dashboard"],
+  },
+  {
+    key: "pro",
+    name: "Pro",
+    price: "$29/mo",
+    desc: "For builders shipping production workflows on top of OneAI.",
+    cta: "Upgrade to Pro",
+    env: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
+    features: [
+      "Higher request limits",
+      "Cost-aware model routing",
+      "Request IDs and idempotency",
+      "Customer usage analytics",
+    ],
+  },
+  {
+    key: "team",
+    name: "Team",
+    price: "$99/mo",
+    desc: "For teams that need shared usage, stronger limits, and billing ops.",
+    cta: "Upgrade to Team",
+    env: "NEXT_PUBLIC_STRIPE_PRICE_TEAM",
+    features: [
+      "Shared organization billing",
+      "API key governance",
+      "Provider/model policy",
+      "Priority commercial support",
+    ],
+  },
+] as const;
+
+function statusClass(status: string) {
+  const s = status.toLowerCase();
+  if (s === "active") return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700";
+  if (s === "trialing") return "border-amber-500/20 bg-amber-500/10 text-amber-700";
+  if (s === "past_due") return "border-red-500/20 bg-red-500/10 text-red-700";
+  return "border-black/10 bg-black/[0.03] text-black/60";
 }
 
-function formatDate(d: string) {
-  try {
-    return new Date(d).toLocaleDateString();
-  } catch {
-    return d;
-  }
+function formatDate(d?: string | null) {
+  if (!d) return "-";
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return d;
+  return date.toLocaleDateString();
 }
 
-function PlanBadge({ plan }: { plan: BillingData["plan"] }) {
-  const label =
-    plan === "pro" ? "Pro" : plan === "team" ? "Team" : plan === "free" ? "Free" : String(plan || "Free");
-
-  const klass =
-    plan === "pro"
-      ? "bg-black text-white"
-      : plan === "team"
-      ? "bg-white text-black border border-black/10"
-      : "bg-black/5 text-black/70 border border-black/10";
-
-  return <span className={cx("inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold", klass)}>{label}</span>;
+function fmtNum(n: number) {
+  return new Intl.NumberFormat("en-US").format(Math.round(Number(n || 0)));
 }
 
-function StatusBadge({ status }: { status: BillingData["status"] }) {
-  const s = (status || "inactive").toLowerCase();
-
-  const map: Record<string, { label: string; cls: string }> = {
-    active: { label: "Active", cls: "bg-emerald-500/10 text-emerald-700 border border-emerald-500/20" },
-    trialing: { label: "Trial", cls: "bg-amber-500/10 text-amber-700 border border-amber-500/20" },
-    past_due: { label: "Past due", cls: "bg-red-500/10 text-red-700 border border-red-500/20" },
-    canceled: { label: "Canceled", cls: "bg-black/5 text-black/60 border border-black/10" },
-    inactive: { label: "Inactive", cls: "bg-black/5 text-black/60 border border-black/10" },
-  };
-
-  const pick = map[s] || { label: String(status || "Inactive"), cls: "bg-black/5 text-black/60 border border-black/10" };
-
-  return (
-    <span className={cx("inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold", pick.cls)}>
-      {pick.label}
-    </span>
-  );
+function fmtUsd(n: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 4,
+  }).format(Number(n || 0));
 }
 
-function NoticeBar({ notice, onClose }: { notice: Notice; onClose?: () => void }) {
+function pct(used: number, limit?: number) {
+  if (!limit) return 0;
+  return Math.max(0, Math.min(100, (Number(used || 0) / limit) * 100));
+}
+
+function NoticeBar({ notice, onClose }: { notice: Notice; onClose: () => void }) {
   const cls =
     notice.type === "success"
       ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-800"
       : notice.type === "warn"
-      ? "border-amber-500/20 bg-amber-500/10 text-amber-900"
-      : "border-red-500/20 bg-red-500/10 text-red-900";
+        ? "border-amber-500/20 bg-amber-500/10 text-amber-900"
+        : "border-red-500/20 bg-red-500/10 text-red-900";
 
   return (
-    <div className={cx("flex items-start justify-between gap-3 rounded-2xl border p-4 text-sm", cls)}>
+    <div className={`flex items-start justify-between gap-3 rounded-lg border p-4 text-sm ${cls}`}>
       <div className="leading-relaxed">{notice.text}</div>
-      {onClose ? (
-        <button
-          onClick={onClose}
-          className="rounded-lg px-2 py-1 text-xs font-semibold opacity-70 hover:opacity-100"
-          aria-label="Close"
-        >
-          ✕
-        </button>
-      ) : null}
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded-md px-2 py-1 text-xs font-semibold opacity-70 hover:opacity-100"
+      >
+        x
+      </button>
+    </div>
+  );
+}
+
+function PlanCard({
+  plan,
+  currentPlan,
+  busy,
+  onCheckout,
+}: {
+  plan: (typeof plans)[number];
+  currentPlan: string;
+  busy: string | null;
+  onCheckout: (tier: "pro" | "team") => void;
+}) {
+  const isCurrent = currentPlan === plan.key;
+  const priceId =
+    plan.key === "pro"
+      ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO
+      : plan.key === "team"
+        ? process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM
+        : "";
+  const canBuy = plan.key === "pro" || plan.key === "team";
+
+  return (
+    <div
+      className={[
+        "rounded-lg border p-5",
+        isCurrent ? "border-black bg-black text-white" : "border-black/10 bg-white",
+      ].join(" ")}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className={isCurrent ? "text-sm font-bold text-white" : "text-sm font-bold text-black"}>
+            {plan.name}
+          </div>
+          <div className={isCurrent ? "mt-2 text-3xl font-bold text-white" : "mt-2 text-3xl font-bold text-black"}>
+            {plan.price}
+          </div>
+        </div>
+        {isCurrent ? (
+          <span className="rounded-md border border-white/20 px-2 py-1 text-xs text-white/80">
+            Current
+          </span>
+        ) : null}
+      </div>
+
+      <p className={isCurrent ? "mt-3 text-sm leading-relaxed text-white/70" : "mt-3 text-sm leading-relaxed text-black/60"}>
+        {plan.desc}
+      </p>
+
+      <div className="mt-5 space-y-2">
+        {plan.features.map((feature) => (
+          <div
+            key={feature}
+            className={isCurrent ? "text-sm text-white/80" : "text-sm text-black/70"}
+          >
+            {feature}
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6">
+        {canBuy ? (
+          <Button
+            variant={isCurrent ? "secondary" : "primary"}
+            onClick={() => onCheckout(plan.key)}
+            disabled={busy !== null || !priceId}
+            className="w-full"
+          >
+            {busy === plan.key ? "Redirecting..." : plan.cta}
+          </Button>
+        ) : (
+          <Button variant="secondary" disabled className="w-full">
+            {plan.cta}
+          </Button>
+        )}
+        {canBuy && !priceId ? (
+          <div className={isCurrent ? "mt-2 text-xs text-white/50" : "mt-2 text-xs text-black/45"}>
+            Missing {plan.env}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -89,46 +239,55 @@ export default function BillingPage() {
   const [busy, setBusy] = useState<"pro" | "team" | "portal" | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
 
-  const pricePro = process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO;
-  const priceTeam = process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM;
-
-  const plan = data?.plan ?? "free";
-  const status = data?.status ?? "inactive";
-
+  const plan = data?.plan || "free";
+  const effectivePlan = data?.effectivePlan || plan;
+  const status = data?.status || "inactive";
   const canPortal = plan !== "free" && status !== "inactive";
+  const periodEnd = useMemo(
+    () => formatDate(data?.currentPeriodEnd),
+    [data?.currentPeriodEnd]
+  );
 
-  const periodEnd = useMemo(() => {
-    if (!data?.currentPeriodEnd) return null;
-    return formatDate(data.currentPeriodEnd);
-  }, [data?.currentPeriodEnd]);
+  async function load() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/billing/status", { cache: "no-store" });
+      const json = await res.json();
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.error || `HTTP ${res.status}`);
+      }
+      setData(json.data || null);
+    } catch (e: any) {
+      setNotice({
+        type: "error",
+        text: e?.message || "Failed to load billing status.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  // 读订阅状态 + URL 提示
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("success")) setNotice({ type: "success", text: "✅ Subscription updated successfully." });
-    if (params.get("canceled")) setNotice({ type: "warn", text: "⚠️ Checkout canceled." });
-
-    const load = async () => {
-      try {
-        const r = await fetch("/api/billing/status", { cache: "no-store" });
-        const j = await r.json();
-        if (j?.success && j?.data) setData(j.data);
-      } catch (e: any) {
-        setNotice({ type: "error", text: e?.message || "Failed to load billing status." });
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    if (params.get("success")) {
+      setNotice({ type: "success", text: "Subscription updated successfully." });
+    }
+    if (params.get("canceled")) {
+      setNotice({ type: "warn", text: "Checkout canceled." });
+    }
     load();
   }, []);
 
-  const checkout = async (tier: "pro" | "team") => {
-    const priceId = tier === "pro" ? pricePro : priceTeam;
+  async function checkout(tier: "pro" | "team") {
+    const priceId =
+      tier === "pro"
+        ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO
+        : process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM;
+
     if (!priceId) {
       setNotice({
         type: "error",
-        text: `Missing env: NEXT_PUBLIC_STRIPE_PRICE_${tier.toUpperCase()}. Set it in .env.local and restart dev server.`,
+        text: `Missing Stripe price env for ${tier}. Set it and restart the web server.`,
       });
       return;
     }
@@ -137,23 +296,28 @@ export default function BillingPage() {
     setNotice(null);
 
     try {
-      const r = await fetch("/api/billing/checkout", {
+      const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ priceId }),
       });
-      const j = await r.json();
-      if (!j?.data?.url) throw new Error(j?.message || "Checkout URL not returned");
-      window.location.href = j.data.url;
+      const json = await res.json();
+      if (!res.ok || !json?.data?.url) {
+        throw new Error(json?.error || json?.message || "Checkout URL not returned");
+      }
+      window.location.href = json.data.url;
     } catch (e: any) {
-      setNotice({ type: "error", text: e?.message || "Checkout failed." });
       setBusy(null);
+      setNotice({ type: "error", text: e?.message || "Checkout failed." });
     }
-  };
+  }
 
-  const openPortal = async () => {
+  async function openPortal() {
     if (!canPortal) {
-      setNotice({ type: "warn", text: "Portal is available only for active paid subscriptions." });
+      setNotice({
+        type: "warn",
+        text: "Billing portal is available after a paid subscription is active.",
+      });
       return;
     }
 
@@ -161,227 +325,260 @@ export default function BillingPage() {
     setNotice(null);
 
     try {
-      const r = await fetch("/api/billing/portal", { method: "POST" });
-      const j = await r.json();
-      if (!j?.data?.url) throw new Error(j?.message || "Portal URL not returned");
-      window.location.href = j.data.url;
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json?.data?.url) {
+        throw new Error(json?.error || json?.message || "Portal URL not returned");
+      }
+      window.location.href = json.data.url;
     } catch (e: any) {
-      setNotice({ type: "error", text: e?.message || "Failed to open billing portal." });
       setBusy(null);
+      setNotice({ type: "error", text: e?.message || "Failed to open portal." });
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-black">Billing</h1>
-          <p className="mt-1 text-sm text-black/60">Manage subscription, upgrade plan, and access invoices.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge>Billing</Badge>
+            <Badge>Commercial API</Badge>
+          </div>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-black">
+            Plans and Billing
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-black/55">
+            Sell reliable OneAI API access with model routing, usage visibility,
+            and cost controls. Stripe handles subscription and invoices.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <PlanBadge plan={plan} />
-          <StatusBadge status={status} />
-          {periodEnd ? (
-            <span className="text-xs text-black/45">
-              Renews / ends: <span className="font-semibold text-black/70">{periodEnd}</span>
-            </span>
-          ) : null}
+          <span className="rounded-md border border-black/10 bg-black/[0.03] px-2 py-1 text-xs font-medium text-black/65">
+            {loading ? "Loading plan" : `Plan: ${effectivePlan}`}
+          </span>
+          <span className={`rounded-md border px-2 py-1 text-xs font-medium ${statusClass(status)}`}>
+            {status}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={openPortal}
+            disabled={busy === "portal" || !canPortal}
+          >
+            {busy === "portal" ? "Opening..." : "Manage Billing"}
+          </Button>
         </div>
       </div>
 
       {notice ? <NoticeBar notice={notice} onClose={() => setNotice(null)} /> : null}
 
-      {/* Current subscription */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-lg border border-black/10 p-4">
+          <div className="text-xs text-black/50">Current plan</div>
+          <div className="mt-2 text-lg font-semibold capitalize">{effectivePlan}</div>
+        </div>
+        <div className="rounded-lg border border-black/10 p-4">
+          <div className="text-xs text-black/50">Subscription status</div>
+          <div className="mt-2 text-lg font-semibold capitalize">{status}</div>
+        </div>
+        <div className="rounded-lg border border-black/10 p-4">
+          <div className="text-xs text-black/50">Current period end</div>
+          <div className="mt-2 text-lg font-semibold">{periodEnd}</div>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Current Subscription</CardTitle>
-          <CardDescription>Real-time status from Stripe.</CardDescription>
+          <CardTitle>Monthly API Allowance</CardTitle>
+          <CardDescription>
+            Current month usage against the effective plan policy.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="rounded-2xl border border-black/10 bg-white/60 p-4 text-sm text-black/60">
-              Loading billing status…
-            </div>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
-                <div className="text-xs font-semibold text-black/50">Plan</div>
-                <div className="mt-2 flex items-center gap-2">
-                  <PlanBadge plan={plan} />
-                </div>
-                <div className="mt-2 text-xs text-black/45">Used across console features & limits.</div>
+          <div className="grid gap-4 lg:grid-cols-4">
+            <div className="rounded-lg border border-black/10 p-4">
+              <div className="text-xs text-black/50">Requests used</div>
+              <div className="mt-2 text-xl font-semibold">
+                {fmtNum(data?.monthUsage?.requestCount || 0)}
               </div>
-
-              <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
-                <div className="text-xs font-semibold text-black/50">Status</div>
-                <div className="mt-2 flex items-center gap-2">
-                  <StatusBadge status={status} />
-                </div>
-                <div className="mt-2 text-xs text-black/45">Payment state and access.</div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/10">
+                <div
+                  className="h-full bg-black"
+                  style={{
+                    width: `${pct(
+                      data?.monthUsage?.requestCount || 0,
+                      data?.policy?.monthlyRequestLimit
+                    )}%`,
+                  }}
+                />
               </div>
-
-              <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
-                <div className="text-xs font-semibold text-black/50">Billing Portal</div>
-                <div className="mt-2">
-                  <Button
-                    variant="secondary"
-                    onClick={openPortal}
-                    disabled={busy === "portal" || !canPortal}
-                    className="w-full"
-                  >
-                    {busy === "portal" ? "Opening…" : "Manage Billing"}
-                  </Button>
-                </div>
-                <div className="mt-2 text-xs text-black/45">Invoices, payment method, cancel / resume.</div>
+              <div className="mt-2 text-xs text-black/45">
+                Limit {fmtNum(data?.policy?.monthlyRequestLimit || 0)}
               </div>
             </div>
-          )}
+
+            <div className="rounded-lg border border-black/10 p-4">
+              <div className="text-xs text-black/50">Model cost used</div>
+              <div className="mt-2 text-xl font-semibold">
+                {fmtUsd(data?.monthUsage?.costUsd || 0)}
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/10">
+                <div
+                  className="h-full bg-black"
+                  style={{
+                    width: `${pct(
+                      data?.monthUsage?.costUsd || 0,
+                      data?.policy?.monthlyCostLimitUsd
+                    )}%`,
+                  }}
+                />
+              </div>
+              <div className="mt-2 text-xs text-black/45">
+                Limit {fmtUsd(data?.policy?.monthlyCostLimitUsd || 0)}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-black/10 p-4">
+              <div className="text-xs text-black/50">Tokens this month</div>
+              <div className="mt-2 text-xl font-semibold">
+                {fmtNum(data?.monthUsage?.totalTokens || 0)}
+              </div>
+              <div className="mt-2 text-xs text-black/45">
+                Prompt {fmtNum(data?.monthUsage?.promptTokens || 0)} · Completion{" "}
+                {fmtNum(data?.monthUsage?.completionTokens || 0)}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-black/10 p-4">
+              <div className="text-xs text-black/50">Allowed task tiers</div>
+              <div className="mt-2 text-xl font-semibold capitalize">
+                {(data?.policy?.allowedTiers || ["free"]).join(", ")}
+              </div>
+              <div className="mt-2 text-xs text-black/45">
+                Active keys {fmtNum(data?.monthUsage?.activeKeys || 0)}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Plans */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Commercial Permissions</CardTitle>
+          <CardDescription>
+            Feature gates enforced by the effective plan.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 lg:grid-cols-4">
+            <div className="rounded-lg border border-black/10 p-4">
+              <div className="text-xs text-black/50">Rate limit</div>
+              <div className="mt-2 text-xl font-semibold">
+                {fmtNum(data?.policy?.rateLimitRpm || 0)} RPM
+              </div>
+              <div className="mt-2 text-xs text-black/45">Inherited by API keys unless overridden</div>
+            </div>
+            <div className="rounded-lg border border-black/10 p-4">
+              <div className="text-xs text-black/50">Max cost per request</div>
+              <div className="mt-2 text-xl font-semibold">
+                {fmtUsd(data?.policy?.maxCostPerRequestUsd || 0)}
+              </div>
+              <div className="mt-2 text-xs text-black/45">Compared with options.llm.maxCostUsd</div>
+            </div>
+            <div className="rounded-lg border border-black/10 p-4">
+              <div className="text-xs text-black/50">Routing modes</div>
+              <div className="mt-2 text-sm font-semibold capitalize leading-relaxed">
+                {(data?.policy?.allowedModes || ["cheap", "balanced"]).join(", ")}
+              </div>
+            </div>
+            <div className="rounded-lg border border-black/10 p-4">
+              <div className="text-xs text-black/50">Advanced controls</div>
+              <div className="mt-2 space-y-1 text-sm text-black/70">
+                <div>Debug trace: {data?.policy?.allowDebug ? "Enabled" : "Locked"}</div>
+                <div>Model select: {data?.policy?.allowExplicitModelSelection ? "Enabled" : "Locked"}</div>
+                <div>Registry: {data?.policy?.allowModelRegistry ? "Enabled" : "Locked"}</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Plans</CardTitle>
-            <CardDescription>Upgrade in one click. Pricing IDs are configured via env.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2">
-            {/* Pro */}
-            <div className="rounded-2xl border border-black/10 bg-white/60 p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-black">Pro</div>
-                  <div className="mt-1 text-xs text-black/50">For solo builders shipping fast.</div>
-                </div>
-                <span className="rounded-full border border-black/10 bg-black/5 px-3 py-1 text-xs font-semibold text-black/70">
-                  Recommended
-                </span>
-              </div>
-
-              <ul className="mt-4 space-y-2 text-sm text-black/70">
-                <li className="flex gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-lg border border-black/10 bg-white text-xs">
-                    ✓
-                  </span>
-                  Higher rate limits & priority
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-lg border border-black/10 bg-white text-xs">
-                    ✓
-                  </span>
-                  Usage analytics + exports
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-lg border border-black/10 bg-white text-xs">
-                    ✓
-                  </span>
-                  Project voice presets
-                </li>
-              </ul>
-
-              <div className="mt-5 flex flex-col gap-2">
-                <Button
-                  onClick={() => checkout("pro")}
-                  disabled={busy !== null || !pricePro}
-                  className="w-full"
-                >
-                  {busy === "pro" ? "Redirecting…" : "Upgrade to Pro"}
-                </Button>
-                {!pricePro ? (
-                  <div className="text-xs text-black/45">
-                    Missing <span className="font-semibold">NEXT_PUBLIC_STRIPE_PRICE_PRO</span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            {/* Team */}
-            <div className="rounded-2xl border border-black/10 bg-white/60 p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-black">Team</div>
-                  <div className="mt-1 text-xs text-black/50">For small teams & shared billing.</div>
-                </div>
-                <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/70">
-                  Multi-user
-                </span>
-              </div>
-
-              <ul className="mt-4 space-y-2 text-sm text-black/70">
-                <li className="flex gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-lg border border-black/10 bg-white text-xs">
-                    ✓
-                  </span>
-                  Shared org usage & limits
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-lg border border-black/10 bg-white text-xs">
-                    ✓
-                  </span>
-                  Key-level stats & audit
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-lg border border-black/10 bg-white text-xs">
-                    ✓
-                  </span>
-                  Environment segmentation
-                </li>
-              </ul>
-
-              <div className="mt-5 flex flex-col gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => checkout("team")}
-                  disabled={busy !== null || !priceTeam}
-                  className="w-full"
-                >
-                  {busy === "team" ? "Redirecting…" : "Upgrade to Team"}
-                </Button>
-                {!priceTeam ? (
-                  <div className="text-xs text-black/45">
-                    Missing <span className="font-semibold">NEXT_PUBLIC_STRIPE_PRICE_TEAM</span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notes / Compliance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-            <CardDescription>Operational details for production.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-black/70">
-            <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
-              <div className="text-xs font-semibold text-black/50">Invoices</div>
-              <div className="mt-2">
-                Use <span className="font-semibold">Manage Billing</span> to download invoices and update payment method.
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
-              <div className="text-xs font-semibold text-black/50">Webhook</div>
-              <div className="mt-2">Ensure Stripe webhooks update your billing status endpoint for accuracy.</div>
-            </div>
-
-            <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
-              <div className="text-xs font-semibold text-black/50">Environment</div>
-              <div className="mt-2">
-                If this is dev, keep plan as <span className="font-semibold">free</span> and wire prices only on prod.
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {plans.map((item) => (
+          <PlanCard
+            key={item.key}
+            plan={item}
+            currentPlan={plan}
+            busy={busy}
+            onCheckout={checkout}
+          />
+        ))}
       </div>
 
-      {/* Footer hint */}
-      <div className="text-xs text-black/45">
-        Tip: keep pricing IDs in <span className="font-semibold">.env.local</span> and restart <span className="font-semibold">next dev</span> after changes.
+      <Card>
+        <CardHeader>
+          <CardTitle>Stripe Launch Readiness</CardTitle>
+          <CardDescription>
+            Checkout requires API secret key and both plan price IDs. Webhook is required before public launch.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-4">
+            {[
+              ["Secret key", data?.stripeConfig?.secretKey],
+              ["Webhook secret", data?.stripeConfig?.webhookSecret],
+              ["Pro price", data?.stripeConfig?.pricePro],
+              ["Team price", data?.stripeConfig?.priceTeam],
+            ].map(([label, ok]) => (
+              <div key={String(label)} className="rounded-lg border border-black/10 p-4">
+                <div className="text-xs text-black/50">{label}</div>
+                <div className={ok ? "mt-2 text-sm font-semibold text-emerald-700" : "mt-2 text-sm font-semibold text-red-700"}>
+                  {ok ? "Configured" : "Missing"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>What customers pay for</CardTitle>
+            <CardDescription>API value, not a generic chatbot.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-black/65">
+            <div>Full-model routing and fallback</div>
+            <div>Structured task outputs</div>
+            <div>Usage, requestId, and support metadata</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Cost control</CardTitle>
+            <CardDescription>Protect margin before scale.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-black/65">
+            <div>Per-request maxCostUsd</div>
+            <div>API key monthly budgets</div>
+            <div>Provider/model allowlists by plan</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Stripe readiness</CardTitle>
+            <CardDescription>Keep billing operational.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-black/65">
+            <div>Set price IDs in web env</div>
+            <div>Configure webhook updates</div>
+            <div>Use portal for invoices and payment methods</div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
