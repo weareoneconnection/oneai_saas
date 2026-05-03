@@ -1,7 +1,7 @@
 // apps/web/src/app/(app)/login/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -25,7 +25,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [email, setEmail] = useState("");
   const params = useSearchParams();
@@ -151,5 +151,13 @@ export default function LoginPage() {
         </aside>
       </main>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-dvh bg-white" />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

@@ -5,14 +5,20 @@ import EmailProvider from "next-auth/providers/email";
 
 const hasEmailProvider =
   !!process.env.EMAIL_SERVER && !!process.env.EMAIL_FROM;
+const hasGoogleProvider =
+  !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    }),
+    ...(hasGoogleProvider
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+          }),
+        ]
+      : []),
     ...(hasEmailProvider
       ? [
           EmailProvider({
