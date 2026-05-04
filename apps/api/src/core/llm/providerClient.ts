@@ -110,6 +110,19 @@ function defaultBaseURL(provider: string): string | undefined {
   }
 }
 
+function usesMaxCompletionTokens(provider: string, model: string): boolean {
+  if (provider !== "openai") return false;
+  return (
+    /^gpt-5(?:[.-]|$)/.test(model) ||
+    /^o\d/.test(model)
+  );
+}
+
+function supportsTemperature(provider: string, model: string): boolean {
+  if (provider !== "openai") return true;
+  return !/^gpt-5(?:[.-]|$)/.test(model);
+}
+
 function requiresExplicitBaseURL(provider: string): boolean {
   return [
     "custom",
@@ -183,8 +196,14 @@ async function generateLLMTextOnce(
   const completion = await client.chat.completions.create({
     model: request.model,
     messages: request.messages,
-    temperature: request.temperature,
-    ...(request.maxTokens ? { max_tokens: request.maxTokens } : {}),
+    ...(supportsTemperature(request.provider, request.model)
+      ? { temperature: request.temperature }
+      : {}),
+    ...(request.maxTokens
+      ? usesMaxCompletionTokens(request.provider, request.model)
+        ? { max_completion_tokens: request.maxTokens }
+        : { max_tokens: request.maxTokens }
+      : {}),
   });
 
   const promptTokens = completion.usage?.prompt_tokens ?? 0;
