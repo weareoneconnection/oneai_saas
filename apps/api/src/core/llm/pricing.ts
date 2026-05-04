@@ -5,6 +5,14 @@ type ModelPricing = {
   completion: number;
 };
 
+export type ResolvedModelPricing = {
+  inputCostPerToken: number;
+  outputCostPerToken: number;
+  inputCostPer1MTokens: number;
+  outputCostPer1MTokens: number;
+  source: "registry" | "built_in";
+};
+
 const DEFAULT_PRICING: Record<string, ModelPricing> = {
   "gpt-5.2": {
     prompt: 0.00000125,
@@ -40,13 +48,39 @@ function findPricing(model: string): ModelPricing | null {
   return key ? DEFAULT_PRICING[key] : null;
 }
 
-export function hasLLMPricing(provider: string | undefined, model: string): boolean {
+export function resolveLLMPricing(
+  provider: string | undefined,
+  model: string
+): ResolvedModelPricing | null {
   if (provider) {
     const profile = findModelProfile(provider, model);
-    if (profile?.inputCostPerToken || profile?.outputCostPerToken) return true;
+    if (profile?.inputCostPerToken || profile?.outputCostPerToken) {
+      const inputCostPerToken = profile.inputCostPerToken ?? 0;
+      const outputCostPerToken = profile.outputCostPerToken ?? 0;
+      return {
+        inputCostPerToken,
+        outputCostPerToken,
+        inputCostPer1MTokens: inputCostPerToken * 1_000_000,
+        outputCostPer1MTokens: outputCostPerToken * 1_000_000,
+        source: "registry",
+      };
+    }
   }
 
-  return !!findPricing(model);
+  const pricing = findPricing(model);
+  if (!pricing) return null;
+
+  return {
+    inputCostPerToken: pricing.prompt,
+    outputCostPerToken: pricing.completion,
+    inputCostPer1MTokens: pricing.prompt * 1_000_000,
+    outputCostPer1MTokens: pricing.completion * 1_000_000,
+    source: "built_in",
+  };
+}
+
+export function hasLLMPricing(provider: string | undefined, model: string): boolean {
+  return !!resolveLLMPricing(provider, model);
 }
 
 export function estimateLLMCostUSD(params: {
@@ -55,21 +89,11 @@ export function estimateLLMCostUSD(params: {
   promptTokens: number;
   completionTokens: number;
 }) {
-  if (params.provider) {
-    const profile = findModelProfile(params.provider, params.model);
-    if (profile?.inputCostPerToken || profile?.outputCostPerToken) {
-      return (
-        params.promptTokens * (profile.inputCostPerToken ?? 0) +
-        params.completionTokens * (profile.outputCostPerToken ?? 0)
-      );
-    }
-  }
-
-  const pricing = findPricing(params.model);
+  const pricing = resolveLLMPricing(params.provider, params.model);
   if (!pricing) return 0;
 
   return (
-    params.promptTokens * pricing.prompt +
-    params.completionTokens * pricing.completion
+    params.promptTokens * pricing.inputCostPerToken +
+    params.completionTokens * pricing.outputCostPerToken
   );
 }

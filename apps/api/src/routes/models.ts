@@ -5,7 +5,7 @@ import { rateLimitRedisTcp } from "../core/security/rateLimitRedis.js";
 import { findModelProfile, getModelCatalogSyncState, listModelProfiles } from "../core/llm/modelRegistry.js";
 import { syncModelCatalog } from "../core/llm/modelCatalogSync.js";
 import { isProviderConfigured } from "../core/llm/providerConfig.js";
-import { hasLLMPricing } from "../core/llm/pricing.js";
+import { estimateLLMCostUSD, hasLLMPricing, resolveLLMPricing } from "../core/llm/pricing.js";
 import { getModelHealth, testModelHealth } from "../core/llm/modelHealth.js";
 
 const router = Router();
@@ -13,6 +13,13 @@ const router = Router();
 const healthSchema = z.object({
   provider: z.string().min(1),
   model: z.string().min(1),
+});
+
+const estimateSchema = z.object({
+  provider: z.string().min(1),
+  model: z.string().min(1),
+  promptTokens: z.number().int().min(0).max(10_000_000).default(0),
+  completionTokens: z.number().int().min(0).max(10_000_000).default(0),
 });
 
 router.use(requireApiKey);
@@ -26,22 +33,28 @@ router.get("/", (_req, res) => {
     oneai: {
       catalogSync: getModelCatalogSyncState(),
     },
-    data: listModelProfiles().map((profile) => ({
-      id: `${profile.provider}:${profile.model}`,
-      object: "model",
-      created: now,
-      owned_by: String(profile.provider),
-      provider: profile.provider,
-      model: profile.model,
-      modes: profile.modes,
-      contextTokens: profile.contextTokens ?? null,
-      supportsJson: profile.supportsJson ?? false,
-      supportsTools: profile.supportsTools ?? false,
-      configured: isProviderConfigured(String(profile.provider)),
-      available: isProviderConfigured(String(profile.provider)),
-      hasPricing: hasLLMPricing(String(profile.provider), profile.model),
-      health: getModelHealth(String(profile.provider), profile.model),
-    })),
+    data: listModelProfiles().map((profile) => {
+      const provider = String(profile.provider);
+      const pricing = resolveLLMPricing(provider, profile.model);
+
+      return {
+        id: `${profile.provider}:${profile.model}`,
+        object: "model",
+        created: now,
+        owned_by: provider,
+        provider: profile.provider,
+        model: profile.model,
+        modes: profile.modes,
+        contextTokens: profile.contextTokens ?? null,
+        supportsJson: profile.supportsJson ?? false,
+        supportsTools: profile.supportsTools ?? false,
+        configured: isProviderConfigured(provider),
+        available: isProviderConfigured(provider),
+        hasPricing: hasLLMPricing(provider, profile.model),
+        pricing,
+        health: getModelHealth(provider, profile.model),
+      };
+    }),
   });
 });
 
@@ -99,6 +112,49 @@ router.post("/health", async (req, res) => {
 
   const status = await testModelHealth(profile);
   return res.json({ success: true, data: status });
+});
+
+router.post("/estimate", (req, res) => {
+  const parsed = estimateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: "provider, model, promptTokens and completionTokens are required",
+      code: "MODEL_ESTIMATE_BAD_REQUEST",
+      details: parsed.error.flatten(),
+    });
+  }
+
+  const profile = findModelProfile(parsed.data.provider, parsed.data.model);
+  if (!profile) {
+    return res.status(404).json({
+      success: false,
+      error: "model not found",
+      code: "MODEL_NOT_FOUND",
+    });
+  }
+
+  const pricing = resolveLLMPricing(parsed.data.provider, parsed.data.model);
+  const estimatedCostUsd = estimateLLMCostUSD({
+    provider: parsed.data.provider,
+    model: parsed.data.model,
+    promptTokens: parsed.data.promptTokens,
+    completionTokens: parsed.data.completionTokens,
+  });
+
+  return res.json({
+    success: true,
+    data: {
+      provider: parsed.data.provider,
+      model: parsed.data.model,
+      promptTokens: parsed.data.promptTokens,
+      completionTokens: parsed.data.completionTokens,
+      totalTokens: parsed.data.promptTokens + parsed.data.completionTokens,
+      canEstimate: !!pricing,
+      pricing,
+      estimatedCostUsd,
+    },
+  });
 });
 
 export default router;

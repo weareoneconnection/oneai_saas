@@ -204,3 +204,29 @@ export async function PUT(req: Request) {
     status: upstream.status,
   });
 }
+
+export async function PATCH(req: Request) {
+  const key = registryKey()[0];
+  if (!key) {
+    return NextResponse.json(
+      { success: false, error: "No API key configured for model cost estimates." },
+      { status: 500 }
+    );
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const upstream = await fetch(`${apiBase()}/v1/models/estimate`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${key}`,
+      accept: "application/json",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  const json = await readJson(upstream).catch(() => null);
+  return NextResponse.json(json || { success: false, error: "bad_response" }, {
+    status: upstream.status,
+  });
+}

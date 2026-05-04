@@ -1,6 +1,7 @@
 // apps/web/src/app/(app)/billing/page.tsx
 "use client";
 
+import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
@@ -94,7 +95,31 @@ const plans = [
       "Priority commercial support",
     ],
   },
+  {
+    key: "enterprise",
+    name: "Enterprise",
+    price: "Custom",
+    desc: "For production customers that need custom policy, provider controls, and support.",
+    cta: "Contact sales",
+    features: [
+      "Custom request and cost limits",
+      "Custom provider/model policy",
+      "Private model configuration",
+      "Launch support and operational review",
+    ],
+  },
 ] as const;
+
+const planMatrix = [
+  ["Monthly requests", "1,000", "50,000", "250,000", "Custom"],
+  ["Monthly model-cost guard", "$10", "$500", "$2,500", "Custom"],
+  ["Rate limit", "30 RPM", "120 RPM", "600 RPM", "Custom"],
+  ["Max cost/request", "$0.05", "$1", "$5", "Custom"],
+  ["Routing modes", "cheap, balanced", "cheap, balanced, fast, auto", "all modes", "all modes"],
+  ["Debug trace", "locked", "locked", "enabled", "enabled"],
+  ["Explicit model selection", "locked", "locked", "enabled", "enabled"],
+  ["Model registry", "locked", "locked", "enabled", "enabled"],
+];
 
 function statusClass(status: string) {
   const s = status.toLowerCase();
@@ -169,6 +194,7 @@ function PlanCard({
         ? process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM
         : "";
   const canBuy = plan.key === "pro" || plan.key === "team";
+  const isEnterprise = plan.key === "enterprise";
 
   return (
     <div
@@ -219,9 +245,15 @@ function PlanCard({
             {busy === plan.key ? "Redirecting..." : plan.cta}
           </Button>
         ) : (
-          <Button variant="secondary" disabled className="w-full">
-            {plan.cta}
-          </Button>
+          isEnterprise ? (
+            <Link href="/docs" className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-black/15 bg-white text-sm font-semibold text-black hover:bg-black/[0.04]">
+              {plan.cta}
+            </Link>
+          ) : (
+            <Button variant="secondary" disabled className="w-full">
+              {plan.cta}
+            </Button>
+          )
         )}
         {canBuy && !priceId ? (
           <div className={isCurrent ? "mt-2 text-xs text-white/50" : "mt-2 text-xs text-black/45"}>
@@ -247,6 +279,16 @@ export default function BillingPage() {
     () => formatDate(data?.currentPeriodEnd),
     [data?.currentPeriodEnd]
   );
+  const requestUsagePct = pct(data?.monthUsage?.requestCount || 0, data?.policy?.monthlyRequestLimit);
+  const costUsagePct = pct(data?.monthUsage?.costUsd || 0, data?.policy?.monthlyCostLimitUsd);
+  const riskLevel = Math.max(requestUsagePct, costUsagePct);
+  const riskLabel = riskLevel >= 90 ? "Critical" : riskLevel >= 70 ? "Watch" : "Healthy";
+  const riskClass =
+    riskLevel >= 90
+      ? "border-red-500/20 bg-red-500/10 text-red-800"
+      : riskLevel >= 70
+        ? "border-amber-500/20 bg-amber-500/10 text-amber-900"
+        : "border-emerald-500/20 bg-emerald-500/10 text-emerald-800";
 
   async function load() {
     setLoading(true);
@@ -361,6 +403,9 @@ export default function BillingPage() {
           <span className={`rounded-md border px-2 py-1 text-xs font-medium ${statusClass(status)}`}>
             {status}
           </span>
+          <span className={`rounded-md border px-2 py-1 text-xs font-medium ${riskClass}`}>
+            Usage: {riskLabel}
+          </span>
           <Button
             variant="secondary"
             size="sm"
@@ -386,6 +431,25 @@ export default function BillingPage() {
         <div className="rounded-lg border border-black/10 p-4">
           <div className="text-xs text-black/50">Current period end</div>
           <div className="mt-2 text-lg font-semibold">{periodEnd}</div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-lg border border-black/10 bg-white p-4">
+          <div className="text-xs text-black/50">Requests remaining</div>
+          <div className="mt-2 text-xl font-semibold">{fmtNum(data?.remaining?.requests || 0)}</div>
+          <div className="mt-2 text-xs text-black/45">{requestUsagePct.toFixed(1)}% used this month</div>
+        </div>
+        <div className="rounded-lg border border-black/10 bg-white p-4">
+          <div className="text-xs text-black/50">Model budget remaining</div>
+          <div className="mt-2 text-xl font-semibold">{fmtUsd(data?.remaining?.costUsd || 0)}</div>
+          <div className="mt-2 text-xs text-black/45">{costUsagePct.toFixed(1)}% used this month</div>
+        </div>
+        <div className="rounded-lg border border-black/10 bg-white p-4">
+          <div className="text-xs text-black/50">Recommended action</div>
+          <div className="mt-2 text-sm font-semibold text-black">
+            {riskLevel >= 90 ? "Upgrade or increase limits before customer traffic fails." : riskLevel >= 70 ? "Monitor usage and prepare an upgrade path." : "Current plan is within healthy operating range."}
+          </div>
         </div>
       </div>
 
@@ -505,7 +569,7 @@ export default function BillingPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-4">
         {plans.map((item) => (
           <PlanCard
             key={item.key}
@@ -516,6 +580,35 @@ export default function BillingPage() {
           />
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Plan Permission Matrix</CardTitle>
+          <CardDescription>
+            What each plan unlocks in the API policy layer.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-hidden rounded-lg border border-black/10">
+            <div className="grid grid-cols-5 bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
+              <div>Capability</div>
+              <div>Free</div>
+              <div>Pro</div>
+              <div>Team</div>
+              <div>Enterprise</div>
+            </div>
+            {planMatrix.map((row) => (
+              <div key={row[0]} className="grid grid-cols-5 border-t border-black/10 px-4 py-3 text-sm text-black/65">
+                <div className="font-medium text-black">{row[0]}</div>
+                <div>{row[1]}</div>
+                <div>{row[2]}</div>
+                <div>{row[3]}</div>
+                <div>{row[4]}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

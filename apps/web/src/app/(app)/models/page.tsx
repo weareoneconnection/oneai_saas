@@ -17,6 +17,11 @@ type ModelRow = {
   configured?: boolean;
   available?: boolean;
   hasPricing?: boolean;
+  pricing?: {
+    inputCostPer1MTokens: number;
+    outputCostPer1MTokens: number;
+    source: string;
+  } | null;
   health?: {
     ok: boolean;
     testedAt: string;
@@ -65,6 +70,15 @@ function fmtNum(n?: number | null) {
   return new Intl.NumberFormat("en-US").format(n);
 }
 
+function fmtPrice(n?: number | null) {
+  if (n == null) return "-";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 4,
+  }).format(n);
+}
+
 function extractPayload(json: ModelsResponse) {
   if (Array.isArray(json.data)) {
     return {
@@ -92,6 +106,11 @@ export default function ModelsPage() {
   const [providerFilter, setProviderFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [query, setQuery] = useState("");
+  const [estimateModelId, setEstimateModelId] = useState("");
+  const [promptTokens, setPromptTokens] = useState("1000");
+  const [completionTokens, setCompletionTokens] = useState("500");
+  const [estimate, setEstimate] = useState<any>(null);
+  const [estimating, setEstimating] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -151,6 +170,36 @@ export default function ModelsPage() {
     }
   }
 
+  async function estimateCost() {
+    const selected = models.find((row) => `${row.provider}:${row.model}` === estimateModelId) || models.find((row) => row.hasPricing);
+    if (!selected) {
+      setErr("No priced model available for estimation");
+      return;
+    }
+
+    setEstimating(true);
+    setErr("");
+    try {
+      const res = await fetch("/api/models", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          provider: selected.provider,
+          model: selected.model,
+          promptTokens: Number(promptTokens || 0),
+          completionTokens: Number(completionTokens || 0),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || `HTTP ${res.status}`);
+      setEstimate(json.data);
+    } catch (e: any) {
+      setErr(e?.message || "Failed to estimate model cost");
+    } finally {
+      setEstimating(false);
+    }
+  }
+
   useEffect(() => {
     load();
   }, []);
@@ -179,6 +228,7 @@ export default function ModelsPage() {
   const configuredModelCount = models.filter((m) => m.configured).length;
   const pricedModelCount = models.filter((m) => m.hasPricing).length;
   const testedOkCount = models.filter((m) => m.health?.ok).length;
+  const estimateOptions = models.filter((row) => row.hasPricing).slice(0, 120);
 
   return (
     <div className="space-y-6">
@@ -214,6 +264,37 @@ export default function ModelsPage() {
         <div className="rounded-lg border border-black/10 p-4">
           <div className="text-xs text-black/50">Priced / tested</div>
           <div className="mt-2 text-lg font-semibold">{pricedModelCount} / {testedOkCount}</div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-black/10 bg-white p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-black">Cost estimator</div>
+            <p className="mt-1 text-sm text-black/55">Estimate model cost before sending production traffic.</p>
+          </div>
+          {estimate ? (
+            <div className="rounded-lg border border-black/10 bg-black/[0.03] px-4 py-2 text-sm">
+              <span className="text-black/50">Estimated: </span>
+              <b>{fmtPrice(estimate.estimatedCostUsd)}</b>
+              <span className="ml-2 text-xs text-black/40">{Number(estimate.totalTokens || 0).toLocaleString()} tokens</span>
+            </div>
+          ) : null}
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-[1fr_150px_170px_140px]">
+          <Select value={estimateModelId} onChange={(e) => setEstimateModelId(e.target.value)}>
+            <option value="">Select priced model</option>
+            {estimateOptions.map((row) => (
+              <option key={`${row.provider}:${row.model}`} value={`${row.provider}:${row.model}`}>
+                {row.provider}:{row.model}
+              </option>
+            ))}
+          </Select>
+          <Input value={promptTokens} onChange={(e) => setPromptTokens(e.target.value)} placeholder="Prompt tokens" className="border-black/10 bg-white text-black placeholder:text-black/35" />
+          <Input value={completionTokens} onChange={(e) => setCompletionTokens(e.target.value)} placeholder="Completion tokens" className="border-black/10 bg-white text-black placeholder:text-black/35" />
+          <Button variant="secondary" onClick={estimateCost} disabled={estimating || !models.length}>
+            {estimating ? "Estimating..." : "Estimate"}
+          </Button>
         </div>
       </div>
 
@@ -268,7 +349,16 @@ export default function ModelsPage() {
               </div>
               <div className="col-span-1 text-right">{yesNo(row.supportsJson)}</div>
               <div className="col-span-1 text-right">{yesNo(row.supportsTools)}</div>
-              <div className="col-span-1 text-right">{yesNo(row.hasPricing)}</div>
+              <div className="col-span-1 text-right">
+                {row.pricing ? (
+                  <div title={`source: ${row.pricing.source}`} className="text-xs text-black/70">
+                    <div>{fmtPrice(row.pricing.inputCostPer1MTokens)}</div>
+                    <div className="text-black/35">/ {fmtPrice(row.pricing.outputCostPer1MTokens)}</div>
+                  </div>
+                ) : (
+                  yesNo(row.hasPricing)
+                )}
+              </div>
             </div>
           ))
         ) : (
