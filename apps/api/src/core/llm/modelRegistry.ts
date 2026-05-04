@@ -11,6 +11,9 @@ export type LLMModelProfile = {
   supportsTools?: boolean;
 };
 
+let syncedProfiles: LLMModelProfile[] = [];
+let syncedAt: string | null = null;
+
 const DEFAULT_MODEL = process.env.ONEAI_DEFAULT_MODEL || "gpt-4o-mini";
 
 const DEFAULT_PROFILES: LLMModelProfile[] = [
@@ -348,7 +351,9 @@ function configuredRegistryProfiles(): LLMModelProfile[] {
 }
 
 export function listModelProfiles(): LLMModelProfile[] {
+  const seen = new Set<string>();
   return [
+    ...syncedProfiles,
     ...DEFAULT_PROFILES,
     envProfile(),
     providerEnvProfile({
@@ -434,7 +439,26 @@ export function listModelProfiles(): LLMModelProfile[] {
     }),
     customProfile(),
     ...configuredRegistryProfiles(),
-  ].filter((x): x is LLMModelProfile => !!x);
+  ]
+    .filter((x): x is LLMModelProfile => !!x)
+    .filter((profile) => {
+      const key = `${profile.provider}:${profile.model}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+export function updateSyncedModelProfiles(profiles: LLMModelProfile[]) {
+  syncedProfiles = profiles;
+  syncedAt = new Date().toISOString();
+}
+
+export function getModelCatalogSyncState() {
+  return {
+    syncedAt,
+    count: syncedProfiles.length,
+  };
 }
 
 export function findModelProfile(provider: string, model: string) {

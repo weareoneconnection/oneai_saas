@@ -175,6 +175,22 @@ curl -s https://oneai-saas-api-production.up.railway.app/v1/chat/completions \
 
 Model IDs can be passed as `provider:model`, such as `openai:gpt-5.2`, `gemini:gemini-3-pro-preview`, or `xai:grok-4.20`. If no provider prefix is used, OneAI resolves the first matching registered model.
 
+Streaming uses OpenAI-compatible server-sent events:
+
+```bash
+curl -N https://oneai-saas-api-production.up.railway.app/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ONEAI_API_KEY" \
+  -d '{
+    "model": "openai:gpt-5.2",
+    "messages": [
+      { "role": "user", "content": "Write a short OneAI launch line." }
+    ],
+    "stream": true,
+    "max_completion_tokens": 300
+  }'
+```
+
 ## Claude-Compatible Messages API
 
 ```bash
@@ -191,4 +207,20 @@ curl -s https://oneai-saas-api-production.up.railway.app/v1/messages \
   }' | jq
 ```
 
-Streaming is intentionally disabled in this first compatibility layer. Use `stream: false` or omit `stream`.
+Streaming for `/v1/messages` is not enabled yet. Use `/v1/chat/completions` for streaming.
+
+## Model Catalog Sync
+
+OneAI ships with a static registry and can also sync provider model catalogs. The first sync layer supports OpenAI and OpenRouter:
+
+```bash
+curl -s -X POST https://oneai-saas-api-production.up.railway.app/v1/models/sync \
+  -H "Authorization: Bearer $ONEAI_ADMIN_API_KEY" | jq
+```
+
+The sync result is merged ahead of the static registry and is visible through:
+
+```bash
+curl -s https://oneai-saas-api-production.up.railway.app/v1/models \
+  -H "Authorization: Bearer $ONEAI_API_KEY" | jq '.oneai.catalogSync'
+```

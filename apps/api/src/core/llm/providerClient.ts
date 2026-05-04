@@ -10,6 +10,14 @@ import { estimateLLMCostUSD } from "./pricing.js";
 
 const clients = new Map<string, OpenAI>();
 
+export function modelUsesMaxCompletionTokens(provider: string, model: string): boolean {
+  return usesMaxCompletionTokens(provider, model);
+}
+
+export function modelSupportsTemperature(provider: string, model: string): boolean {
+  return supportsTemperature(provider, model);
+}
+
 function readEnv(name: string | undefined): string | undefined {
   if (!name) return undefined;
   return process.env[name]?.trim() || undefined;
@@ -187,13 +195,8 @@ export function getLLMClient(config: LLMResolvedConfig) {
   return client;
 }
 
-async function generateLLMTextOnce(
-  request: LLMGenerateRequest
-): Promise<LLMGenerateResult> {
-  const start = Date.now();
-  const client = getLLMClient(request);
-
-  const completion = await client.chat.completions.create({
+export function buildChatCompletionParams(request: LLMGenerateRequest) {
+  return {
     model: request.model,
     messages: request.messages,
     ...(supportsTemperature(request.provider, request.model)
@@ -204,7 +207,16 @@ async function generateLLMTextOnce(
         ? { max_completion_tokens: request.maxTokens }
         : { max_tokens: request.maxTokens }
       : {}),
-  });
+  };
+}
+
+async function generateLLMTextOnce(
+  request: LLMGenerateRequest
+): Promise<LLMGenerateResult> {
+  const start = Date.now();
+  const client = getLLMClient(request);
+
+  const completion = await client.chat.completions.create(buildChatCompletionParams(request));
 
   const promptTokens = completion.usage?.prompt_tokens ?? 0;
   const completionTokens = completion.usage?.completion_tokens ?? 0;

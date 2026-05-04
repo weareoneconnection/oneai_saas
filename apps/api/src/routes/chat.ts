@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { requireApiKey, type AuthedRequest } from "../core/security/auth.js";
 import { rateLimitRedisTcp } from "../core/security/rateLimitRedis.js";
 import { prisma } from "../config/prisma.js";
-import { generateLLMText } from "../core/llm/providerClient.js";
+import { buildChatCompletionParams, generateLLMText, getLLMClient } from "../core/llm/providerClient.js";
 import { assertLLMConfigured } from "../core/llm/providerClient.js";
 import { assertLLMAllowed, assertLLMCostAllowed } from "../core/llm/policy.js";
 import { findModelProfile, listModelProfiles } from "../core/llm/modelRegistry.js";
@@ -167,16 +167,6 @@ router.post("/completions", async (req, res) => {
 
   try {
     const parsed = chatSchema.parse(req.body);
-    if (parsed.stream) {
-      return res.status(400).json({
-        error: {
-          message: "Streaming is not enabled on this endpoint yet. Use stream=false.",
-          type: "invalid_request_error",
-          code: "STREAMING_NOT_SUPPORTED",
-        },
-      });
-    }
-
     const { provider, model } = splitModelId(parsed.model);
     const config = resolveConfig({
       provider,
@@ -188,6 +178,65 @@ router.post("/completions", async (req, res) => {
     if (!(req as AuthedRequest).auth?.isAdmin) assertLLMAllowed(config);
     assertLLMCostAllowed(config, req.body);
     assertLLMConfigured(config);
+
+    if (parsed.stream) {
+      res.status(200);
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders?.();
+
+      const client = getLLMClient(config);
+      const stream = await client.chat.completions.create({
+        ...buildChatCompletionParams({
+          ...config,
+          messages: normalizeMessages(parsed.messages),
+        }),
+        stream: true,
+      } as any);
+
+      let modelName = model;
+      let fullText = "";
+      const created = Math.floor(Date.now() / 1000);
+
+      for await (const chunk of stream as any) {
+        modelName = chunk?.model || modelName;
+        const delta = chunk?.choices?.[0]?.delta || {};
+        const finishReason = chunk?.choices?.[0]?.finish_reason || null;
+        const content = delta?.content || "";
+        if (content) fullText += content;
+
+        res.write(`data: ${JSON.stringify({
+          id,
+          object: "chat.completion.chunk",
+          created,
+          model: modelName,
+          provider,
+          choices: [
+            {
+              index: 0,
+              delta,
+              finish_reason: finishReason,
+            },
+          ],
+        })}\n\n`);
+      }
+
+      res.write("data: [DONE]\n\n");
+      res.end();
+
+      await persistChatRequest({
+        req: req as AuthedRequest,
+        requestId: id,
+        provider,
+        model: modelName,
+        inputJson: req.body,
+        outputJson: { id, stream: true, text: fullText },
+        success: true,
+        latencyMs: Date.now() - start,
+      });
+      return;
+    }
 
     const result = await generateLLMText({
       ...config,
