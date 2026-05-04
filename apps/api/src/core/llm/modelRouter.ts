@@ -30,10 +30,34 @@ function defaultModelForProvider(provider: string): string | undefined {
       return DEFAULT_MODEL;
     case "openrouter":
       return process.env.OPENROUTER_MODEL || undefined;
+    case "anthropic":
+      return process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+    case "gemini":
+      return process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    case "xai":
+      return process.env.XAI_MODEL || "grok-4";
     case "deepseek":
       return process.env.DEEPSEEK_MODEL || "deepseek-chat";
     case "groq":
       return process.env.GROQ_MODEL || undefined;
+    case "mistral":
+      return process.env.MISTRAL_MODEL || "mistral-large-latest";
+    case "perplexity":
+      return process.env.PERPLEXITY_MODEL || "sonar-pro";
+    case "cohere":
+      return process.env.COHERE_MODEL || "command-a-03-2025";
+    case "together":
+      return process.env.TOGETHER_MODEL || "meta-llama/Llama-3.3-70B-Instruct-Turbo";
+    case "fireworks":
+      return process.env.FIREWORKS_MODEL || "accounts/fireworks/models/llama-v3p3-70b-instruct";
+    case "cerebras":
+      return process.env.CEREBRAS_MODEL || "llama-3.3-70b";
+    case "siliconflow":
+      return process.env.SILICONFLOW_MODEL || "Qwen/Qwen2.5-72B-Instruct";
+    case "zhipu":
+      return process.env.ZHIPU_MODEL || "glm-4.5";
+    case "minimax":
+      return process.env.MINIMAX_MODEL || "MiniMax-M1";
     case "qwen":
       return process.env.QWEN_MODEL || undefined;
     case "moonshot":

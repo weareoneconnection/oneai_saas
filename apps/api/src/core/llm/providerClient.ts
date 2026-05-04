@@ -19,10 +19,34 @@ function defaultApiKeyEnv(provider: string): string {
   switch (provider) {
     case "openrouter":
       return "OPENROUTER_API_KEY";
+    case "anthropic":
+      return "ANTHROPIC_API_KEY";
+    case "gemini":
+      return "GEMINI_API_KEY";
+    case "xai":
+      return "XAI_API_KEY";
     case "deepseek":
       return "DEEPSEEK_API_KEY";
     case "groq":
       return "GROQ_API_KEY";
+    case "mistral":
+      return "MISTRAL_API_KEY";
+    case "perplexity":
+      return "PERPLEXITY_API_KEY";
+    case "cohere":
+      return "COHERE_API_KEY";
+    case "together":
+      return "TOGETHER_API_KEY";
+    case "fireworks":
+      return "FIREWORKS_API_KEY";
+    case "cerebras":
+      return "CEREBRAS_API_KEY";
+    case "siliconflow":
+      return "SILICONFLOW_API_KEY";
+    case "zhipu":
+      return "ZHIPU_API_KEY";
+    case "minimax":
+      return "MINIMAX_API_KEY";
     case "qwen":
       return "QWEN_API_KEY";
     case "moonshot":
@@ -42,10 +66,34 @@ function defaultBaseURL(provider: string): string | undefined {
   switch (provider) {
     case "openrouter":
       return process.env.OPENROUTER_BASE_URL?.trim() || "https://openrouter.ai/api/v1";
+    case "anthropic":
+      return process.env.ANTHROPIC_BASE_URL?.trim() || "https://api.anthropic.com/v1";
+    case "gemini":
+      return process.env.GEMINI_BASE_URL?.trim() || "https://generativelanguage.googleapis.com/v1beta/openai";
+    case "xai":
+      return process.env.XAI_BASE_URL?.trim() || "https://api.x.ai/v1";
     case "deepseek":
       return process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com";
     case "groq":
       return process.env.GROQ_BASE_URL?.trim() || "https://api.groq.com/openai/v1";
+    case "mistral":
+      return process.env.MISTRAL_BASE_URL?.trim() || "https://api.mistral.ai/v1";
+    case "perplexity":
+      return process.env.PERPLEXITY_BASE_URL?.trim() || "https://api.perplexity.ai";
+    case "cohere":
+      return process.env.COHERE_BASE_URL?.trim() || "https://api.cohere.com/compatibility/v1";
+    case "together":
+      return process.env.TOGETHER_BASE_URL?.trim() || "https://api.together.xyz/v1";
+    case "fireworks":
+      return process.env.FIREWORKS_BASE_URL?.trim() || "https://api.fireworks.ai/inference/v1";
+    case "cerebras":
+      return process.env.CEREBRAS_BASE_URL?.trim() || "https://api.cerebras.ai/v1";
+    case "siliconflow":
+      return process.env.SILICONFLOW_BASE_URL?.trim() || "https://api.siliconflow.cn/v1";
+    case "zhipu":
+      return process.env.ZHIPU_BASE_URL?.trim() || "https://open.bigmodel.cn/api/paas/v4";
+    case "minimax":
+      return process.env.MINIMAX_BASE_URL?.trim() || "https://api.minimax.chat/v1";
     case "qwen":
       return process.env.QWEN_BASE_URL?.trim() || undefined;
     case "moonshot":

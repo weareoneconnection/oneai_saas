@@ -33,6 +33,10 @@ return current
 `;
 
 async function hit(key: string, windowMs: number) {
+  if (!redis) {
+    return { count: 0, retryAfterSec: 1 };
+  }
+
   const count = (await redis.eval(INCR_EXPIRE_LUA, 1, key, String(windowMs))) as number;
   const ttl = await redis.pttl(key); // 剩余窗口时间（ms）
   const retryAfterSec = Math.max(1, Math.ceil(ttl / 1000));
