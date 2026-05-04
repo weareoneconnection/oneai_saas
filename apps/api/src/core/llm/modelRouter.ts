@@ -31,17 +31,17 @@ function defaultModelForProvider(provider: string): string | undefined {
     case "openrouter":
       return process.env.OPENROUTER_MODEL || undefined;
     case "anthropic":
-      return process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+      return process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514";
     case "gemini":
-      return process.env.GEMINI_MODEL || "gemini-2.5-flash";
+      return process.env.GEMINI_MODEL || "gemini-3-pro-preview";
     case "xai":
-      return process.env.XAI_MODEL || "grok-4";
+      return process.env.XAI_MODEL || "grok-4.20";
     case "deepseek":
       return process.env.DEEPSEEK_MODEL || "deepseek-chat";
     case "groq":
       return process.env.GROQ_MODEL || undefined;
     case "mistral":
-      return process.env.MISTRAL_MODEL || "mistral-large-latest";
+      return process.env.MISTRAL_MODEL || "mistral-large-2512";
     case "perplexity":
       return process.env.PERPLEXITY_MODEL || "sonar-pro";
     case "cohere":
