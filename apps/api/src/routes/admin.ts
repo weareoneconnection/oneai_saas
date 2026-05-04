@@ -44,6 +44,10 @@ router.get("/keys", requireAdminKey, async (req, res) => {
       revokedAt: true,
       lastUsedAt: true,
       status: true,
+      rateLimitRpm: true,
+      monthlyBudgetUsd: true,
+      scopes: true,
+      allowedIps: true,
     } as any,
   });
 
@@ -53,6 +57,11 @@ router.get("/keys", requireAdminKey, async (req, res) => {
 router.post("/keys", requireAdminKey, async (req, res) => {
   const userEmail = String(req.body?.userEmail || "").trim().toLowerCase();
   const name = (req.body?.name ? String(req.body.name) : "default").slice(0, 60);
+  const rateLimitRpmRaw = req.body?.rateLimitRpm == null ? undefined : Number(req.body.rateLimitRpm);
+  const monthlyBudgetUsdRaw = req.body?.monthlyBudgetUsd == null ? undefined : Number(req.body.monthlyBudgetUsd);
+  const scopes = Array.isArray(req.body?.scopes)
+    ? req.body.scopes.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 20)
+    : [];
   if (!userEmail) return res.status(400).json({ success: false, error: "userEmail required" });
 
   const org = await getOrCreateOrgForUserEmail(userEmail);
@@ -68,6 +77,9 @@ router.post("/keys", requireAdminKey, async (req, res) => {
       prefix,
       keyHash,
       status: "ACTIVE", // ✅ 不依赖 enum
+      ...(Number.isFinite(rateLimitRpmRaw) && Number(rateLimitRpmRaw) > 0 ? { rateLimitRpm: Number(rateLimitRpmRaw) } : {}),
+      ...(Number.isFinite(monthlyBudgetUsdRaw) && Number(monthlyBudgetUsdRaw) > 0 ? { monthlyBudgetUsd: Number(monthlyBudgetUsdRaw) } : {}),
+      ...(scopes.length ? { scopes } : {}),
       org: { connect: { id: org.id } },
     } as any,
     select: {
@@ -127,21 +139,34 @@ router.get("/usage", requireAdminKey, async (req, res) => {
   const total = await prisma.request.aggregate({
     where,
     _count: { _all: true },
-    _sum: { totalTokens: true, estimatedCostUsd: true },
+    _sum: { promptTokens: true, completionTokens: true, totalTokens: true, estimatedCostUsd: true },
+    _avg: { latencyMs: true },
   });
 
-  const [byModelRaw, byTaskRaw] = await Promise.all([
+  const errors = await prisma.request.aggregate({
+    where: { ...where, success: false },
+    _count: { _all: true },
+  });
+
+  const [byModelRaw, byTaskRaw, byProviderRaw] = await Promise.all([
     prisma.request.groupBy({
       by: ["provider", "model"],
       where,
-      _count: { _all: true },
+      _count: { _all: true, success: true },
       _sum: { totalTokens: true, estimatedCostUsd: true },
       orderBy: { _count: { id: "desc" } },
     } as any),
     prisma.request.groupBy({
       by: ["task"],
       where,
-      _count: { _all: true },
+      _count: { _all: true, success: true },
+      _sum: { totalTokens: true, estimatedCostUsd: true },
+      orderBy: { _count: { id: "desc" } },
+    } as any),
+    prisma.request.groupBy({
+      by: ["provider"],
+      where,
+      _count: { _all: true, success: true },
       _sum: { totalTokens: true, estimatedCostUsd: true },
       orderBy: { _count: { id: "desc" } },
     } as any),
@@ -175,26 +200,51 @@ router.get("/usage", requireAdminKey, async (req, res) => {
       task: true,
       provider: true,
       model: true,
+      success: true,
+      error: true,
+      latencyMs: true,
       totalTokens: true,
       estimatedCostUsd: true,
       createdAt: true,
     },
   });
 
+  const totalRequests = total._count._all || 0;
+  const errorCount = errors._count._all || 0;
   const data = {
-    totalRequests: total._count._all || 0,
+    totalRequests,
+    errorCount,
+    errorRatePct: totalRequests ? Number(((errorCount / totalRequests) * 100).toFixed(2)) : 0,
+    avgLatencyMs: total._avg.latencyMs ? Math.round(Number(total._avg.latencyMs)) : null,
+    promptTokens: total._sum.promptTokens || 0,
+    completionTokens: total._sum.completionTokens || 0,
     totalTokens: total._sum.totalTokens || 0,
     totalCostUSD: Number(total._sum.estimatedCostUsd || 0),
+    byProvider: byProviderRaw.map((m: any) => {
+      const requests = m._count._all || 0;
+      const success = m._count.success || 0;
+      const errorCount = requests - success;
+      return {
+        provider: m.provider || "unknown",
+        requests,
+        errorCount,
+        errorRatePct: requests ? Number(((errorCount / requests) * 100).toFixed(2)) : 0,
+        tokens: m._sum.totalTokens || 0,
+        costUSD: Number(m._sum.estimatedCostUsd || 0),
+      };
+    }),
     byModel: byModelRaw.map((m: any) => ({
       provider: m.provider || "unknown",
       model: m.model || "(unknown)",
       requests: m._count._all,
+      errorCount: m._count._all - (m._count.success || 0),
       tokens: m._sum.totalTokens || 0,
       costUSD: Number(m._sum.estimatedCostUsd || 0),
     })),
     byTask: byTaskRaw.map((m: any) => ({
       task: m.task || "(unknown)",
       requests: m._count._all,
+      errorCount: m._count._all - (m._count.success || 0),
       tokens: m._sum.totalTokens || 0,
       costUSD: Number(m._sum.estimatedCostUsd || 0),
     })),
@@ -214,6 +264,9 @@ router.get("/usage", requireAdminKey, async (req, res) => {
       type: r.task,
       provider: r.provider,
       model: r.model,
+      success: r.success,
+      error: r.error,
+      latencyMs: r.latencyMs,
       tokens: r.totalTokens || 0,
       costUSD: Number(r.estimatedCostUsd || 0),
       createdAt: r.createdAt.toISOString(),

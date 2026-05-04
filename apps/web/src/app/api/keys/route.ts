@@ -143,8 +143,16 @@ export async function POST(req: Request) {
   const e = env();
   if (!e.ok) return fail({ error: e.error, hint: e.hint, base: e.base }, e.status);
 
-  const body = (await req.json().catch(() => ({}))) as { name?: string };
+  const body = (await req.json().catch(() => ({}))) as {
+    name?: string;
+    rateLimitRpm?: number | string | null;
+    monthlyBudgetUsd?: number | string | null;
+    scopes?: string[];
+  };
   const name = (body?.name || "default").toString().trim().slice(0, 64) || "default";
+  const rateLimitRpm = body.rateLimitRpm == null || body.rateLimitRpm === "" ? undefined : Number(body.rateLimitRpm);
+  const monthlyBudgetUsd = body.monthlyBudgetUsd == null || body.monthlyBudgetUsd === "" ? undefined : Number(body.monthlyBudgetUsd);
+  const scopes = Array.isArray(body.scopes) ? body.scopes : [];
 
   const url = `${e.base}/v1/admin/keys`;
 
@@ -155,7 +163,13 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
         "x-admin-key": e.key,
       },
-      body: JSON.stringify({ userEmail: auth.email, name }),
+      body: JSON.stringify({
+        userEmail: auth.email,
+        name,
+        ...(Number.isFinite(rateLimitRpm) ? { rateLimitRpm } : {}),
+        ...(Number.isFinite(monthlyBudgetUsd) ? { monthlyBudgetUsd } : {}),
+        ...(scopes.length ? { scopes } : {}),
+      }),
       timeoutMs: 10_000,
     });
 

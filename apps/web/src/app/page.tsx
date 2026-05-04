@@ -1,7 +1,7 @@
 // apps/web/src/app/page.tsx
 import Link from "next/link";
 
-const code = `curl https://api.oneai.dev/v1/generate \\
+const code = `curl https://oneai-saas-api-production.up.railway.app/v1/generate \\
   -H "content-type: application/json" \\
   -H "x-api-key: $ONEAI_API_KEY" \\
   -d '{
@@ -13,6 +13,17 @@ const code = `curl https://api.oneai.dev/v1/generate \\
     "options": {
       "llm": { "mode": "cheap", "maxCostUsd": 0.03 }
     }
+  }'`;
+
+const chatCode = `curl https://oneai-saas-api-production.up.railway.app/v1/chat/completions \\
+  -H "content-type: application/json" \\
+  -H "Authorization: Bearer $ONEAI_API_KEY" \\
+  -d '{
+    "model": "openai:gpt-5.2",
+    "messages": [
+      { "role": "user", "content": "Explain OneAI in one sentence." }
+    ],
+    "max_completion_tokens": 300
   }'`;
 
 function Header() {
@@ -90,12 +101,12 @@ export default function HomePage() {
               OneAI only coordinates intelligence. OneClaw and bots execute.
             </div>
             <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight md:text-6xl">
-              OneAI API is the full-model intelligent brain for production AI.
+              Full-model AI infrastructure with task intelligence built in.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-black/65 md:text-lg">
-              Route tasks across models, enforce cost limits, return structured
-              outputs, record usage, and expose commercial API controls without
-              turning OneAI into an execution layer.
+              OneAI gives developers one API for model routing, structured
+              workflows, cost controls, streaming chat, model health checks,
+              usage, and billing. Execution stays with OneClaw and bots.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -114,19 +125,24 @@ export default function HomePage() {
             </div>
 
             <div className="mt-12 grid gap-4 sm:grid-cols-3">
-              <Metric value="Multi-model" label="OpenAI, DeepSeek, Groq, Qwen, Moonshot, Doubao, OpenRouter, custom" />
-              <Metric value="Cost-aware" label="Mode routing, max cost guard, fallback, pricing telemetry" />
-              <Metric value="Commercial" label="API keys, usage, billing, request IDs, idempotency" />
+              <Metric value="Full-model" label="OpenAI GPT-5, Anthropic, Gemini, xAI, DeepSeek, Qwen, Moonshot, Doubao, OpenRouter" />
+              <Metric value="Cost-aware" label="Mode routing, maxCostUsd, pricing coverage, model health, fallback telemetry" />
+              <Metric value="Commercial" label="API keys, plans, usage, billing, request IDs, idempotency, docs" />
             </div>
           </div>
 
           <div className="min-w-0 rounded-lg border border-black/10 bg-[#0f1115] p-4 text-white">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="text-sm font-semibold">Generate API</div>
-              <div className="text-xs text-white/45">structured JSON</div>
+              <div className="text-sm font-semibold">Two commercial APIs</div>
+              <div className="text-xs text-white/45">task + chat</div>
             </div>
-            <pre className="mt-4 overflow-auto text-xs leading-relaxed text-white/75">
+            <div className="mt-4 text-xs font-semibold text-white/70">Task intelligence</div>
+            <pre className="mt-2 overflow-auto text-xs leading-relaxed text-white/75">
               <code>{code}</code>
+            </pre>
+            <div className="mt-5 border-t border-white/10 pt-4 text-xs font-semibold text-white/70">Model gateway</div>
+            <pre className="mt-2 overflow-auto text-xs leading-relaxed text-white/75">
+              <code>{chatCode}</code>
             </pre>
           </div>
         </div>
@@ -138,27 +154,55 @@ export default function HomePage() {
             Infrastructure scope
           </div>
           <h2 className="mt-2 text-2xl font-bold tracking-tight md:text-4xl">
-            Keep OneAI as the brain. Make the brain excellent.
+            One platform, two reasons to buy.
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-black/60 md:text-base">
-            The web now sells the API, documents the platform, and gives
-            customers a console for keys, usage, billing, tasks, and models.
+            A normal model gateway gives access to models. OneAI adds
+            productized task intelligence, cost-aware routing, and a SaaS
+            console that customers can operate.
           </p>
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <Feature
-            title="Unified model routing"
-            desc="Choose cheap, fast, balanced, premium, or explicit provider/model per request."
+            title="OpenAI-compatible gateway"
+            desc="Use /v1/chat/completions, streaming, Bearer auth, provider:model ids, model catalog sync, and health checks."
           />
           <Feature
-            title="Structured task registry"
-            desc="Expose task types such as agent_plan, mission_os, and waoc_chat as productized API capabilities."
+            title="Structured task intelligence"
+            desc="Expose agent_plan, mission_os, waoc_chat, and OneClaw planning as productized API capabilities."
           />
           <Feature
-            title="Usage and billing foundation"
-            desc="Track requestId, tokens, estimated cost, latency, model, provider, and idempotency behavior."
+            title="Commercial controls"
+            desc="Track requestId, tokens, cost, latency, model, provider, API key usage, plan gates, and billing state."
           />
+        </div>
+      </section>
+
+      <section className="border-t border-black/10 bg-black/[0.02]">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
+          <div className="grid gap-6 md:grid-cols-[0.9fr_1.1fr]">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wide text-black/45">
+                Moat
+              </div>
+              <h2 className="mt-2 text-2xl font-bold tracking-tight md:text-4xl">
+                Gateway compatibility plus OneAI task intelligence.
+              </h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                "Standard chat completions for easy migration",
+                "Task registry for structured business outputs",
+                "Model health and catalog sync for operations",
+                "Usage, cost, and plan policy for API revenue",
+              ].map((item) => (
+                <div key={item} className="rounded-lg border border-black/10 bg-white p-4 text-sm font-semibold text-black/75">
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
     </main>

@@ -43,7 +43,8 @@ export default function SecurityPage() {
           <p className="mt-5 text-base leading-relaxed text-black/65">
             OneAI is designed as API infrastructure: hashed API keys, scoped
             access, usage logs, billing controls, request IDs, and model routing
-            policies.
+            policies. It coordinates intelligence; OneClaw and bots handle
+            execution.
           </p>
         </div>
 
@@ -60,15 +61,39 @@ export default function SecurityPage() {
             title="Provider policy"
             desc="Use provider/model allowlists, routing modes, fallbacks, and maxCostUsd to keep production calls controlled."
           />
+          <Item
+            title="Model readiness"
+            desc="Model registry, catalog sync, pricing coverage, and one-model-at-a-time health checks help operators verify providers before customer traffic."
+          />
+          <Item
+            title="Request observability"
+            desc="Every commercial call can be tied back to requestId, provider, model, usage, latency, error state, and API key."
+          />
+          <Item
+            title="Execution boundary"
+            desc="OneAI returns plans, structured decisions, and coordination outputs. Direct execution stays outside the OneAI API boundary."
+          />
         </div>
 
-        <div className="mt-10 rounded-lg border border-black/10 bg-black/[0.02] p-6">
-          <div className="text-sm font-bold">Operational recommendation</div>
-          <p className="mt-2 text-sm leading-relaxed text-black/60">
-            Keep secrets server-side, pass requests through your backend, set
-            idempotency keys for retries, and monitor usage daily before
-            increasing customer limits.
-          </p>
+        <div className="mt-10 grid gap-4 md:grid-cols-[1fr_1fr]">
+          <div className="rounded-lg border border-black/10 bg-black/[0.02] p-6">
+            <div className="text-sm font-bold">Operational recommendation</div>
+            <p className="mt-2 text-sm leading-relaxed text-black/60">
+              Keep secrets server-side, pass requests through your backend, set
+              idempotency keys for retries, and monitor usage daily before
+              increasing customer limits.
+            </p>
+          </div>
+          <div className="rounded-lg border border-black/10 bg-black/[0.02] p-6">
+            <div className="text-sm font-bold">Production checklist</div>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-black/60">
+              <li>Separate prod and dev API keys</li>
+              <li>Set monthly budgets and maxCostUsd</li>
+              <li>Enable Stripe billing before paid traffic</li>
+              <li>Review Usage for errors and cost spikes</li>
+              <li>Health-check new providers before exposing them</li>
+            </ul>
+          </div>
         </div>
       </section>
     </main>

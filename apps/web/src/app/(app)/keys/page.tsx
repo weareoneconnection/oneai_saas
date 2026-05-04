@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { Select } from "@/components/ui/Select";
 
 type ApiKeyRow = {
   id: string;
@@ -13,6 +15,11 @@ type ApiKeyRow = {
   createdAt: string;
   revokedAt: string | null;
   lastUsedAt: string | null;
+  status?: string;
+  rateLimitRpm?: number | null;
+  monthlyBudgetUsd?: number | null;
+  scopes?: string[];
+  allowedIps?: string[];
 };
 
 function fmtTime(iso?: string | null) {
@@ -32,17 +39,47 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
+function envOf(name?: string | null) {
+  const s = String(name || "").toLowerCase();
+  if (s.includes("prod") || s.includes("live")) return "prod";
+  if (s.includes("dev") || s.includes("test") || s.includes("local")) return "dev";
+  return "unlabeled";
+}
+
+function fmtUSD(n?: number | null) {
+  if (!n) return "—";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+}
+
 export default function KeysPage() {
   const [rows, setRows] = useState<ApiKeyRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const [newName, setNewName] = useState("default");
+  const [newEnv, setNewEnv] = useState("prod");
+  const [newRateLimit, setNewRateLimit] = useState("120");
+  const [newBudget, setNewBudget] = useState("100");
+  const [newScopes, setNewScopes] = useState("generate,chat,models");
   const [newKeyPlain, setNewKeyPlain] = useState<string | null>(null);
   const [toast, setToast] = useState<string>("");
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("active");
+  const [envFilter, setEnvFilter] = useState("all");
 
   const activeRows = useMemo(() => rows.filter((r) => !r.revokedAt), [rows]);
   const revokedRows = useMemo(() => rows.filter((r) => !!r.revokedAt), [rows]);
+  const prodRows = useMemo(() => rows.filter((r) => envOf(r.name) === "prod" && !r.revokedAt), [rows]);
+  const filteredRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (statusFilter === "active" && row.revokedAt) return false;
+      if (statusFilter === "revoked" && !row.revokedAt) return false;
+      if (envFilter !== "all" && envOf(row.name) !== envFilter) return false;
+      if (q && !`${row.name || ""} ${row.prefix} ${row.id}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [envFilter, query, rows, statusFilter]);
 
   async function load() {
     setLoading(true);
@@ -74,7 +111,12 @@ export default function KeysPage() {
       const r = await fetch("/api/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim() }),
+        body: JSON.stringify({
+          name: `${newEnv}_${newName.trim()}`.replace(/_{2,}/g, "_"),
+          rateLimitRpm: newRateLimit ? Number(newRateLimit) : undefined,
+          monthlyBudgetUsd: newBudget ? Number(newBudget) : undefined,
+          scopes: newScopes.split(",").map((x) => x.trim()).filter(Boolean),
+        }),
       });
 
       const text = await r.text();
@@ -131,7 +173,7 @@ export default function KeysPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge>Console</Badge>
             <Badge>Keys</Badge>
-            <span className="text-xs text-black/45">Use via header: <b className="text-black">x-api-key</b></span>
+            <span className="text-xs text-black/45">Use via headers: <b className="text-black">x-api-key</b> or <b className="text-black">Authorization: Bearer</b></span>
           </div>
           <h1 className="mt-3 text-2xl font-extrabold text-black">API Keys</h1>
           <p className="mt-1 text-sm text-black/55">
@@ -149,6 +191,7 @@ export default function KeysPage() {
       {/* KPIs */}
       <div className="grid gap-3 md:grid-cols-3">
         <Stat label="Active keys" value={`${activeRows.length}`} sub="Not revoked" />
+        <Stat label="Production keys" value={`${prodRows.length}`} sub="Named prod/live" />
         <Stat label="Revoked keys" value={`${revokedRows.length}`} sub="Disabled permanently" />
         <Stat label="Total keys" value={`${rows.length}`} sub="Across environments" />
       </div>
@@ -166,17 +209,39 @@ export default function KeysPage() {
             </div>
           ) : null}
 
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="md:col-span-2">
+          <div className="grid gap-3 md:grid-cols-4">
+            <div>
+              <div className="mb-1 text-xs text-black/50">Environment</div>
+              <Select value={newEnv} onChange={(e) => setNewEnv(e.target.value)}>
+                <option value="prod">prod</option>
+                <option value="dev">dev</option>
+                <option value="test">test</option>
+              </Select>
+            </div>
+            <div>
               <div className="mb-1 text-xs text-black/50">Key name</div>
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="default / prod_web / dev_cli ..."
+                placeholder="web / api / cli ..."
+                className="border-black/10 bg-white text-black placeholder:text-black/35"
               />
             </div>
-
-            <div className="flex items-end gap-2">
+            <div>
+              <div className="mb-1 text-xs text-black/50">Rate limit RPM</div>
+              <Input value={newRateLimit} onChange={(e) => setNewRateLimit(e.target.value)} placeholder="120" className="border-black/10 bg-white text-black placeholder:text-black/35" />
+            </div>
+            <div>
+              <div className="mb-1 text-xs text-black/50">Monthly budget USD</div>
+              <Input value={newBudget} onChange={(e) => setNewBudget(e.target.value)} placeholder="100" className="border-black/10 bg-white text-black placeholder:text-black/35" />
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-[1fr_180px]">
+            <div>
+              <div className="mb-1 text-xs text-black/50">Scopes</div>
+              <Input value={newScopes} onChange={(e) => setNewScopes(e.target.value)} placeholder="generate,chat,models" className="border-black/10 bg-white text-black placeholder:text-black/35" />
+            </div>
+            <div className="flex items-end">
               <Button onClick={createKey} disabled={creating} className="w-full">
                 {creating ? "Creating..." : "Create key"}
               </Button>
@@ -205,6 +270,14 @@ export default function KeysPage() {
               <div className="mt-3 rounded-xl border border-black/10 bg-white p-3">
                 <code className="break-all text-sm text-black/80">{newKeyPlain}</code>
               </div>
+              <div className="mt-3 rounded-xl border border-black/10 bg-[#0f1115] p-3">
+                <pre className="overflow-auto text-xs leading-relaxed text-white/75">
+                  <code>{`curl -s https://oneai-saas-api-production.up.railway.app/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${newKeyPlain}" \\
+  -d '{"model":"openai:gpt-5.2","messages":[{"role":"user","content":"Say hello from OneAI."}],"max_completion_tokens":80}' | jq`}</code>
+                </pre>
+              </div>
             </div>
           ) : null}
         </CardContent>
@@ -217,20 +290,38 @@ export default function KeysPage() {
           <CardDescription>Manage access and track last usage.</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 grid gap-3 md:grid-cols-[1fr_160px_160px]">
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search key name, prefix, id..." className="border-black/10 bg-white text-black placeholder:text-black/35" />
+            <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All status</option>
+              <option value="active">Active</option>
+              <option value="revoked">Revoked</option>
+            </Select>
+            <Select value={envFilter} onChange={(e) => setEnvFilter(e.target.value)}>
+              <option value="all">All env</option>
+              <option value="prod">prod/live</option>
+              <option value="dev">dev/test</option>
+              <option value="unlabeled">unlabeled</option>
+            </Select>
+          </div>
+
           <div className="overflow-hidden rounded-2xl border border-black/10 bg-white/60">
             <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
-              <div className="col-span-4">Name</div>
-              <div className="col-span-2">Status</div>
+              <div className="col-span-3">Name</div>
+              <div className="col-span-1">Env</div>
+              <div className="col-span-1">Status</div>
               <div className="col-span-2">Prefix</div>
-              <div className="col-span-2">Created</div>
+              <div className="col-span-2 text-right">Policy</div>
               <div className="col-span-2">Last used</div>
+              <div className="col-span-1 text-right">Action</div>
             </div>
 
-            {rows.length === 0 ? (
+            {filteredRows.length === 0 ? (
               <div className="p-4 text-sm text-black/55">No keys yet. Create one above.</div>
             ) : (
-              rows.map((r) => {
+              filteredRows.map((r) => {
                 const revoked = !!r.revokedAt;
+                const env = envOf(r.name);
                 return (
                   <div
                     key={r.id}
@@ -240,12 +331,19 @@ export default function KeysPage() {
                       revoked ? "opacity-60" : "",
                     ].join(" ")}
                   >
-                    <div className="col-span-4">
+                    <div className="col-span-3">
                       <div className="font-medium text-black">{r.name || "(no name)"}</div>
                       <div className="text-xs text-black/45">id: {r.id}</div>
+                      {r.scopes?.length ? <div className="mt-1 text-xs text-black/45">scopes: {r.scopes.join(", ")}</div> : null}
                     </div>
 
-                    <div className="col-span-2 flex items-center">
+                    <div className="col-span-1 flex items-center">
+                      <span className={["rounded-full px-2 py-0.5 text-xs font-semibold", env === "prod" ? "bg-black text-white" : "bg-black/10 text-black/60"].join(" ")}>
+                        {env}
+                      </span>
+                    </div>
+
+                    <div className="col-span-1 flex items-center">
                       {revoked ? (
                         <span className="inline-flex items-center rounded-full bg-black/10 px-2 py-0.5 text-xs font-medium text-black">
                           Revoked
@@ -263,9 +361,14 @@ export default function KeysPage() {
                       </code>
                     </div>
 
-                    <div className="col-span-2 flex items-center text-black/70">{fmtTime(r.createdAt)}</div>
-                    <div className="col-span-2 flex items-center justify-between gap-2">
+                    <div className="col-span-2 text-right text-xs text-black/60">
+                      <div>{r.rateLimitRpm ? `${r.rateLimitRpm} RPM` : "Default RPM"}</div>
+                      <div>{r.monthlyBudgetUsd ? `${fmtUSD(r.monthlyBudgetUsd)} budget` : "Plan budget"}</div>
+                    </div>
+                    <div className="col-span-2 flex items-center text-black/70">
                       <span className="text-black/70">{fmtTime(r.lastUsedAt)}</span>
+                    </div>
+                    <div className="col-span-1 flex items-center justify-end">
                       {!revoked ? (
                         <Button variant="secondary" size="sm" onClick={() => revoke(r.id)}>
                           Revoke
@@ -279,7 +382,7 @@ export default function KeysPage() {
           </div>
 
           <div className="mt-3 text-xs text-black/45">
-            Tip: name keys by <b>env + app</b> to enable key-level analytics later (prod_web / prod_api / dev_cli).
+            Tip: keep keys server-side. Use <Link href="/docs/quickstart" className="font-semibold text-black hover:underline">Quickstart</Link> and <Link href="/usage" className="font-semibold text-black hover:underline">Usage</Link> to validate production traffic.
           </div>
         </CardContent>
       </Card>

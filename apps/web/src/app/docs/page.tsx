@@ -5,6 +5,8 @@ const quick = [
   { title: "Quickstart", desc: "Make the first /v1/generate call.", href: "/docs/quickstart" },
   { title: "API Basics", desc: "Auth, request shape, response metadata.", href: "/docs/api" },
   { title: "Generate Reference", desc: "Task input, options, usage, trace.", href: "/docs/reference/generate" },
+  { title: "Chat Completions", desc: "OpenAI-compatible model gateway calls.", href: "/docs/reference/chat" },
+  { title: "Models", desc: "Catalog, health checks, pricing coverage.", href: "/docs/reference/models" },
   { title: "Errors", desc: "Retryable failures and customer-safe errors.", href: "/docs/reference/errors" },
   { title: "Rate Limits", desc: "API key policy and production limits.", href: "/docs/reference/rate-limits" },
   { title: "Schemas", desc: "Structured output contracts.", href: "/docs/reference/schemas" },
@@ -42,8 +44,9 @@ export default function DocsHomePage() {
           </h1>
           <p className="mt-5 text-base leading-relaxed text-black/65">
             OneAI is the model-routing and structured-intelligence layer.
-            Execution stays with OneClaw and bots; the API returns plans,
-            missions, chat decisions, usage metadata, and request IDs.
+            Use /v1/generate for task intelligence, /v1/chat/completions
+            for standard model gateway calls, and /v1/models for catalog
+            discovery.
           </p>
         </div>
 
@@ -65,7 +68,7 @@ export default function DocsHomePage() {
         <div className="mt-10 rounded-lg border border-black/10 bg-[#0f1115] p-5 text-white">
           <div className="text-sm font-semibold">Production request</div>
           <pre className="mt-4 overflow-auto text-xs leading-relaxed text-white/75">
-            <code>{`curl http://localhost:4000/v1/generate \\
+            <code>{`curl https://oneai-saas-api-production.up.railway.app/v1/generate \\
   -H "content-type: application/json" \\
   -H "x-api-key: $ONEAI_API_KEY" \\
   -H "Idempotency-Key: launch-plan-001" \\

@@ -17,6 +17,13 @@ type ModelRow = {
   configured?: boolean;
   available?: boolean;
   hasPricing?: boolean;
+  health?: {
+    ok: boolean;
+    testedAt: string;
+    latencyMs?: number;
+    error?: string;
+    responseModel?: string;
+  } | null;
 };
 
 type ModelsResponse = {
@@ -80,6 +87,7 @@ export default function ModelsPage() {
   const [catalogSync, setCatalogSync] = useState<ReturnType<typeof extractPayload>["catalogSync"]>(null);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [testingId, setTestingId] = useState("");
   const [err, setErr] = useState("");
   const [providerFilter, setProviderFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -119,6 +127,30 @@ export default function ModelsPage() {
     }
   }
 
+  async function testModel(row: ModelRow) {
+    const id = `${row.provider}:${row.model}`;
+    setTestingId(id);
+    setErr("");
+    try {
+      const res = await fetch("/api/models", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider: row.provider, model: row.model }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || `HTTP ${res.status}`);
+      setModels((current) =>
+        current.map((item) =>
+          `${item.provider}:${item.model}` === id ? { ...item, health: json.data } : item
+        )
+      );
+    } catch (e: any) {
+      setErr(e?.message || "Failed to test model");
+    } finally {
+      setTestingId("");
+    }
+  }
+
   useEffect(() => {
     load();
   }, []);
@@ -146,6 +178,7 @@ export default function ModelsPage() {
 
   const configuredModelCount = models.filter((m) => m.configured).length;
   const pricedModelCount = models.filter((m) => m.hasPricing).length;
+  const testedOkCount = models.filter((m) => m.health?.ok).length;
 
   return (
     <div className="space-y-6">
@@ -179,8 +212,8 @@ export default function ModelsPage() {
           <div className="mt-2 text-lg font-semibold">{configuredModelCount}</div>
         </div>
         <div className="rounded-lg border border-black/10 p-4">
-          <div className="text-xs text-black/50">Priced models</div>
-          <div className="mt-2 text-lg font-semibold">{pricedModelCount}</div>
+          <div className="text-xs text-black/50">Priced / tested</div>
+          <div className="mt-2 text-lg font-semibold">{pricedModelCount} / {testedOkCount}</div>
         </div>
       </div>
 
@@ -221,7 +254,18 @@ export default function ModelsPage() {
               <div className="col-span-2 text-black/70">{row.provider}</div>
               <div className="col-span-4 min-w-0"><code className="break-all text-xs text-black/80">{row.model}</code>{row.contextTokens ? <div className="mt-1 text-xs text-black/40">ctx {fmtNum(row.contextTokens)}</div> : null}</div>
               <div className="col-span-2 text-black/60">{(row.modes || []).join(", ") || "-"}</div>
-              <div className="col-span-1 text-right"><span className={`rounded-full border px-2 py-0.5 text-xs ${pillClass(row.configured)}`}>{row.configured ? "Ready" : "No key"}</span></div>
+              <div className="col-span-1 text-right">
+                <button
+                  type="button"
+                  onClick={() => testModel(row)}
+                  disabled={!row.configured || testingId === `${row.provider}:${row.model}`}
+                  title={row.health?.error || (row.health?.testedAt ? `Last tested ${new Date(row.health.testedAt).toLocaleString()}` : "Run a lightweight health check")}
+                  className={`rounded-full border px-2 py-0.5 text-xs disabled:cursor-not-allowed ${pillClass(row.configured && row.health?.ok !== false)}`}
+                >
+                  {testingId === `${row.provider}:${row.model}` ? "Test..." : row.health?.ok ? "Live" : row.configured ? "Ready" : "No key"}
+                </button>
+                {row.health?.latencyMs ? <div className="mt-1 text-xs text-black/35">{row.health.latencyMs}ms</div> : null}
+              </div>
               <div className="col-span-1 text-right">{yesNo(row.supportsJson)}</div>
               <div className="col-span-1 text-right">{yesNo(row.supportsTools)}</div>
               <div className="col-span-1 text-right">{yesNo(row.hasPricing)}</div>

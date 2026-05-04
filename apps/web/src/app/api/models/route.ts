@@ -178,3 +178,29 @@ export async function POST() {
     status: upstream.status,
   });
 }
+
+export async function PUT(req: Request) {
+  const key = registryKey()[0];
+  if (!key) {
+    return NextResponse.json(
+      { success: false, error: "No admin API key configured for model health checks." },
+      { status: 500 }
+    );
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const upstream = await fetch(`${apiBase()}/v1/models/health`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${key}`,
+      accept: "application/json",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  const json = await readJson(upstream).catch(() => null);
+  return NextResponse.json(json || { success: false, error: "bad_response" }, {
+    status: upstream.status,
+  });
+}

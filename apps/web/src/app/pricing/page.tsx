@@ -30,18 +30,30 @@ const plans = [
       "Premium mode, debug trace, model registry",
     ],
   },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    desc: "For production teams that need custom providers, higher limits, private policy, and support.",
+    features: [
+      "Custom request volume",
+      "Custom model-cost guard",
+      "Dedicated provider policy",
+      "Custom models, health checks, support",
+    ],
+  },
 ];
 
 const matrix = [
-  ["Monthly requests", "1,000", "50,000", "250,000"],
-  ["Monthly model-cost guard", "$10", "$500", "$2,500"],
-  ["API key rate limit", "30 RPM", "120 RPM", "600 RPM"],
-  ["Per-request maxCostUsd", "$0.05", "$1", "$5"],
-  ["Routing modes", "cheap, balanced", "cheap, balanced, fast, auto", "all modes"],
-  ["Task tiers", "free", "free + pro", "free + pro + team"],
-  ["Debug trace", "locked", "locked", "enabled"],
-  ["Explicit provider/model", "locked", "locked", "enabled"],
-  ["Model registry", "locked", "locked", "enabled"],
+  ["Monthly requests", "1,000", "50,000", "250,000", "Custom"],
+  ["Monthly model-cost guard", "$10", "$500", "$2,500", "Custom"],
+  ["API key rate limit", "30 RPM", "120 RPM", "600 RPM", "Custom"],
+  ["Per-request maxCostUsd", "$0.05", "$1", "$5", "Custom"],
+  ["Routing modes", "cheap, balanced", "cheap, balanced, fast, auto", "all modes", "all modes"],
+  ["Task tiers", "free", "free + pro", "free + pro + team", "all tiers"],
+  ["Debug trace", "locked", "locked", "enabled", "enabled"],
+  ["Explicit provider/model", "locked", "locked", "enabled", "enabled"],
+  ["Model registry and health", "locked", "locked", "enabled", "enabled"],
+  ["Custom provider policy", "locked", "locked", "limited", "enabled"],
 ];
 
 function Header() {
@@ -93,7 +105,7 @@ export default function PricingPage() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-4">
           {plans.map((plan) => (
             <div
               key={plan.name}
@@ -122,7 +134,7 @@ export default function PricingPage() {
                 ))}
               </div>
               <Link
-                href={plan.name === "Free" ? "/keys" : "/billing"}
+                href={plan.name === "Free" ? "/keys" : plan.name === "Enterprise" ? "/docs" : "/billing"}
                 className={[
                   "mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg text-sm font-semibold transition",
                   plan.name === "Pro"
@@ -130,7 +142,7 @@ export default function PricingPage() {
                     : "bg-black text-white hover:bg-neutral-900",
                 ].join(" ")}
               >
-                {plan.name === "Free" ? "Start free" : "Choose plan"}
+                {plan.name === "Free" ? "Start free" : plan.name === "Enterprise" ? "Talk to us" : "Choose plan"}
               </Link>
             </div>
           ))}
@@ -147,21 +159,23 @@ export default function PricingPage() {
           </div>
 
           <div className="mt-6 overflow-hidden rounded-lg border border-black/10">
-            <div className="grid grid-cols-4 bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
+            <div className="grid grid-cols-5 bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
               <div>Capability</div>
               <div>Free</div>
               <div>Pro</div>
               <div>Team</div>
+              <div>Enterprise</div>
             </div>
             {matrix.map((row) => (
               <div
                 key={row[0]}
-                className="grid grid-cols-4 border-t border-black/10 px-4 py-3 text-sm"
+                className="grid grid-cols-5 border-t border-black/10 px-4 py-3 text-sm"
               >
                 <div className="font-medium text-black">{row[0]}</div>
                 <div className="text-black/65">{row[1]}</div>
                 <div className="text-black/65">{row[2]}</div>
                 <div className="text-black/65">{row[3]}</div>
+                <div className="text-black/65">{row[4]}</div>
               </div>
             ))}
           </div>
@@ -169,24 +183,24 @@ export default function PricingPage() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">Model costs</div>
+            <div className="text-sm font-bold">Model gateway</div>
+            <p className="mt-2 text-sm leading-relaxed text-black/60">
+              Chat completions, streaming, model catalog, model health, and
+              provider readiness are included in the commercial platform.
+            </p>
+          </div>
+          <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
+            <div className="text-sm font-bold">Cost controls</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
               Provider costs are tracked per request and can be limited with
-              routing policy and maxCostUsd.
+              routing policy, plan gates, monthly budgets, and maxCostUsd.
             </p>
           </div>
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">Plan policy</div>
+            <div className="text-sm font-bold">Task intelligence</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
-              Plans map to API key limits, provider allowlists, budgets, and
-              support level.
-            </p>
-          </div>
-          <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">Commercial objective</div>
-            <p className="mt-2 text-sm leading-relaxed text-black/60">
-              The product is API revenue: reliable intelligence coordination
-              customers can build on.
+              Generate structured outputs for planning, missions, WAOC chat,
+              OneClaw execution planning, and market decisions.
             </p>
           </div>
         </div>

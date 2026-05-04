@@ -7,7 +7,7 @@ export default function Page() {
       description="POST /v1/generate — the primary structured intelligence endpoint."
       pills={["POST /v1/generate", "task type", "LLM policy", "usage metadata"]}
       prev={{ href: "/docs/api", label: "API Basics" }}
-      next={{ href: "/docs/reference/schemas", label: "Schemas" }}
+      next={{ href: "/docs/reference/chat", label: "Chat Completions" }}
     >
       <DocSectionTitle title="Request" desc="Route by task type and choose a model mode or explicit provider/model." />
       <div className="mt-6 rounded-lg border border-black/10 bg-white p-6">
@@ -22,6 +22,22 @@ export default function Page() {
     }
   }
 }`}</pre>
+      </div>
+
+      <div className="mt-10">
+        <DocSectionTitle title="Model routing options" desc="Use modes for cost-aware routing, or provider/model overrides when your plan allows explicit model selection." />
+        <div className="mt-6 rounded-lg border border-black/10 bg-white p-6">
+          <pre className="whitespace-pre-wrap text-sm text-black/80">{`{
+  "options": {
+    "llm": {
+      "mode": "cheap",
+      "provider": "openai",
+      "model": "gpt-5.2",
+      "maxCostUsd": 0.05
+    }
+  }
+}`}</pre>
+        </div>
       </div>
 
       <div className="mt-10">

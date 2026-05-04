@@ -15,7 +15,7 @@ export default function Page() {
         desc="Create a key in Console, then pass it via x-api-key."
       />
       <div className="mt-6 rounded-lg border border-black/10 bg-white p-5">
-        <pre className="whitespace-pre-wrap text-sm leading-relaxed text-black/80">{`curl -X POST http://localhost:4000/v1/generate \\
+        <pre className="whitespace-pre-wrap text-sm leading-relaxed text-black/80">{`curl -X POST https://oneai-saas-api-production.up.railway.app/v1/generate \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: YOUR_KEY" \\
   -H "Idempotency-Key: launch-plan-001" \\
@@ -30,6 +30,9 @@ export default function Page() {
           </Link>
           <Link href="/docs/reference/generate" className="rounded-lg border border-black/15 bg-white px-5 py-2 text-sm font-bold hover:bg-black/[0.04]">
             Generate reference →
+          </Link>
+          <Link href="/docs/reference/chat" className="rounded-lg border border-black/15 bg-white px-5 py-2 text-sm font-bold hover:bg-black/[0.04]">
+            Chat reference →
           </Link>
         </div>
       </div>
@@ -58,6 +61,25 @@ export default function Page() {
   "details": { "code":"VALIDATION_FAILED", "issues":[...] }
 }`}</pre>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-10">
+        <DocSectionTitle
+          title="3) Use the model gateway"
+          desc="For OpenAI-compatible integrations, call /v1/chat/completions with Authorization: Bearer."
+        />
+        <div className="mt-6 rounded-lg border border-black/10 bg-white p-5">
+          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-black/80">{`curl -s https://oneai-saas-api-production.up.railway.app/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_KEY" \\
+  -d '{
+    "model": "openai:gpt-5.2",
+    "messages": [
+      { "role": "user", "content": "Explain OneAI SaaS in one sentence." }
+    ],
+    "max_completion_tokens": 300
+  }'`}</pre>
         </div>
       </div>
     </DocShell>

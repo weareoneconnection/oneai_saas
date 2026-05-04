@@ -1,6 +1,7 @@
 // apps/web/src/app/dashboard/page.tsx
 "use client";
 
+import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ResponsiveContainer,
@@ -48,6 +49,14 @@ type DashboardPayload = {
     lastUsedISO?: string;
   }>;
   forecast7d: Array<{ day: string; forecastCostUSD: number }>;
+};
+
+type ModelRow = {
+  provider: string;
+  model: string;
+  configured?: boolean;
+  hasPricing?: boolean;
+  health?: { ok: boolean; testedAt: string; latencyMs?: number; error?: string } | null;
 };
 
 function fmtNum(n: number) {
@@ -147,6 +156,7 @@ function EnvPill({ env }: { env: EnvKey }) {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardPayload>(() => buildMock());
   const [source, setSource] = useState<"mock" | "live">("mock");
+  const [models, setModels] = useState<ModelRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string>("");
 
@@ -162,6 +172,13 @@ export default function DashboardPage() {
       const json = (await res.json()) as DashboardPayload;
       setData(json);
       setSource("live");
+
+      const modelRes = await fetch("/api/models", { cache: "no-store", credentials: "include" });
+      const modelJson = await modelRes.json().catch(() => null);
+      const modelRows = Array.isArray(modelJson?.data)
+        ? modelJson.data
+        : modelJson?.data?.models || [];
+      setModels(modelRows);
     } catch (e: any) {
       // 没有 API 就保持 mock（正式上线也能展示）
       setData((prev) => prev || buildMock());
@@ -182,6 +199,42 @@ export default function DashboardPage() {
     return [...data.keyUsage].sort((a, b) => b.costUSD - a.costUSD).slice(0, 8);
   }, [data.keyUsage]);
 
+  const modelStats = useMemo(() => {
+    const total = models.length;
+    const configured = models.filter((m) => m.configured).length;
+    const priced = models.filter((m) => m.hasPricing).length;
+    const live = models.filter((m) => m.health?.ok).length;
+    const failed = models.filter((m) => m.health && !m.health.ok).length;
+    return { total, configured, priced, live, failed };
+  }, [models]);
+
+  const readinessItems = [
+    {
+      label: "Gateway",
+      value: source === "live" ? "Live" : "Fallback",
+      good: source === "live",
+      href: "/playground",
+    },
+    {
+      label: "Models",
+      value: modelStats.configured ? `${modelStats.configured} ready` : "Check keys",
+      good: modelStats.configured > 0,
+      href: "/models",
+    },
+    {
+      label: "Pricing",
+      value: modelStats.priced ? `${modelStats.priced} covered` : "Incomplete",
+      good: modelStats.priced > 0,
+      href: "/models",
+    },
+    {
+      label: "Errors",
+      value: pct(data.kpis.errorRatePct),
+      good: Number(data.kpis.errorRatePct || 0) < 2,
+      href: "/usage",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -197,7 +250,7 @@ export default function DashboardPage() {
           </div>
           <h1 className="mt-3 text-2xl font-extrabold text-black">Dashboard</h1>
           <p className="mt-1 text-sm text-black/55">
-            Usage, cost, keys, environments — ready for production.
+            API health, cost, keys, models, and production readiness.
           </p>
         </div>
 
@@ -222,6 +275,29 @@ export default function DashboardPage() {
             Use Mock
           </Button>
         </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        {readinessItems.map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            className="rounded-lg border border-black/10 bg-white p-4 transition hover:border-black/25 hover:bg-black/[0.02]"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-xs text-black/50">{item.label}</div>
+              <span
+                className={[
+                  "rounded-full px-2 py-0.5 text-xs font-semibold",
+                  item.good ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800",
+                ].join(" ")}
+              >
+                {item.good ? "OK" : "Review"}
+              </span>
+            </div>
+            <div className="mt-2 text-lg font-semibold text-black">{item.value}</div>
+          </Link>
+        ))}
       </div>
 
       {/* KPI row */}
@@ -297,6 +373,53 @@ export default function DashboardPage() {
                   </div>
                   <span className="text-black/45">{fmtUSD(e.costUSD)}</span>
                 </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Model Readiness</CardTitle>
+            <CardDescription>Catalog, configured providers, pricing, health checks</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              <KpiCard label="Catalog models" value={fmtNum(modelStats.total)} />
+              <KpiCard label="Configured" value={fmtNum(modelStats.configured)} />
+              <KpiCard label="Priced" value={fmtNum(modelStats.priced)} />
+              <KpiCard label="Live tested" value={fmtNum(modelStats.live)} sub={modelStats.failed ? `${modelStats.failed} failed` : "Health check on demand"} />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/models" className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-900">
+                Open Models
+              </Link>
+              <Link href="/docs/reference/models" className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]">
+                Model Docs
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Commercial Readiness</CardTitle>
+            <CardDescription>Next operator actions before heavier customer traffic</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2">
+              {[
+                ["Test gateway", "Run Chat API in Playground with openai:gpt-5.2.", "/playground"],
+                ["Create prod key", "Issue a separate production API key with budget limits.", "/keys"],
+                ["Review usage", "Check errors, latency, cost by model, task, key, and provider.", "/usage"],
+                ["Confirm billing", "Verify Stripe plan and paid access before customer launch.", "/billing"],
+              ].map(([title, desc, href]) => (
+                <Link key={title} href={href} className="rounded-lg border border-black/10 bg-black/[0.02] p-4 hover:border-black/25">
+                  <div className="text-sm font-semibold text-black">{title}</div>
+                  <p className="mt-2 text-sm leading-relaxed text-black/55">{desc}</p>
+                </Link>
               ))}
             </div>
           </CardContent>
@@ -399,7 +522,9 @@ export default function DashboardPage() {
               <CardTitle>Key-level Usage</CardTitle>
               <CardDescription>Top keys by cost (24h)</CardDescription>
             </div>
-            <Button variant="secondary">Manage Keys</Button>
+            <Link href="/keys" className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]">
+              Manage Keys
+            </Link>
           </div>
         </CardHeader>
 
