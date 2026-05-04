@@ -7,6 +7,7 @@ import { syncModelCatalog } from "../core/llm/modelCatalogSync.js";
 import { isProviderConfigured } from "../core/llm/providerConfig.js";
 import { estimateLLMCostUSD, hasLLMPricing, resolveLLMPricing } from "../core/llm/pricing.js";
 import { getModelHealth, testModelHealth } from "../core/llm/modelHealth.js";
+import { prisma } from "../lib/prisma.js";
 
 const router = Router();
 
@@ -25,13 +26,83 @@ const estimateSchema = z.object({
 router.use(requireApiKey);
 router.use(rateLimitRedisTcp({ windowMs: 60_000, maxPerKeyPerWindow: 120, maxPerIpPerWindow: 120 }));
 
-router.get("/", (_req, res) => {
+router.get("/", async (_req, res) => {
   const now = Math.floor(Date.now() / 1000);
+
+  try {
+    const registryModels = await prisma.modelRegistry.findMany({
+      orderBy: [
+        { provider: "asc" },
+        { model: "asc" },
+      ],
+    });
+
+    if (registryModels.length > 0) {
+      return res.json({
+        object: "list",
+        oneai: {
+          catalogSync: getModelCatalogSyncState(),
+          source: "database",
+        },
+        data: registryModels.map((item) => {
+          const provider = String(item.provider);
+          const configured = item.configured || isProviderConfigured(provider);
+          const pricing =
+            item.hasPricing
+              ? {
+                  inputPricePer1mTokens: item.inputPricePer1mTokens,
+                  outputPricePer1mTokens: item.outputPricePer1mTokens,
+                }
+              : resolveLLMPricing(provider, item.model);
+
+          return {
+            id: `${item.provider}:${item.model}`,
+            object: "model",
+            created: Math.floor(item.createdAt.getTime() / 1000),
+            owned_by: provider,
+
+            provider: item.provider,
+            model: item.model,
+            displayName: item.displayName,
+            description: item.description,
+
+            modes: [],
+            contextTokens: item.contextTokens ?? null,
+            maxOutputTokens: item.maxOutputTokens ?? null,
+
+            supportsStreaming: item.supportsStreaming,
+            supportsJson: item.supportsJson,
+            supportsTools: item.supportsTools,
+            supportsVision: item.supportsVision,
+
+            configured,
+            available: item.available && configured,
+            hasPricing: item.hasPricing,
+            pricing,
+
+            status: item.status,
+            health: {
+              status: item.healthStatus ?? "UNKNOWN",
+              testedAt: item.lastHealthCheckAt?.toISOString() ?? null,
+              error: item.lastHealthMessage ?? null,
+              latencyMs: item.lastLatencyMs ?? null,
+              runtime: getModelHealth(provider, item.model),
+            },
+
+            updatedAt: item.updatedAt.toISOString(),
+          };
+        }),
+      });
+    }
+  } catch (error) {
+    console.error("[models] Failed to read ModelRegistry, falling back to in-memory catalog:", error);
+  }
 
   return res.json({
     object: "list",
     oneai: {
       catalogSync: getModelCatalogSyncState(),
+      source: "memory_fallback",
     },
     data: listModelProfiles().map((profile) => {
       const provider = String(profile.provider);
