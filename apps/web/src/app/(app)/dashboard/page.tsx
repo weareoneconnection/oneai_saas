@@ -25,7 +25,8 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
-type EnvKey = "prod" | "dev";
+type EnvKey = "prod" | "dev" | "staging";
+type DashboardSource = "live" | "demo" | "empty";
 
 type DashboardPayload = {
   range: { fromISO: string; toISO: string };
@@ -37,9 +38,25 @@ type DashboardPayload = {
     p95LatencyMs?: number;
     errorRatePct?: number;
   };
-  timeseries24h: Array<{ hour: string; requests: number; tokens: number; costUSD: number }>;
-  modelBreakdown: Array<{ model: string; tokens: number; requests: number; costUSD: number }>;
-  envSegmentation: Array<{ env: EnvKey; requests: number; tokens: number; costUSD: number }>;
+  timeseries24h: Array<{
+    hour: string;
+    requests: number;
+    tokens: number;
+    costUSD: number;
+  }>;
+  modelBreakdown: Array<{
+    model: string;
+    provider?: string;
+    tokens: number;
+    requests: number;
+    costUSD: number;
+  }>;
+  envSegmentation: Array<{
+    env: EnvKey;
+    requests: number;
+    tokens: number;
+    costUSD: number;
+  }>;
   keyUsage: Array<{
     key: string;
     env: EnvKey;
@@ -48,29 +65,85 @@ type DashboardPayload = {
     costUSD: number;
     lastUsedISO?: string;
   }>;
-  forecast7d: Array<{ day: string; forecastCostUSD: number }>;
+  forecast7d: Array<{
+    day: string;
+    forecastCostUSD: number;
+  }>;
 };
+
+type ModelHealthStatus = "HEALTHY" | "DEGRADED" | "DOWN" | "UNKNOWN";
 
 type ModelRow = {
   provider: string;
   model: string;
   configured?: boolean;
+  available?: boolean;
   hasPricing?: boolean;
-  health?: { ok: boolean; testedAt: string; latencyMs?: number; error?: string } | null;
+  health?: {
+    ok?: boolean;
+    status?: ModelHealthStatus;
+    testedAt?: string | null;
+    latencyMs?: number | null;
+    error?: string | null;
+  } | null;
+};
+
+type TaskRow = {
+  id?: string;
+  task?: string;
+  type?: string;
+  displayName?: string;
+  description?: string;
+  category?: string;
+  tier?: string;
+  maturity?: string;
+  enabled?: boolean;
+  inputSchema?: unknown;
+  outputSchema?: unknown;
+  hasInputSchema?: boolean;
+  hasOutputSchema?: boolean;
 };
 
 function fmtNum(n: number) {
-  return new Intl.NumberFormat("en-US").format(Math.round(n));
+  return new Intl.NumberFormat("en-US").format(Math.round(Number.isFinite(n) ? n : 0));
 }
+
 function fmtUSD(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(Number.isFinite(n) ? n : 0);
 }
+
 function pct(n?: number) {
-  if (n === undefined) return "—";
+  if (n === undefined || n === null || Number.isNaN(n)) return "—";
   return `${n.toFixed(2)}%`;
 }
 
-function buildMock(): DashboardPayload {
+function buildEmptyData(): DashboardPayload {
+  const now = new Date();
+  const toISO = now.toISOString();
+  const fromISO = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+
+  return {
+    range: { fromISO, toISO },
+    kpis: {
+      requests24h: 0,
+      tokens24h: 0,
+      cost24hUSD: 0,
+      activeKeys: 0,
+      p95LatencyMs: undefined,
+      errorRatePct: undefined,
+    },
+    timeseries24h: [],
+    modelBreakdown: [],
+    envSegmentation: [],
+    keyUsage: [],
+    forecast7d: [],
+  };
+}
+
+function buildDemoData(): DashboardPayload {
   const now = new Date();
   const toISO = now.toISOString();
   const fromISO = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
@@ -79,7 +152,7 @@ function buildMock(): DashboardPayload {
     const h = i.toString().padStart(2, "0");
     const requests = Math.floor(250 + Math.random() * 700);
     const tokens = Math.floor(requests * (400 + Math.random() * 900));
-    const costUSD = Number((tokens / 1_000_000 * (2.2 + Math.random() * 1.2)).toFixed(2));
+    const costUSD = Number(((tokens / 1_000_000) * (2.2 + Math.random() * 1.2)).toFixed(2));
     return { hour: `${h}:00`, requests, tokens, costUSD };
   });
 
@@ -88,28 +161,97 @@ function buildMock(): DashboardPayload {
   const sumCost = Number(timeseries24h.reduce((a, b) => a + b.costUSD, 0).toFixed(2));
 
   const modelBreakdown = [
-    { model: "gpt-4o", tokens: Math.floor(sumTok * 0.38), requests: Math.floor(sumReq * 0.34), costUSD: Number((sumCost * 0.42).toFixed(2)) },
-    { model: "gpt-4o-mini", tokens: Math.floor(sumTok * 0.32), requests: Math.floor(sumReq * 0.40), costUSD: Number((sumCost * 0.25).toFixed(2)) },
-    { model: "claude-3", tokens: Math.floor(sumTok * 0.18), requests: Math.floor(sumReq * 0.16), costUSD: Number((sumCost * 0.22).toFixed(2)) },
-    { model: "deepseek", tokens: Math.floor(sumTok * 0.12), requests: Math.floor(sumReq * 0.10), costUSD: Number((sumCost * 0.11).toFixed(2)) },
+    {
+      model: "gpt-4.1",
+      provider: "openai",
+      tokens: Math.floor(sumTok * 0.38),
+      requests: Math.floor(sumReq * 0.34),
+      costUSD: Number((sumCost * 0.42).toFixed(2)),
+    },
+    {
+      model: "gpt-4.1-mini",
+      provider: "openai",
+      tokens: Math.floor(sumTok * 0.32),
+      requests: Math.floor(sumReq * 0.4),
+      costUSD: Number((sumCost * 0.25).toFixed(2)),
+    },
+    {
+      model: "claude-3-5-sonnet",
+      provider: "anthropic",
+      tokens: Math.floor(sumTok * 0.18),
+      requests: Math.floor(sumReq * 0.16),
+      costUSD: Number((sumCost * 0.22).toFixed(2)),
+    },
+    {
+      model: "deepseek-chat",
+      provider: "deepseek",
+      tokens: Math.floor(sumTok * 0.12),
+      requests: Math.floor(sumReq * 0.1),
+      costUSD: Number((sumCost * 0.11).toFixed(2)),
+    },
   ];
 
   const envSegmentation = [
-    { env: "prod" as const, requests: Math.floor(sumReq * 0.78), tokens: Math.floor(sumTok * 0.82), costUSD: Number((sumCost * 0.86).toFixed(2)) },
-    { env: "dev" as const, requests: Math.floor(sumReq * 0.22), tokens: Math.floor(sumTok * 0.18), costUSD: Number((sumCost * 0.14).toFixed(2)) },
+    {
+      env: "prod" as const,
+      requests: Math.floor(sumReq * 0.78),
+      tokens: Math.floor(sumTok * 0.82),
+      costUSD: Number((sumCost * 0.86).toFixed(2)),
+    },
+    {
+      env: "dev" as const,
+      requests: Math.floor(sumReq * 0.22),
+      tokens: Math.floor(sumTok * 0.18),
+      costUSD: Number((sumCost * 0.14).toFixed(2)),
+    },
   ];
 
   const keyUsage = [
-    { key: "prod_live_1", env: "prod" as const, requests: Math.floor(sumReq * 0.32), tokens: Math.floor(sumTok * 0.34), costUSD: Number((sumCost * 0.32).toFixed(2)), lastUsedISO: new Date(now.getTime() - 2 * 60 * 1000).toISOString() },
-    { key: "prod_live_2", env: "prod" as const, requests: Math.floor(sumReq * 0.24), tokens: Math.floor(sumTok * 0.27), costUSD: Number((sumCost * 0.26).toFixed(2)), lastUsedISO: new Date(now.getTime() - 15 * 60 * 1000).toISOString() },
-    { key: "prod_batch", env: "prod" as const, requests: Math.floor(sumReq * 0.22), tokens: Math.floor(sumTok * 0.21), costUSD: Number((sumCost * 0.19).toFixed(2)), lastUsedISO: new Date(now.getTime() - 45 * 60 * 1000).toISOString() },
-    { key: "dev_key_1", env: "dev" as const, requests: Math.floor(sumReq * 0.14), tokens: Math.floor(sumTok * 0.10), costUSD: Number((sumCost * 0.10).toFixed(2)), lastUsedISO: new Date(now.getTime() - 4 * 3600 * 1000).toISOString() },
-    { key: "dev_key_2", env: "dev" as const, requests: Math.floor(sumReq * 0.08), tokens: Math.floor(sumTok * 0.08), costUSD: Number((sumCost * 0.13).toFixed(2)), lastUsedISO: new Date(now.getTime() - 10 * 3600 * 1000).toISOString() },
+    {
+      key: "prod_live_1",
+      env: "prod" as const,
+      requests: Math.floor(sumReq * 0.32),
+      tokens: Math.floor(sumTok * 0.34),
+      costUSD: Number((sumCost * 0.32).toFixed(2)),
+      lastUsedISO: new Date(now.getTime() - 2 * 60 * 1000).toISOString(),
+    },
+    {
+      key: "prod_live_2",
+      env: "prod" as const,
+      requests: Math.floor(sumReq * 0.24),
+      tokens: Math.floor(sumTok * 0.27),
+      costUSD: Number((sumCost * 0.26).toFixed(2)),
+      lastUsedISO: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
+    },
+    {
+      key: "prod_batch",
+      env: "prod" as const,
+      requests: Math.floor(sumReq * 0.22),
+      tokens: Math.floor(sumTok * 0.21),
+      costUSD: Number((sumCost * 0.19).toFixed(2)),
+      lastUsedISO: new Date(now.getTime() - 45 * 60 * 1000).toISOString(),
+    },
+    {
+      key: "dev_key_1",
+      env: "dev" as const,
+      requests: Math.floor(sumReq * 0.14),
+      tokens: Math.floor(sumTok * 0.1),
+      costUSD: Number((sumCost * 0.1).toFixed(2)),
+      lastUsedISO: new Date(now.getTime() - 4 * 3600 * 1000).toISOString(),
+    },
+    {
+      key: "dev_key_2",
+      env: "dev" as const,
+      requests: Math.floor(sumReq * 0.08),
+      tokens: Math.floor(sumTok * 0.08),
+      costUSD: Number((sumCost * 0.13).toFixed(2)),
+      lastUsedISO: new Date(now.getTime() - 10 * 3600 * 1000).toISOString(),
+    },
   ];
 
   const forecast7d = Array.from({ length: 7 }).map((_, i) => ({
     day: `D${i + 1}`,
-    forecastCostUSD: Number((sumCost / 24 * 24 * (0.95 + i * 0.06)).toFixed(2)),
+    forecastCostUSD: Number(((sumCost / 24) * 24 * (0.95 + i * 0.06)).toFixed(2)),
   }));
 
   return {
@@ -128,6 +270,48 @@ function buildMock(): DashboardPayload {
     keyUsage,
     forecast7d,
   };
+}
+
+function normalizeDashboardPayload(value: unknown): DashboardPayload | null {
+  if (!value || typeof value !== "object") return null;
+
+  const raw = value as any;
+  const payload = raw.data && typeof raw.data === "object" ? raw.data : raw;
+
+  if (!payload.kpis || !payload.range) return null;
+
+  return {
+    range: {
+      fromISO: String(payload.range.fromISO || new Date(Date.now() - 24 * 3600 * 1000).toISOString()),
+      toISO: String(payload.range.toISO || new Date().toISOString()),
+    },
+    kpis: {
+      requests24h: Number(payload.kpis.requests24h || 0),
+      tokens24h: Number(payload.kpis.tokens24h || 0),
+      cost24hUSD: Number(payload.kpis.cost24hUSD || 0),
+      activeKeys: Number(payload.kpis.activeKeys || 0),
+      p95LatencyMs:
+        payload.kpis.p95LatencyMs === undefined || payload.kpis.p95LatencyMs === null
+          ? undefined
+          : Number(payload.kpis.p95LatencyMs),
+      errorRatePct:
+        payload.kpis.errorRatePct === undefined || payload.kpis.errorRatePct === null
+          ? undefined
+          : Number(payload.kpis.errorRatePct),
+    },
+    timeseries24h: Array.isArray(payload.timeseries24h) ? payload.timeseries24h : [],
+    modelBreakdown: Array.isArray(payload.modelBreakdown) ? payload.modelBreakdown : [],
+    envSegmentation: Array.isArray(payload.envSegmentation) ? payload.envSegmentation : [],
+    keyUsage: Array.isArray(payload.keyUsage) ? payload.keyUsage : [],
+    forecast7d: Array.isArray(payload.forecast7d) ? payload.forecast7d : [],
+  };
+}
+
+function extractRows<T>(json: any, nestedKey: string): T[] {
+  if (Array.isArray(json?.data)) return json.data;
+  if (Array.isArray(json?.data?.[nestedKey])) return json.data[nestedKey];
+  if (Array.isArray(json?.[nestedKey])) return json[nestedKey];
+  return [];
 }
 
 function KpiCard(props: { label: string; value: string; sub?: string }) {
@@ -154,43 +338,103 @@ function EnvPill({ env }: { env: EnvKey }) {
 }
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardPayload>(() => buildMock());
-  const [source, setSource] = useState<"mock" | "live">("mock");
+  const [data, setData] = useState<DashboardPayload>(() => buildEmptyData());
+  const [source, setSource] = useState<DashboardSource>("empty");
   const [models, setModels] = useState<ModelRow[]>([]);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string>("");
+  const [analyticsErr, setAnalyticsErr] = useState<string>("");
+  const [registryErr, setRegistryErr] = useState<string>("");
+
+  const showDemoButton = process.env.NODE_ENV !== "production";
+
+  async function refreshAnalytics() {
+    const res = await fetch("/api/analytics/dashboard", {
+      cache: "no-store",
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      throw new Error(`analytics HTTP ${res.status}`);
+    }
+
+    const json = await res.json();
+    const payload = normalizeDashboardPayload(json);
+
+    if (!payload) {
+      throw new Error("analytics payload is invalid");
+    }
+
+    setData(payload);
+    setSource("live");
+    setAnalyticsErr("");
+  }
+
+  async function refreshRegistries() {
+    const [modelResult, taskResult] = await Promise.allSettled([
+      fetch("/api/models", { cache: "no-store", credentials: "include" }),
+      fetch("/api/tasks", { cache: "no-store", credentials: "include" }),
+    ]);
+
+    if (modelResult.status === "fulfilled") {
+      if (!modelResult.value.ok) {
+        throw new Error(`models HTTP ${modelResult.value.status}`);
+      }
+
+      const modelJson = await modelResult.value.json().catch(() => null);
+      setModels(extractRows<ModelRow>(modelJson, "models"));
+    } else {
+      throw new Error(modelResult.reason?.message || "models request failed");
+    }
+
+    if (taskResult.status === "fulfilled") {
+      if (!taskResult.value.ok) {
+        throw new Error(`tasks HTTP ${taskResult.value.status}`);
+      }
+
+      const taskJson = await taskResult.value.json().catch(() => null);
+      setTasks(extractRows<TaskRow>(taskJson, "tasks"));
+    } else {
+      throw new Error(taskResult.reason?.message || "tasks request failed");
+    }
+
+    setRegistryErr("");
+  }
 
   async function refresh() {
     setLoading(true);
-    setErr("");
-    try {
-      const res = await fetch("/api/analytics/dashboard", {
-      cache: "no-store",
-      credentials: "include", // ✅ 加这个
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = (await res.json()) as DashboardPayload;
-      setData(json);
-      setSource("live");
 
-      const modelRes = await fetch("/api/models", { cache: "no-store", credentials: "include" });
-      const modelJson = await modelRes.json().catch(() => null);
-      const modelRows = Array.isArray(modelJson?.data)
-        ? modelJson.data
-        : modelJson?.data?.models || [];
-      setModels(modelRows);
-    } catch (e: any) {
-      // 没有 API 就保持 mock（正式上线也能展示）
-      setData((prev) => prev || buildMock());
-      setSource("mock");
-      setErr(e?.message || "Failed to load live analytics");
-    } finally {
-      setLoading(false);
+    const [analyticsResult, registryResult] = await Promise.allSettled([
+      refreshAnalytics(),
+      refreshRegistries(),
+    ]);
+
+    if (analyticsResult.status === "rejected") {
+      setAnalyticsErr(analyticsResult.reason?.message || "Failed to load live analytics");
+
+      setData((prev) => {
+        const hasAnyLiveData =
+          prev.kpis.requests24h > 0 ||
+          prev.kpis.tokens24h > 0 ||
+          prev.kpis.cost24hUSD > 0 ||
+          prev.timeseries24h.length > 0 ||
+          prev.modelBreakdown.length > 0 ||
+          prev.keyUsage.length > 0;
+
+        return hasAnyLiveData ? prev : buildEmptyData();
+      });
+
+      setSource((prev) => (prev === "demo" ? "demo" : "empty"));
     }
+
+    if (registryResult.status === "rejected") {
+      setRegistryErr(registryResult.reason?.message || "Failed to load model/task registries");
+    }
+
+    setLoading(false);
   }
 
   useEffect(() => {
-    // 有 API 就自动用 live；没 API 则不影响页面可用性
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -201,25 +445,63 @@ export default function DashboardPage() {
 
   const modelStats = useMemo(() => {
     const total = models.length;
-    const configured = models.filter((m) => m.configured).length;
-    const priced = models.filter((m) => m.hasPricing).length;
-    const live = models.filter((m) => m.health?.ok).length;
-    const failed = models.filter((m) => m.health && !m.health.ok).length;
+
+    const configured = models.filter((m) => {
+      return m.configured === true || m.available === true;
+    }).length;
+
+    const priced = models.filter((m) => {
+      return m.hasPricing === true;
+    }).length;
+
+    const live = models.filter((m) => {
+      return m.health?.ok === true || m.health?.status === "HEALTHY";
+    }).length;
+
+    const failed = models.filter((m) => {
+      return m.health?.ok === false || m.health?.status === "DOWN";
+    }).length;
+
     return { total, configured, priced, live, failed };
   }, [models]);
+
+  const taskStats = useMemo(() => {
+    const total = tasks.length;
+
+    const stable = tasks.filter((t) => {
+      return String(t.maturity || "").toUpperCase() === "STABLE";
+    }).length;
+
+    const schemaCovered = tasks.filter((t) => {
+      return Boolean(t.inputSchema || t.outputSchema || t.hasInputSchema || t.hasOutputSchema);
+    }).length;
+
+    const paid = tasks.filter((t) => {
+      const tier = String(t.tier || "").toLowerCase();
+      return Boolean(tier && tier !== "free");
+    }).length;
+
+    return { total, stable, schemaCovered, paid };
+  }, [tasks]);
 
   const readinessItems = [
     {
       label: "Gateway",
-      value: source === "live" ? "Live" : "Fallback",
+      value: source === "live" ? "Live analytics" : source === "demo" ? "Demo data" : "No traffic yet",
       good: source === "live",
       href: "/playground",
     },
     {
       label: "Models",
-      value: modelStats.configured ? `${modelStats.configured} ready` : "Check keys",
-      good: modelStats.configured > 0,
+      value: modelStats.total ? `${modelStats.configured}/${modelStats.total} ready` : "No models",
+      good: modelStats.total > 0 && modelStats.configured > 0,
       href: "/models",
+    },
+    {
+      label: "Tasks",
+      value: taskStats.total ? `${taskStats.total} registered` : "No tasks",
+      good: taskStats.total > 0,
+      href: "/tasks",
     },
     {
       label: "Pricing",
@@ -233,7 +515,16 @@ export default function DashboardPage() {
       good: Number(data.kpis.errorRatePct || 0) < 2,
       href: "/usage",
     },
+    {
+      label: "Billing",
+      value: data.kpis.cost24hUSD > 0 ? "Usage tracked" : "Review plan",
+      good: data.kpis.cost24hUSD > 0,
+      href: "/billing",
+    },
   ];
+
+  const sourceBadge =
+    source === "live" ? "LIVE" : source === "demo" ? "DEMO" : "EMPTY";
 
   return (
     <div className="space-y-6">
@@ -244,13 +535,19 @@ export default function DashboardPage() {
             <Badge>Console</Badge>
             <Badge>Analytics</Badge>
             <span className="text-xs text-black/45">
-              Source: <b className="text-black">{source.toUpperCase()}</b>
+              Source: <b className="text-black">{sourceBadge}</b>
             </span>
-            {err ? <span className="text-xs text-red-600">Live error: {err}</span> : null}
+            {analyticsErr ? (
+              <span className="text-xs text-amber-700">Analytics: {analyticsErr}</span>
+            ) : null}
+            {registryErr ? (
+              <span className="text-xs text-red-600">Registry: {registryErr}</span>
+            ) : null}
           </div>
+
           <h1 className="mt-3 text-2xl font-extrabold text-black">Dashboard</h1>
           <p className="mt-1 text-sm text-black/55">
-            API health, cost, keys, models, and production readiness.
+            API health, cost, keys, models, tasks, and production readiness.
           </p>
         </div>
 
@@ -263,21 +560,30 @@ export default function DashboardPage() {
           >
             {loading ? "Refreshing..." : "Refresh"}
           </Button>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setData(buildMock());
-              setSource("mock");
-              setErr("");
-            }}
-            className="whitespace-nowrap"
-          >
-            Use Mock
-          </Button>
+
+          {showDemoButton ? (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setData(buildDemoData());
+                setSource("demo");
+                setAnalyticsErr("");
+              }}
+              className="whitespace-nowrap"
+            >
+              Use Demo
+            </Button>
+          ) : null}
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
+      {source === "empty" && !loading ? (
+        <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-black/60">
+          No live usage data found yet. Create an API key, run a request in Playground, then refresh this dashboard.
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
         {readinessItems.map((item) => (
           <Link
             key={item.label}
@@ -308,14 +614,13 @@ export default function DashboardPage() {
         <KpiCard label="Active Keys" value={fmtNum(data.kpis.activeKeys)} />
         <KpiCard
           label="Quality"
-          value={`${data.kpis.p95LatencyMs ?? "—"}ms`}
+          value={data.kpis.p95LatencyMs === undefined ? "—" : `${data.kpis.p95LatencyMs}ms`}
           sub={`Error rate: ${pct(data.kpis.errorRatePct)}`}
         />
       </div>
 
       {/* Charts row */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* 24h usage */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
@@ -329,52 +634,69 @@ export default function DashboardPage() {
               </div>
             </div>
           </CardHeader>
+
           <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.timeseries24h}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="hour" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="requests" stroke="#111111" strokeWidth={2} />
-                <Line type="monotone" dataKey="costUSD" stroke="#555555" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-            <div className="mt-2 flex flex-wrap gap-2 text-xs text-black/55">
-              <span>— requests</span>
-              <span>— costUSD</span>
-            </div>
+            {data.timeseries24h.length ? (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.timeseries24h}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="hour" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="requests" stroke="#111111" strokeWidth={2} />
+                    <Line type="monotone" dataKey="costUSD" stroke="#555555" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-black/55">
+                  <span>— requests</span>
+                  <span>— costUSD</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-black/10 text-sm text-black/45">
+                No 24h usage data yet.
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Env segmentation */}
         <Card>
           <CardHeader>
             <CardTitle>Environment Segmentation</CardTitle>
-            <CardDescription>prod vs dev</CardDescription>
+            <CardDescription>prod / staging / dev</CardDescription>
           </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.envSegmentation}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="env" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="requests" fill="#111111" />
-              </BarChart>
-            </ResponsiveContainer>
 
-            <div className="mt-4 space-y-2 text-sm">
-              {data.envSegmentation.map((e) => (
-                <div key={e.env} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <EnvPill env={e.env} />
-                    <span className="text-black/70">{fmtNum(e.requests)} req</span>
-                  </div>
-                  <span className="text-black/45">{fmtUSD(e.costUSD)}</span>
+          <CardContent className="h-72">
+            {data.envSegmentation.length ? (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.envSegmentation}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="env" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="requests" fill="#111111" />
+                  </BarChart>
+                </ResponsiveContainer>
+
+                <div className="mt-4 space-y-2 text-sm">
+                  {data.envSegmentation.map((e) => (
+                    <div key={e.env} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <EnvPill env={e.env} />
+                        <span className="text-black/70">{fmtNum(e.requests)} req</span>
+                      </div>
+                      <span className="text-black/45">{fmtUSD(e.costUSD)}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-black/10 text-sm text-black/45">
+                No environment usage yet.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -390,33 +712,76 @@ export default function DashboardPage() {
               <KpiCard label="Catalog models" value={fmtNum(modelStats.total)} />
               <KpiCard label="Configured" value={fmtNum(modelStats.configured)} />
               <KpiCard label="Priced" value={fmtNum(modelStats.priced)} />
-              <KpiCard label="Live tested" value={fmtNum(modelStats.live)} sub={modelStats.failed ? `${modelStats.failed} failed` : "Health check on demand"} />
+              <KpiCard
+                label="Live tested"
+                value={fmtNum(modelStats.live)}
+                sub={modelStats.failed ? `${modelStats.failed} failed` : "Health check on demand"}
+              />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/models" className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-900">
+              <Link
+                href="/models"
+                className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-900"
+              >
                 Open Models
               </Link>
-              <Link href="/docs/reference/models" className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]">
+              <Link
+                href="/docs/reference/models"
+                className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]"
+              >
                 Model Docs
               </Link>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Task Readiness</CardTitle>
+            <CardDescription>Registry, stable workflows, schemas, paid tiers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              <KpiCard label="Registered tasks" value={fmtNum(taskStats.total)} />
+              <KpiCard label="Stable" value={fmtNum(taskStats.stable)} />
+              <KpiCard label="Schema covered" value={fmtNum(taskStats.schemaCovered)} />
+              <KpiCard label="Paid tiers" value={fmtNum(taskStats.paid)} />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/tasks"
+                className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-900"
+              >
+                Open Tasks
+              </Link>
+              <Link
+                href="/playground"
+                className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]"
+              >
+                Test Task
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader>
             <CardTitle>Commercial Readiness</CardTitle>
             <CardDescription>Next operator actions before heavier customer traffic</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3">
               {[
-                ["Test gateway", "Run Chat API in Playground with openai:gpt-5.2.", "/playground"],
-                ["Create prod key", "Issue a separate production API key with budget limits.", "/keys"],
+                ["Test gateway", "Run Chat API in Playground with a configured model.", "/playground"],
+                ["Create prod key", "Issue a production API key with budget limits.", "/keys"],
                 ["Review usage", "Check errors, latency, cost by model, task, key, and provider.", "/usage"],
                 ["Confirm billing", "Verify Stripe plan and paid access before customer launch.", "/billing"],
               ].map(([title, desc, href]) => (
-                <Link key={title} href={href} className="rounded-lg border border-black/10 bg-black/[0.02] p-4 hover:border-black/25">
+                <Link
+                  key={title}
+                  href={href}
+                  className="rounded-lg border border-black/10 bg-black/[0.02] p-4 hover:border-black/25"
+                >
                   <div className="text-sm font-semibold text-black">{title}</div>
                   <p className="mt-2 text-sm leading-relaxed text-black/55">{desc}</p>
                 </Link>
@@ -428,7 +793,6 @@ export default function DashboardPage() {
 
       {/* Breakdown row */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Model breakdown */}
         <Card>
           <CardHeader>
             <CardTitle>Model Usage Breakdown</CardTitle>
@@ -436,15 +800,21 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.modelBreakdown}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="model" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="tokens" fill="#111111" />
-                </BarChart>
-              </ResponsiveContainer>
+              {data.modelBreakdown.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.modelBreakdown}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="model" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="tokens" fill="#111111" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-black/10 text-sm text-black/45">
+                  No model usage yet.
+                </div>
+              )}
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-black/10">
@@ -454,22 +824,23 @@ export default function DashboardPage() {
                 <div className="col-span-2 text-right">Req</div>
                 <div className="col-span-2 text-right">Cost</div>
               </div>
-              {data.modelBreakdown.map((m) => (
-                <div
-                  key={m.model}
-                  className="grid grid-cols-12 px-3 py-2 text-sm text-black/75"
-                >
-                  <div className="col-span-5 font-medium text-black">{m.model}</div>
-                  <div className="col-span-3 text-right">{fmtNum(m.tokens)}</div>
-                  <div className="col-span-2 text-right">{fmtNum(m.requests)}</div>
-                  <div className="col-span-2 text-right">{fmtUSD(m.costUSD)}</div>
-                </div>
-              ))}
+
+              {data.modelBreakdown.length ? (
+                data.modelBreakdown.map((m) => (
+                  <div key={`${m.provider || "unknown"}:${m.model}`} className="grid grid-cols-12 px-3 py-2 text-sm text-black/75">
+                    <div className="col-span-5 font-medium text-black">{m.model}</div>
+                    <div className="col-span-3 text-right">{fmtNum(m.tokens)}</div>
+                    <div className="col-span-2 text-right">{fmtNum(m.requests)}</div>
+                    <div className="col-span-2 text-right">{fmtUSD(m.costUSD)}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-3 py-6 text-sm text-black/45">No rows.</div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Cost forecast */}
         <Card>
           <CardHeader>
             <CardTitle>Cost Forecast (7 days)</CardTitle>
@@ -477,20 +848,26 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data.forecast7d}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="forecastCostUSD"
-                    stroke="#111111"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {data.forecast7d.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.forecast7d}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="day" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="forecastCostUSD"
+                      stroke="#111111"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-black/10 text-sm text-black/45">
+                  No forecast available yet.
+                </div>
+              )}
             </div>
 
             <div className="rounded-2xl border border-black/10 bg-white/60 p-4 text-sm text-black/70">
@@ -507,7 +884,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="mt-3 text-xs text-black/45">
-                Tip: you can cap cost per env / per key in Billing policies later.
+                Tip: cap cost per environment or per API key in Billing policies.
               </div>
             </div>
           </CardContent>
@@ -522,7 +899,10 @@ export default function DashboardPage() {
               <CardTitle>Key-level Usage</CardTitle>
               <CardDescription>Top keys by cost (24h)</CardDescription>
             </div>
-            <Link href="/keys" className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]">
+            <Link
+              href="/keys"
+              className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]"
+            >
               Manage Keys
             </Link>
           </div>
@@ -538,26 +918,34 @@ export default function DashboardPage() {
               <div className="col-span-2 text-right">Cost</div>
             </div>
 
-            {topKeys.map((k) => (
-              <div key={k.key} className="grid grid-cols-12 px-3 py-2 text-sm">
-                <div className="col-span-4">
-                  <div className="font-medium text-black">{k.key}</div>
-                  <div className="text-xs text-black/45">
-                    {k.lastUsedISO ? `Last used: ${new Date(k.lastUsedISO).toLocaleString()}` : "Last used: —"}
+            {topKeys.length ? (
+              topKeys.map((k) => (
+                <div key={k.key} className="grid grid-cols-12 px-3 py-2 text-sm">
+                  <div className="col-span-4">
+                    <div className="font-medium text-black">{k.key}</div>
+                    <div className="text-xs text-black/45">
+                      {k.lastUsedISO
+                        ? `Last used: ${new Date(k.lastUsedISO).toLocaleString()}`
+                        : "Last used: —"}
+                    </div>
+                  </div>
+
+                  <div className="col-span-2 flex items-center">
+                    <EnvPill env={k.env} />
+                  </div>
+
+                  <div className="col-span-2 text-right text-black/75">{fmtNum(k.requests)}</div>
+                  <div className="col-span-2 text-right text-black/75">{fmtNum(k.tokens)}</div>
+                  <div className="col-span-2 text-right font-semibold text-black">
+                    {fmtUSD(k.costUSD)}
                   </div>
                 </div>
-
-                <div className="col-span-2 flex items-center">
-                  <EnvPill env={k.env} />
-                </div>
-
-                <div className="col-span-2 text-right text-black/75">{fmtNum(k.requests)}</div>
-                <div className="col-span-2 text-right text-black/75">{fmtNum(k.tokens)}</div>
-                <div className="col-span-2 text-right font-semibold text-black">
-                  {fmtUSD(k.costUSD)}
-                </div>
+              ))
+            ) : (
+              <div className="px-3 py-6 text-sm text-black/45">
+                No key-level usage yet.
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
