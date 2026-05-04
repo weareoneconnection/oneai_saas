@@ -3,6 +3,8 @@ import { requireApiKey } from "../core/security/auth.js";
 import { rateLimitRedisTcp } from "../core/security/rateLimitRedis.js";
 import { getModelCatalogSyncState, listModelProfiles } from "../core/llm/modelRegistry.js";
 import { syncModelCatalog } from "../core/llm/modelCatalogSync.js";
+import { isProviderConfigured } from "../core/llm/providerConfig.js";
+import { hasLLMPricing } from "../core/llm/pricing.js";
 
 const router = Router();
 
@@ -28,6 +30,9 @@ router.get("/", (_req, res) => {
       contextTokens: profile.contextTokens ?? null,
       supportsJson: profile.supportsJson ?? false,
       supportsTools: profile.supportsTools ?? false,
+      configured: isProviderConfigured(String(profile.provider)),
+      available: isProviderConfigured(String(profile.provider)),
+      hasPricing: hasLLMPricing(String(profile.provider), profile.model),
     })),
   });
 });

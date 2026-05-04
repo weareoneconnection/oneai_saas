@@ -82,6 +82,30 @@ function fallbackRegistry(reason: string) {
   };
 }
 
+function normalizeModelsResponse(json: any) {
+  if (json?.object === "list" && Array.isArray(json.data)) {
+    return {
+      success: true,
+      oneai: json.oneai,
+      data: {
+        config: {
+          defaultProvider: process.env.ONEAI_DEFAULT_PROVIDER || "openai",
+          defaultModel: process.env.ONEAI_DEFAULT_MODEL || "gpt-4o-mini",
+          configuredKeys: Object.fromEntries(
+            Array.from(new Set(json.data.map((item: any) => item.provider))).map((provider) => [
+              provider,
+              json.data.some((item: any) => item.provider === provider && item.configured),
+            ])
+          ),
+        },
+        models: json.data,
+      },
+    };
+  }
+
+  return json;
+}
+
 export async function GET() {
   const keys = registryKey();
   if (!keys.length) {
@@ -95,8 +119,8 @@ export async function GET() {
   let lastStatus = 500;
 
   for (const key of keys) {
-    const upstream = await fetch(`${apiBase()}/v1/generate/models`, {
-      headers: { "x-api-key": key, accept: "application/json" },
+    const upstream = await fetch(`${apiBase()}/v1/models`, {
+      headers: { authorization: `Bearer ${key}`, accept: "application/json" },
       cache: "no-store",
     }).catch((err) => {
       lastJson = { success: false, error: err?.message || "fetch_failed" };
@@ -113,7 +137,11 @@ export async function GET() {
     }));
 
     if (upstream.ok && lastJson?.success) {
-      return NextResponse.json(lastJson, { status: upstream.status });
+      return NextResponse.json(normalizeModelsResponse(lastJson), { status: upstream.status });
+    }
+
+    if (upstream.ok && lastJson?.object === "list") {
+      return NextResponse.json(normalizeModelsResponse(lastJson), { status: upstream.status });
     }
 
     if (![401, 403].includes(upstream.status)) break;
@@ -129,4 +157,24 @@ export async function GET() {
           : "Live model registry unavailable; showing local model defaults.";
 
   return NextResponse.json(fallbackRegistry(reason), { status: 200 });
+}
+
+export async function POST() {
+  const key = registryKey()[0];
+  if (!key) {
+    return NextResponse.json(
+      { success: false, error: "No admin API key configured for model sync." },
+      { status: 500 }
+    );
+  }
+
+  const upstream = await fetch(`${apiBase()}/v1/models/sync`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${key}`, accept: "application/json" },
+    cache: "no-store",
+  });
+  const json = await readJson(upstream).catch(() => null);
+  return NextResponse.json(json || { success: false, error: "bad_response" }, {
+    status: upstream.status,
+  });
 }

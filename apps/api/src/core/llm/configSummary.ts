@@ -31,28 +31,7 @@ export function getLLMConfigSummary() {
       providers: listFromEnv("ONEAI_ALLOWED_LLM_PROVIDERS"),
       models: listFromEnv("ONEAI_ALLOWED_LLM_MODELS"),
     },
-    configuredKeys: {
-      openai: hasEnv("OPENAI_API_KEY"),
-      openrouter: hasEnv("OPENROUTER_API_KEY"),
-      anthropic: hasEnv("ANTHROPIC_API_KEY"),
-      gemini: hasEnv("GEMINI_API_KEY"),
-      xai: hasEnv("XAI_API_KEY"),
-      deepseek: hasEnv("DEEPSEEK_API_KEY"),
-      groq: hasEnv("GROQ_API_KEY"),
-      mistral: hasEnv("MISTRAL_API_KEY"),
-      perplexity: hasEnv("PERPLEXITY_API_KEY"),
-      cohere: hasEnv("COHERE_API_KEY"),
-      together: hasEnv("TOGETHER_API_KEY"),
-      fireworks: hasEnv("FIREWORKS_API_KEY"),
-      cerebras: hasEnv("CEREBRAS_API_KEY"),
-      siliconflow: hasEnv("SILICONFLOW_API_KEY"),
-      zhipu: hasEnv("ZHIPU_API_KEY"),
-      minimax: hasEnv("MINIMAX_API_KEY"),
-      qwen: hasEnv("QWEN_API_KEY"),
-      moonshot: hasEnv("MOONSHOT_API_KEY"),
-      doubao: hasEnv("DOUBAO_API_KEY"),
-      custom: hasEnv("ONEAI_LLM_API_KEY"),
-    },
+    configuredKeys: configuredProviders(),
     configuredModels: {
       openrouter: process.env.OPENROUTER_MODEL || null,
       anthropic: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
@@ -80,3 +59,4 @@ export function getLLMConfigSummary() {
     },
   };
 }
+import { configuredProviders, isProviderConfigured } from "./providerConfig.js";
