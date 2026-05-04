@@ -149,3 +149,46 @@ GET /v1/generate/models
 ```
 
 Requires an admin API key. Returns registered model profiles and a non-secret configuration summary.
+
+## OpenAI-Compatible API
+
+OneAI also exposes a standard model gateway for external callers:
+
+```bash
+curl -s https://oneai-saas-api-production.up.railway.app/v1/models \
+  -H "Authorization: Bearer $ONEAI_API_KEY" | jq
+```
+
+```bash
+curl -s https://oneai-saas-api-production.up.railway.app/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ONEAI_API_KEY" \
+  -d '{
+    "model": "openai:gpt-5.2",
+    "messages": [
+      { "role": "user", "content": "Explain OneAI in one sentence." }
+    ],
+    "temperature": 0.4,
+    "max_tokens": 300
+  }' | jq
+```
+
+Model IDs can be passed as `provider:model`, such as `openai:gpt-5.2`, `gemini:gemini-3-pro-preview`, or `xai:grok-4.20`. If no provider prefix is used, OneAI resolves the first matching registered model.
+
+## Claude-Compatible Messages API
+
+```bash
+curl -s https://oneai-saas-api-production.up.railway.app/v1/messages \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ONEAI_API_KEY" \
+  -d '{
+    "model": "anthropic:claude-sonnet-4-20250514",
+    "system": "You are OneAI.",
+    "messages": [
+      { "role": "user", "content": "Create a short launch note." }
+    ],
+    "max_tokens": 300
+  }' | jq
+```
+
+Streaming is intentionally disabled in this first compatibility layer. Use `stream: false` or omit `stream`.

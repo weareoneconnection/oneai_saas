@@ -7,6 +7,10 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { listTasks } from "./core/workflow/registry.js";
 import generateRoute from "./routes/generate.js";
+import modelsRoute from "./routes/models.js";
+import chatRoute, { messagesHandler } from "./routes/chat.js";
+import { requireApiKey } from "./core/security/auth.js";
+import { rateLimitRedisTcp } from "./core/security/rateLimitRedis.js";
 import adminRoute from "./routes/admin.js";
 import adminDashboardRouter from "./routes/admin_dashboard.js";
 import tasksRoute from "./routes/tasks.js";
@@ -44,6 +48,14 @@ app.get("/health", (_req, res) => {
 
 // ===== 核心 API =====
 app.use("/v1/generate", generateRoute);
+app.use("/v1/models", modelsRoute);
+app.use("/v1/chat", chatRoute);
+app.post(
+  "/v1/messages",
+  requireApiKey,
+  rateLimitRedisTcp({ windowMs: 60_000, maxPerKeyPerWindow: 120, maxPerIpPerWindow: 120 }),
+  messagesHandler
+);
 app.use("/v1/tasks", tasksRoute);
 app.use("/v1/usage", usageRoute);
 

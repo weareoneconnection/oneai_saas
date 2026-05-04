@@ -13,15 +13,24 @@ export type AuthedRequest = Request & {
   };
 };
 
+export function getApiKeyFromRequest(req: Request) {
+  const headerKey = String(req.header("x-api-key") || "").trim();
+  if (headerKey) return headerKey;
+
+  const auth = String(req.header("authorization") || "").trim();
+  const match = /^Bearer\s+(.+)$/i.exec(auth);
+  return match?.[1]?.trim() || "";
+}
+
 function sha256Hex(s: string) {
   return crypto.createHash("sha256").update(s).digest("hex");
 }
 
 export async function requireApiKey(req: AuthedRequest, res: Response, next: NextFunction) {
   try {
-    const rawKey = String(req.header("x-api-key") || "").trim();
+    const rawKey = getApiKeyFromRequest(req);
     if (!rawKey) {
-      return res.status(401).json({ success: false, error: "Missing x-api-key" });
+      return res.status(401).json({ success: false, error: "Missing API key" });
     }
 
     const keyHash = sha256Hex(rawKey);
