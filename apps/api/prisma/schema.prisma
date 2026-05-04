@@ -6,9 +6,12 @@ datasource db {
   provider = "postgresql"
 }
 
-/// * =========================
-///  * NextAuth models (Prisma Adapter standard)
-///  * =========================
+/**
+ * =========================
+ * NextAuth models
+ * =========================
+ */
+
 model User {
   id            String       @id @default(cuid())
   name          String?
@@ -17,9 +20,13 @@ model User {
   image         String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+
   accounts      Account[]
-  memberships   Membership[]
   sessions      Session[]
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
 }
 
 model Account {
@@ -28,6 +35,7 @@ model Account {
   type              String
   provider          String
   providerAccountId String
+
   refresh_token     String?
   access_token      String?
   expires_at        Int?
@@ -35,9 +43,11 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
+
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -45,7 +55,11 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
+
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
 }
 
 model VerificationToken {
@@ -56,13 +70,17 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-/// * =========================
-///  * SaaS: Organizations / Memberships
-///  * =========================
+/**
+ * =========================
+ * SaaS: Organizations / Memberships
+ * =========================
+ */
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
   slug      String   @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -70,9 +88,11 @@ model Organization {
   apiKeys     ApiKey[]
   requests    Request[]
   usageDaily  UsageDaily[]
+  billing     OrgBilling?
+  auditLogs   AuditLog[]
 
-  // ✅ FIX: 反向关系字段（OrgBilling.org 的 opposite）
-  billing OrgBilling?
+  @@index([slug])
+  @@index([createdAt])
 }
 
 model Membership {
@@ -80,108 +100,194 @@ model Membership {
   orgId     String
   userId    String
   role      OrgRole      @default(MEMBER)
+
   createdAt DateTime     @default(now())
+  updatedAt DateTime     @default(now()) @updatedAt
+
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([orgId, userId])
+  @@index([userId])
+  @@index([orgId, role])
 }
 
-/// * =========================
-///  * SaaS: API Keys (store hash only)
-///  * =========================
+/**
+ * =========================
+ * SaaS: API Keys
+ * Store hash only. Never store raw key.
+ * =========================
+ */
+
 model ApiKey {
   id               String       @id @default(cuid())
-  name             String
-  keyHash          String       @unique
-  createdAt        DateTime     @default(now())
-  allowedIps       String[]     @default([])
-  monthlyBudgetUsd Float?
   orgId            String
+
+  name             String
   prefix           String
-  rateLimitRpm     Int?
-  revokedAt        DateTime?
-  scopes           String[]     @default([])
-  status           ApiKeyStatus @default(ACTIVE)
-  updatedAt        DateTime     @updatedAt
-  lastUsedAt       DateTime?
+  keyHash          String       @unique
+
   userEmail        String       @db.VarChar(255)
+
+  status           ApiKeyStatus @default(ACTIVE)
+  scopes           String[]     @default([])
+
+  environment      ApiKeyEnvironment @default(DEVELOPMENT)
+
+  rateLimitRpm     Int?
+  monthlyBudgetUsd Float?
+  allowedIps       String[]     @default([])
+  allowedTasks     String[]     @default([])
+  allowedModels    String[]     @default([])
+
+  lastUsedAt       DateTime?
+  revokedAt        DateTime?
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
   org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   requests         Request[]
   usageDaily       UsageDaily[]
+  auditLogs        AuditLog[]
 
   @@index([orgId, status])
+  @@index([orgId, environment])
+  @@index([prefix])
+  @@index([lastUsedAt])
 }
 
-/// * =========================
-///  * Core: Request log (existing)
-///  * You can adapt fields to match your current code.
-///  * =========================
+/**
+ * =========================
+ * Core: Request log
+ * Raw per-request logging for usage, debugging, billing, and observability.
+ * =========================
+ */
+
 model Request {
   id               String        @id @default(cuid())
   requestId        String        @unique @default(cuid())
-  createdAt        DateTime      @default(now())
+
+  orgId            String?
+  apiKeyId         String?
+
+  endpoint         String        @default("/v1/generate")
   task             String
   success          Boolean       @default(true)
   attempts         Int           @default(1)
+
   error            String?
+  errorCode        String?
+  statusCode       Int?
+
   provider         String        @default("unknown")
   model            String
+
   promptTokens     Int           @default(0)
   completionTokens Int           @default(0)
   totalTokens      Int           @default(0)
-  apiKeyId         String?
+
   estimatedCostUsd Float         @default(0)
-  idempotencyKey   String?
-  inputJson        Json?
   latencyMs        Int?
-  orgId            String?
+
+  idempotencyKey   String?
+
+  inputJson        Json?
   outputJson       Json?
-  apiKey           ApiKey?       @relation(fields: [apiKeyId], references: [id])
-  org              Organization? @relation(fields: [orgId], references: [id])
+
+  inputStored      Boolean       @default(true)
+  outputStored     Boolean       @default(true)
+  redacted         Boolean       @default(false)
+
+  clientIp         String?
+  userAgent        String?
+
+  createdAt        DateTime      @default(now())
+
+  apiKey           ApiKey?       @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  org              Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([orgId, createdAt])
   @@index([apiKeyId, createdAt])
+  @@index([task, createdAt])
   @@index([provider, model])
+  @@index([success, createdAt])
+  @@index([statusCode, createdAt])
   @@unique([orgId, apiKeyId, idempotencyKey])
 }
 
-/// * =========================
-///  * Aggregates for dashboard + billing
-///  * =========================
+/**
+ * =========================
+ * Aggregates: Dashboard + billing
+ * UsageDaily should be updated when Request is persisted.
+ * =========================
+ */
+
 model UsageDaily {
   id               String       @id @default(cuid())
+
   day              String
   orgId            String
   apiKeyId         String?
+
   task             String
   provider         String       @default("unknown")
   model            String
+
   requestCount     Int          @default(0)
+  successCount     Int          @default(0)
+  errorCount       Int          @default(0)
+
   promptTokens     Int          @default(0)
   completionTokens Int          @default(0)
   totalTokens      Int          @default(0)
+
   costUsd          Float        @default(0)
+  avgLatencyMs     Float?
+
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
-  apiKey           ApiKey?      @relation(fields: [apiKeyId], references: [id])
+
+  apiKey           ApiKey?      @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
   org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@unique([day, orgId, apiKeyId, task, provider, model])
   @@index([orgId, day])
+  @@index([apiKeyId, day])
+  @@index([task, day])
   @@index([provider, model])
 }
+
+/**
+ * =========================
+ * Billing
+ * Stripe-backed subscription and plan state.
+ *
+ * IMPORTANT:
+ * Keep plan/status as String for now.
+ * This avoids unsafe drop/recreate migrations on existing production data.
+ * Later, you can migrate them to enums in a separate controlled migration.
+ * =========================
+ */
 
 model OrgBilling {
   id    String @id @default(cuid())
   orgId String @unique
 
-  stripeCustomerId String?   @unique
-  stripeSubId      String?   @unique
-  plan             String    @default("free")
-  status           String    @default("inactive") // active, trialing, canceled...
-  currentPeriodEnd DateTime?
+  stripeCustomerId String? @unique
+  stripeSubId      String? @unique
+
+  plan             String @default("free")
+  status           String @default("inactive")
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+
+  monthlyRequestLimit Int?
+  monthlyCostLimitUsd Float?
+  rateLimitRpm        Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -190,7 +296,143 @@ model OrgBilling {
 
   @@index([plan])
   @@index([status])
+  @@index([currentPeriodEnd])
 }
+
+/**
+ * =========================
+ * Model Registry
+ * Public catalog + operational health + pricing coverage.
+ * This prevents the Models page from showing 0 when provider keys are missing.
+ * =========================
+ */
+
+model ModelRegistry {
+  id          String @id @default(cuid())
+
+  provider    String
+  model       String
+  displayName String?
+
+  description String?
+
+  status      RegistryStatus @default(ACTIVE)
+
+  contextTokens    Int?
+  maxOutputTokens  Int?
+
+  supportsStreaming Boolean @default(false)
+  supportsJson      Boolean @default(false)
+  supportsTools     Boolean @default(false)
+  supportsVision    Boolean @default(false)
+
+  inputPricePer1mTokens  Float?
+  outputPricePer1mTokens Float?
+
+  configured      Boolean @default(false)
+  available       Boolean @default(false)
+  hasPricing      Boolean @default(false)
+
+  healthStatus        HealthStatus?
+  lastHealthCheckAt   DateTime?
+  lastHealthMessage   String?
+  lastLatencyMs       Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, model])
+  @@index([provider])
+  @@index([status])
+  @@index([available])
+  @@index([healthStatus])
+}
+
+/**
+ * =========================
+ * Task Registry
+ * Productized task intelligence layer.
+ * This powers /v1/tasks, Docs, Playground, and plan gating.
+ *
+ * IMPORTANT:
+ * Keep tier as String for now to avoid billing enum migration risk.
+ * Suggested values: free, pro, team, enterprise.
+ * =========================
+ */
+
+model TaskRegistry {
+  id          String @id @default(cuid())
+
+  task        String @unique
+  displayName String
+  description String?
+
+  category    String?
+  tier        String       @default("free")
+  maturity    TaskMaturity @default(BETA)
+
+  enabled     Boolean @default(true)
+
+  inputSchema  Json?
+  outputSchema Json?
+
+  defaultProvider String?
+  defaultModel    String?
+  defaultMode     String?
+
+  allowedModels    String[] @default([])
+  allowedProviders String[] @default([])
+
+  exampleInput    Json?
+  exampleOutput   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled])
+  @@index([tier])
+  @@index([maturity])
+  @@index([category])
+}
+
+/**
+ * =========================
+ * Audit Log
+ * Tracks security-sensitive and commercial actions.
+ * =========================
+ */
+
+model AuditLog {
+  id       String @id @default(cuid())
+
+  orgId    String?
+  userId   String?
+  apiKeyId String?
+
+  action   String
+  target   String?
+  metadata Json?
+
+  ip        String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  org    Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  user   User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  apiKey ApiKey?       @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, createdAt])
+  @@index([userId, createdAt])
+  @@index([apiKeyId, createdAt])
+  @@index([action, createdAt])
+}
+
+/**
+ * =========================
+ * Enums
+ * =========================
+ */
 
 enum OrgRole {
   OWNER
@@ -201,6 +443,34 @@ enum OrgRole {
 
 enum ApiKeyStatus {
   ACTIVE
-  SUSPENDED
   REVOKED
+  SUSPENDED
 }
+
+enum ApiKeyEnvironment {
+  DEVELOPMENT
+  STAGING
+  PRODUCTION
+}
+
+enum RegistryStatus {
+  ACTIVE
+  DEGRADED
+  DISABLED
+  DEPRECATED
+}
+
+enum HealthStatus {
+  HEALTHY
+  DEGRADED
+  DOWN
+  UNKNOWN
+}
+
+enum TaskMaturity {
+  ALPHA
+  BETA
+  STABLE
+  DEPRECATED
+}
+
