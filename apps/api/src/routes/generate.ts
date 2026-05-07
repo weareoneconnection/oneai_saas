@@ -102,6 +102,23 @@ function getApiKeyId(r: AuthedRequest): string | null {
   return (r as any).auth?.apiKeyId || (r as any).auth?.apiKey?.id || null;
 }
 
+function errorMessageFromUnknown(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  if (err && typeof err === "object") {
+    const anyErr = err as any;
+    if (typeof anyErr.message === "string" && anyErr.message.trim()) {
+      return anyErr.message;
+    }
+    if (typeof anyErr.error === "string" && anyErr.error.trim()) {
+      return anyErr.error;
+    }
+    if (anyErr.errors) return safeJsonStringify(anyErr.errors);
+    return safeJsonStringify(err);
+  }
+  return "Unknown error";
+}
+
 /**
  * 关键：错误分类要把 quota 和 rate limit 分开
  */
@@ -112,8 +129,7 @@ function classifyError(err: unknown): {
   details?: string;
   retryable: boolean;
 } {
-  const message =
-    err instanceof Error ? err.message : typeof err === "string" ? err : "Unknown error";
+  const message = errorMessageFromUnknown(err);
 
   const lower = String(message).toLowerCase();
 
