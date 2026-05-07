@@ -467,6 +467,29 @@ export function findModelProfile(provider: string, model: string) {
   );
 }
 
+function isChatCompletionsModel(profile: LLMModelProfile): boolean {
+  const provider = String(profile.provider);
+  const model = profile.model.toLowerCase();
+
+  if (provider !== "openai") return true;
+
+  if (
+    model.includes("image") ||
+    model.includes("audio") ||
+    model.includes("realtime") ||
+    model.includes("transcribe") ||
+    model.includes("tts") ||
+    model.includes("embedding") ||
+    model.includes("moderation") ||
+    model.includes("search") ||
+    model.includes("instruct")
+  ) {
+    return false;
+  }
+
+  return /^(gpt-(?:3\.5|4|5)|chatgpt-|o\d)/.test(model);
+}
+
 export function chooseModelForMode(params: {
   provider?: string;
   mode?: LLMRoutingMode;
@@ -474,6 +497,7 @@ export function chooseModelForMode(params: {
   const mode = params.mode || "auto";
   const candidates = listModelProfiles().filter((profile) => {
     if (params.provider && profile.provider !== params.provider) return false;
+    if (!isChatCompletionsModel(profile)) return false;
     return profile.modes.includes(mode) || profile.modes.includes("auto");
   });
 
@@ -506,6 +530,8 @@ export function fallbackModelsForMode(params: {
       if (profile.provider === params.provider && profile.model === params.model) {
         return false;
       }
+
+      if (!isChatCompletionsModel(profile)) return false;
 
       return profile.modes.includes(mode) || profile.modes.includes("auto");
     })
