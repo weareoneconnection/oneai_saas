@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { prisma } from "../config/prisma.js";
 import { requireAdminKey } from "../core/security/admin.js";
 import { getOrCreateOrgForUserEmail } from "../core/orgs/ensureOrg.js";
-import { getPlanPolicy } from "../core/billing/planPolicy.js";
+import { applyPlanPolicyOverrides, getPlanPolicy } from "../core/billing/planPolicy.js";
 
 const router = Router();
 
@@ -45,6 +45,10 @@ function allowedPriceIds() {
   ]);
 }
 
+function planFromPriceId(priceId: string) {
+  return allowedPriceIds().get(priceId) || "custom";
+}
+
 function appUrl() {
   return (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
 }
@@ -67,6 +71,52 @@ async function getOrCreateBilling(orgId: string) {
   });
 }
 
+async function syncSubscriptionToBilling(
+  subscription: any,
+  fallback?: { orgId?: string; userEmail?: string; plan?: string }
+) {
+  const orgId = String(subscription?.metadata?.orgId || fallback?.orgId || "");
+  if (!orgId) {
+    console.warn("[billing] Stripe subscription event has no orgId", {
+      subscriptionId: subscription?.id,
+      customer: subscription?.customer,
+    });
+    return null;
+  }
+
+  const priceId = String(subscription?.items?.data?.[0]?.price?.id || "");
+  const plan = String(subscription?.metadata?.plan || fallback?.plan || planFromPriceId(priceId));
+  const currentPeriodStart = subscription?.current_period_start
+    ? new Date(Number(subscription.current_period_start) * 1000)
+    : null;
+  const currentPeriodEnd = subscription?.current_period_end
+    ? new Date(Number(subscription.current_period_end) * 1000)
+    : null;
+
+  return prisma.orgBilling.upsert({
+    where: { orgId },
+    update: {
+      stripeCustomerId: String(subscription.customer || ""),
+      stripeSubId: String(subscription.id || ""),
+      plan,
+      status: String(subscription.status || "inactive"),
+      currentPeriodStart,
+      currentPeriodEnd,
+      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+    } as any,
+    create: {
+      orgId,
+      stripeCustomerId: String(subscription.customer || ""),
+      stripeSubId: String(subscription.id || ""),
+      plan,
+      status: String(subscription.status || "inactive"),
+      currentPeriodStart,
+      currentPeriodEnd,
+      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+    } as any,
+  });
+}
+
 /**
  * GET /v1/billing/status?userEmail=...
  * 用于 web 展示 plan/status
@@ -77,11 +127,9 @@ router.get("/status", requireAdminKey, async (req, res) => {
 
   const org = await getOrCreateOrgForUserEmail(userEmail);
   const billing = await getOrCreateBilling(org.id);
-  const plan =
-    ["active", "trialing"].includes(String(billing.status))
-      ? billing.plan || "free"
-      : "free";
-  const policy = getPlanPolicy(plan);
+  const billingIsActive = ["active", "trialing"].includes(String(billing.status));
+  const plan = billingIsActive ? billing.plan || "free" : "free";
+  const policy = applyPlanPolicyOverrides(getPlanPolicy(plan), billingIsActive ? billing : null);
   const from = monthStartUtc();
 
   const [usage, activeKeys] = await Promise.all([
@@ -197,11 +245,15 @@ router.post("/checkout", requireAdminKey, async (req, res) => {
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
+    client_reference_id: org.id,
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${appUrl()}/billing?success=1`,
     cancel_url: `${appUrl()}/billing?canceled=1`,
     allow_promotion_codes: true,
     metadata: { orgId: org.id, userEmail, plan: pricePlan },
+    subscription_data: {
+      metadata: { orgId: org.id, userEmail, plan: pricePlan },
+    },
   } as any);
 
   return res.json({ success: true, data: { url: (session as any).url } });
@@ -252,43 +304,24 @@ export async function handleStripeWebhook(req: any, res: any) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as any;
+    const subscriptionId = String(session.subscription || "");
+
+    if (subscriptionId) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      await syncSubscriptionToBilling(subscription as any, {
+        orgId: String(session.metadata?.orgId || session.client_reference_id || ""),
+        userEmail: String(session.metadata?.userEmail || ""),
+        plan: String(session.metadata?.plan || ""),
+      });
+    }
+  }
+
   // 订阅创建/更新：同步到 OrgBilling
   if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
     const sub = event.data.object as Stripe.Subscription;
-
-    const orgId = String((sub as any).metadata?.orgId || "");
-    if (orgId) {
-      const priceId = String((sub as any).items?.data?.[0]?.price?.id || "");
-
-      const plan =
-        priceId === process.env.STRIPE_PRICE_TEAM
-          ? "team"
-          : priceId === process.env.STRIPE_PRICE_PRO
-          ? "pro"
-          : "custom";
-
-      // ✅ Stripe types 在你版本里不暴露 current_period_end：用 any 读取
-      const cpe = (sub as any).current_period_end as number | undefined;
-
-      await prisma.orgBilling.upsert({
-        where: { orgId },
-        update: {
-          stripeCustomerId: String((sub as any).customer),
-          stripeSubId: String((sub as any).id),
-          plan,
-          status: String((sub as any).status),
-          currentPeriodEnd: cpe ? new Date(cpe * 1000) : null,
-        } as any,
-        create: {
-          orgId,
-          stripeCustomerId: String((sub as any).customer),
-          stripeSubId: String((sub as any).id),
-          plan,
-          status: String((sub as any).status),
-          currentPeriodEnd: cpe ? new Date(cpe * 1000) : null,
-        } as any,
-      });
-    }
+    await syncSubscriptionToBilling(sub as any);
   }
 
   // 订阅取消：标记状态
@@ -298,7 +331,18 @@ export async function handleStripeWebhook(req: any, res: any) {
     if (orgId) {
       await prisma.orgBilling.update({
         where: { orgId },
-        data: { status: "canceled" } as any,
+        data: {
+          status: "canceled",
+          cancelAtPeriodEnd: Boolean((sub as any).cancel_at_period_end),
+        } as any,
+      });
+    } else if ((sub as any).id) {
+      await prisma.orgBilling.updateMany({
+        where: { stripeSubId: String((sub as any).id) },
+        data: {
+          status: "canceled",
+          cancelAtPeriodEnd: Boolean((sub as any).cancel_at_period_end),
+        } as any,
       });
     }
   }

@@ -72,6 +72,33 @@ export function getPlanPolicy(plan?: string | null): PlanPolicy {
   return POLICIES[String(plan || "free").toLowerCase()] ?? POLICIES.free;
 }
 
+export function applyPlanPolicyOverrides(
+  policy: PlanPolicy,
+  overrides?: {
+    monthlyRequestLimit?: number | null;
+    monthlyCostLimitUsd?: number | null;
+    rateLimitRpm?: number | null;
+  } | null
+): PlanPolicy {
+  if (!overrides) return policy;
+
+  return {
+    ...policy,
+    monthlyRequestLimit:
+      typeof overrides.monthlyRequestLimit === "number" && overrides.monthlyRequestLimit > 0
+        ? overrides.monthlyRequestLimit
+        : policy.monthlyRequestLimit,
+    monthlyCostLimitUsd:
+      typeof overrides.monthlyCostLimitUsd === "number" && overrides.monthlyCostLimitUsd > 0
+        ? overrides.monthlyCostLimitUsd
+        : policy.monthlyCostLimitUsd,
+    rateLimitRpm:
+      typeof overrides.rateLimitRpm === "number" && overrides.rateLimitRpm > 0
+        ? overrides.rateLimitRpm
+        : policy.rateLimitRpm,
+  };
+}
+
 export function canUseTaskTier(plan: string | null | undefined, tier: string) {
   return getPlanPolicy(plan).allowedTiers.includes(tier);
 }

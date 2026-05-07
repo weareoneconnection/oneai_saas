@@ -58,6 +58,13 @@ type BillingData = {
 
 type Notice = { type: "success" | "warn" | "error"; text: string };
 
+const ENABLE_STRIPE_CHECKOUT = process.env.NEXT_PUBLIC_ENABLE_STRIPE_CHECKOUT === "1";
+const CONTACT_SALES_EMAIL = "info@weareoneconnection.com";
+const CONTACT_SALES_HREF =
+  `mailto:${CONTACT_SALES_EMAIL}?subject=OneAI%20SaaS%20plan`;
+const CONTACT_TELEGRAM_HREF = "https://t.me/waocfounder";
+const CONTACT_X_HREF = "https://x.com/waoconnectone?s=21";
+
 const plans = [
   {
     key: "free",
@@ -194,6 +201,7 @@ function PlanCard({
         ? process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM
         : "";
   const canBuy = plan.key === "pro" || plan.key === "team";
+  const canCheckout = canBuy && ENABLE_STRIPE_CHECKOUT;
   const isEnterprise = plan.key === "enterprise";
 
   return (
@@ -235,7 +243,7 @@ function PlanCard({
       </div>
 
       <div className="mt-6">
-        {canBuy ? (
+        {canCheckout ? (
           <Button
             variant={isCurrent ? "secondary" : "primary"}
             onClick={() => onCheckout(plan.key)}
@@ -244,20 +252,30 @@ function PlanCard({
           >
             {busy === plan.key ? "Redirecting..." : plan.cta}
           </Button>
+        ) : canBuy || isEnterprise ? (
+          <Link
+            href={CONTACT_SALES_HREF}
+            className={[
+              "inline-flex h-10 w-full items-center justify-center rounded-lg text-sm font-semibold transition",
+              isCurrent
+                ? "border border-white/20 bg-white text-black hover:bg-white/90"
+                : "border border-black/15 bg-black text-white hover:bg-neutral-900",
+            ].join(" ")}
+          >
+            Contact sales
+          </Link>
         ) : (
-          isEnterprise ? (
-            <Link href="/docs" className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-black/15 bg-white text-sm font-semibold text-black hover:bg-black/[0.04]">
-              {plan.cta}
-            </Link>
-          ) : (
-            <Button variant="secondary" disabled className="w-full">
-              {plan.cta}
-            </Button>
-          )
+          <Button variant="secondary" disabled className="w-full">
+            {plan.cta}
+          </Button>
         )}
-        {canBuy && !priceId ? (
+        {canCheckout && !priceId ? (
           <div className={isCurrent ? "mt-2 text-xs text-white/50" : "mt-2 text-xs text-black/45"}>
             Missing {plan.env}
+          </div>
+        ) : canBuy && !ENABLE_STRIPE_CHECKOUT ? (
+          <div className={isCurrent ? "mt-2 text-xs text-white/50" : "mt-2 text-xs text-black/45"}>
+            Manual onboarding while Stripe is pending.
           </div>
         ) : null}
       </div>
@@ -394,6 +412,21 @@ export default function BillingPage() {
             Sell reliable OneAI API access with model routing, usage visibility,
             and cost controls. Stripe handles subscription and invoices.
           </p>
+          {!ENABLE_STRIPE_CHECKOUT ? (
+            <div className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-800">
+              <span>Manual sales mode</span>
+              <span className="text-amber-900/50">Contact:</span>
+              <a className="underline underline-offset-2" href={CONTACT_SALES_HREF}>
+                {CONTACT_SALES_EMAIL}
+              </a>
+              <a className="underline underline-offset-2" href={CONTACT_TELEGRAM_HREF} target="_blank" rel="noreferrer">
+                Telegram
+              </a>
+              <a className="underline underline-offset-2" href={CONTACT_X_HREF} target="_blank" rel="noreferrer">
+                X
+              </a>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -612,27 +645,56 @@ export default function BillingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Stripe Launch Readiness</CardTitle>
+          <CardTitle>{ENABLE_STRIPE_CHECKOUT ? "Stripe Launch Readiness" : "Manual Sales Mode"}</CardTitle>
           <CardDescription>
-            Checkout requires API secret key and both plan price IDs. Webhook is required before public launch.
+            {ENABLE_STRIPE_CHECKOUT
+              ? "Checkout requires API secret key and both plan price IDs. Webhook is required before public launch."
+              : "Automatic checkout is hidden for now. Customers contact sales, and you can activate plans manually while Stripe setup is pending."}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-4">
-            {[
-              ["Secret key", data?.stripeConfig?.secretKey],
-              ["Webhook secret", data?.stripeConfig?.webhookSecret],
-              ["Pro price", data?.stripeConfig?.pricePro],
-              ["Team price", data?.stripeConfig?.priceTeam],
-            ].map(([label, ok]) => (
-              <div key={String(label)} className="rounded-lg border border-black/10 p-4">
-                <div className="text-xs text-black/50">{label}</div>
-                <div className={ok ? "mt-2 text-sm font-semibold text-emerald-700" : "mt-2 text-sm font-semibold text-red-700"}>
-                  {ok ? "Configured" : "Missing"}
+          {!ENABLE_STRIPE_CHECKOUT ? (
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-lg border border-black/10 p-4">
+                <div className="text-xs text-black/50">Sales contacts</div>
+                <div className="mt-2 space-y-1 text-sm font-semibold text-black">
+                  <a className="block underline underline-offset-2" href={CONTACT_SALES_HREF}>
+                    {CONTACT_SALES_EMAIL}
+                  </a>
+                  <a className="block underline underline-offset-2" href={CONTACT_TELEGRAM_HREF} target="_blank" rel="noreferrer">
+                    t.me/waocfounder
+                  </a>
+                  <a className="block underline underline-offset-2" href={CONTACT_X_HREF} target="_blank" rel="noreferrer">
+                    x.com/waoconnectone
+                  </a>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="rounded-lg border border-black/10 p-4">
+                <div className="text-xs text-black/50">Activation</div>
+                <div className="mt-2 text-sm font-semibold text-black">Manual plan setup</div>
+              </div>
+              <div className="rounded-lg border border-black/10 p-4">
+                <div className="text-xs text-black/50">Checkout</div>
+                <div className="mt-2 text-sm font-semibold text-amber-800">Hidden until Stripe is ready</div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-4">
+              {[
+                ["Secret key", data?.stripeConfig?.secretKey],
+                ["Webhook secret", data?.stripeConfig?.webhookSecret],
+                ["Pro price", data?.stripeConfig?.pricePro],
+                ["Team price", data?.stripeConfig?.priceTeam],
+              ].map(([label, ok]) => (
+                <div key={String(label)} className="rounded-lg border border-black/10 p-4">
+                  <div className="text-xs text-black/50">{label}</div>
+                  <div className={ok ? "mt-2 text-sm font-semibold text-emerald-700" : "mt-2 text-sm font-semibold text-red-700"}>
+                    {ok ? "Configured" : "Missing"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

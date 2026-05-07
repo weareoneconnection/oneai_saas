@@ -14,7 +14,7 @@ import { listModelProfiles } from "../core/llm/modelRegistry.js";
 import { applyTaskDifficultyRouting } from "../core/llm/taskDifficulty.js";
 import { getLLMConfigSummary } from "../core/llm/configSummary.js";
 import { getTaskCatalogItem } from "../core/tasks/catalog.js";
-import { canUseTaskTier, getPlanPolicy } from "../core/billing/planPolicy.js";
+import { applyPlanPolicyOverrides, getPlanPolicy } from "../core/billing/planPolicy.js";
 
 const router = Router();
 
@@ -194,18 +194,56 @@ async function persistRequestSafe(data: any) {
   }
 }
 
-async function getOrgPlan(orgId: string | null): Promise<string> {
-  if (!orgId) return "free";
+async function getOrgBillingPolicy(orgId: string | null) {
+  if (!orgId) {
+    const plan = "free";
+    return {
+      plan,
+      policy: getPlanPolicy(plan),
+    };
+  }
 
   const billing = await prisma.orgBilling.findUnique({
     where: { orgId },
-    select: { plan: true, status: true },
+    select: {
+      plan: true,
+      status: true,
+      monthlyRequestLimit: true,
+      monthlyCostLimitUsd: true,
+      rateLimitRpm: true,
+    },
   });
 
-  if (!billing) return "free";
-  if (!["active", "trialing"].includes(String(billing.status))) return "free";
+  const billingIsActive = billing && ["active", "trialing"].includes(String(billing.status));
+  const plan = billingIsActive ? billing.plan || "free" : "free";
 
-  return billing.plan || "free";
+  return {
+    plan,
+    policy: applyPlanPolicyOverrides(getPlanPolicy(plan), billingIsActive ? billing : null),
+  };
+}
+
+async function getTaskTier(taskType: string) {
+  try {
+    const task = await prisma.taskRegistry.findUnique({
+      where: { task: taskType },
+      select: { tier: true, enabled: true },
+    });
+
+    if (task && !task.enabled) {
+      throw new Error(`Task ${taskType} is disabled`);
+    }
+
+    if (task?.tier) return task.tier;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("disabled")) throw err;
+    console.error("[OneAI][router] failed to read TaskRegistry tier", {
+      task: taskType,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  return getTaskCatalogItem(taskType)?.tier ?? "free";
 }
 
 async function assertPlanAllowsUsage(params: {
@@ -217,11 +255,9 @@ async function assertPlanAllowsUsage(params: {
   llmOptions?: any;
   llmConfig?: LLMResolvedConfig;
 }) {
-  const plan = await getOrgPlan(params.orgId);
-  const task = getTaskCatalogItem(params.task);
-  const tier = task?.tier ?? "free";
+  const { plan, policy } = await getOrgBillingPolicy(params.orgId);
+  const tier = await getTaskTier(params.task);
   const enforcePlanPolicy = process.env.ONEAI_PLAN_POLICY_ENFORCE !== "0";
-  const policy = getPlanPolicy(plan);
 
   if (!params.isAdmin && params.debug && !policy.allowDebug) {
     throw new Error(`Debug trace requires team plan`);
@@ -248,7 +284,7 @@ async function assertPlanAllowsUsage(params: {
     );
   }
 
-  if (enforcePlanPolicy && !canUseTaskTier(plan, tier)) {
+  if (enforcePlanPolicy && !policy.allowedTiers.includes(tier)) {
     throw new Error(`Task ${params.task} requires ${tier} plan`);
   }
 
@@ -308,8 +344,7 @@ router.use(
 router.get("/models", async (req, res) => {
   const r = req as AuthedRequest;
   if (!r.auth?.isAdmin) {
-    const plan = await getOrgPlan(getOrgId(r));
-    const policy = getPlanPolicy(plan);
+    const { policy } = await getOrgBillingPolicy(getOrgId(r));
     if (!policy.allowModelRegistry) {
       return res.status(403).json({
         success: false,

@@ -1,6 +1,12 @@
 // apps/web/src/app/pricing/page.tsx
 import Link from "next/link";
 
+const CONTACT_SALES_EMAIL = "info@weareoneconnection.com";
+const CONTACT_SALES_HREF =
+  `mailto:${CONTACT_SALES_EMAIL}?subject=OneAI%20SaaS%20plan`;
+const CONTACT_TELEGRAM_HREF = "https://t.me/waocfounder";
+const CONTACT_X_HREF = "https://x.com/waoconnectone?s=21";
+
 const plans = [
   {
     name: "Free",
@@ -134,7 +140,7 @@ export default function PricingPage() {
                 ))}
               </div>
               <Link
-                href={plan.name === "Free" ? "/keys" : plan.name === "Enterprise" ? "/docs" : "/billing"}
+                href={plan.name === "Free" ? "/keys" : CONTACT_SALES_HREF}
                 className={[
                   "mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg text-sm font-semibold transition",
                   plan.name === "Pro"
@@ -142,10 +148,29 @@ export default function PricingPage() {
                     : "bg-black text-white hover:bg-neutral-900",
                 ].join(" ")}
               >
-                {plan.name === "Free" ? "Start free" : plan.name === "Enterprise" ? "Talk to us" : "Choose plan"}
+                {plan.name === "Free" ? "Start free" : "Contact sales"}
               </Link>
             </div>
           ))}
+        </div>
+
+        <div className="mt-6 rounded-lg border border-black/10 bg-black/[0.02] p-5">
+          <div className="text-sm font-bold text-black">Manual onboarding</div>
+          <p className="mt-2 text-sm leading-relaxed text-black/60">
+            Stripe checkout is temporarily hidden. For Pro, Team, or Enterprise
+            access, contact sales and we will activate the plan manually.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-4 text-sm font-semibold">
+            <a href={CONTACT_SALES_HREF} className="text-black underline underline-offset-4">
+              {CONTACT_SALES_EMAIL}
+            </a>
+            <a href={CONTACT_TELEGRAM_HREF} target="_blank" rel="noreferrer" className="text-black underline underline-offset-4">
+              Telegram
+            </a>
+            <a href={CONTACT_X_HREF} target="_blank" rel="noreferrer" className="text-black underline underline-offset-4">
+              X
+            </a>
+          </div>
         </div>
 
         <div className="mt-12">

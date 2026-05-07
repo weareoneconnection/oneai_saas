@@ -2,7 +2,7 @@
 import type { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import { prisma } from "../../config/prisma.js";
-import { getPlanPolicy } from "../billing/planPolicy.js";
+import { applyPlanPolicyOverrides, getPlanPolicy } from "../billing/planPolicy.js";
 
 export type AuthedRequest = Request & {
   auth?: {
@@ -56,6 +56,9 @@ export async function requireApiKey(req: AuthedRequest, res: Response, next: Nex
               select: {
                 plan: true,
                 status: true,
+                monthlyRequestLimit: true,
+                monthlyCostLimitUsd: true,
+                rateLimitRpm: true,
               },
             },
           },
@@ -73,11 +76,12 @@ export async function requireApiKey(req: AuthedRequest, res: Response, next: Nex
 
     // isAdmin：用 scopes 控制（推荐）
     const isAdmin = Array.isArray(apiKey.scopes) && apiKey.scopes.includes("admin");
-    const effectivePlan =
-      ["active", "trialing"].includes(String(apiKey.org?.billing?.status))
-        ? apiKey.org?.billing?.plan || "free"
-        : "free";
-    const policy = getPlanPolicy(effectivePlan);
+    const billingIsActive = ["active", "trialing"].includes(String(apiKey.org?.billing?.status));
+    const effectivePlan = billingIsActive ? apiKey.org?.billing?.plan || "free" : "free";
+    const policy = applyPlanPolicyOverrides(
+      getPlanPolicy(effectivePlan),
+      billingIsActive ? apiKey.org?.billing : null
+    );
     const effectiveApiKey = {
       ...apiKey,
       rateLimitRpm: apiKey.rateLimitRpm || policy.rateLimitRpm,
