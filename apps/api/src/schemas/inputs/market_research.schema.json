@@ -1,0 +1,11 @@
+{
+  "$id": "marketResearchInput",
+  "type": "object",
+  "properties": {
+    "product": { "type": "string" },
+    "audience": { "type": "string" },
+    "competitors": { "type": "array", "items": { "type": "string" } },
+    "objective": { "type": "string" }
+  },
+  "additionalProperties": true
+}

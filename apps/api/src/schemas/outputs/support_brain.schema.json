@@ -1,0 +1,15 @@
+{
+  "$id": "supportBrainOutput",
+  "type": "object",
+  "required": ["reply", "intent", "confidence", "suggestedAction", "escalationNeeded", "memoryUpdate"],
+  "properties": {
+    "reply": { "type": "string" },
+    "intent": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "suggestedAction": { "type": "string" },
+    "escalationNeeded": { "type": "boolean" },
+    "memoryUpdate": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

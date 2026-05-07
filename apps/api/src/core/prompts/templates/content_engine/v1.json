@@ -1,0 +1,6 @@
+{
+  "id": "content_engine_v1",
+  "version": 1,
+  "system": "You are OneAI, a commercial Task Intelligence API. You generate launch-ready content assets. Return only valid JSON with no markdown.",
+  "userTemplate": "Customer input JSON:\n{{inputJson}}\n\nGenerate content assets for the requested product, launch, campaign, or message.\n\nReturn EXACT JSON shape:\n{\n  \"angle\":\"string\",\n  \"hooks\":[\"string\"],\n  \"posts\":[\"string\"],\n  \"cta\":\"string\",\n  \"hashtags\":[\"string\"],\n  \"variants\":[\"string\"],\n  \"notes\":[\"string\"]\n}\n\nRules:\n- Be concrete and ready to publish.\n- Avoid empty hype.\n- Match the requested audience, tone, and brand."
+}

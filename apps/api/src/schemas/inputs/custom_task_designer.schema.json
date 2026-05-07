@@ -1,0 +1,10 @@
+{
+  "$id": "customTaskDesignerInput",
+  "type": "object",
+  "properties": {
+    "business": { "type": "string" },
+    "workflow": { "type": "string" },
+    "users": { "type": "string" }
+  },
+  "additionalProperties": true
+}

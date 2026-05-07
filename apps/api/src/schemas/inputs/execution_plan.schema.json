@@ -1,0 +1,10 @@
+{
+  "$id": "executionPlanInput",
+  "type": "object",
+  "properties": {
+    "goal": { "type": "string" },
+    "actor": { "type": "string" },
+    "constraints": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,11 @@
+{
+  "$id": "decisionIntelligenceInput",
+  "type": "object",
+  "properties": {
+    "question": { "type": "string" },
+    "options": { "type": "array", "items": { "type": "string" } },
+    "context": {},
+    "riskTolerance": { "type": "string" }
+  },
+  "additionalProperties": true
+}

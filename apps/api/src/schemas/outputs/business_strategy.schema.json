@@ -1,0 +1,15 @@
+{
+  "$id": "businessStrategyOutput",
+  "type": "object",
+  "required": ["summary", "strategy", "milestones", "risks", "nextActions", "successMetrics"],
+  "properties": {
+    "summary": { "type": "string" },
+    "strategy": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "milestones": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "risks": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "nextActions": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "successMetrics": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "assumptions": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

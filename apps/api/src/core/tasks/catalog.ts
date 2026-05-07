@@ -20,12 +20,26 @@ const TASK_DESCRIPTIONS: Record<string, string> = {
   market_intelligence: "Market intelligence synthesis.",
   onefield_intelligence: "Coordination intelligence over builder/network fields.",
   tweet: "Generate structured tweet content.",
+  business_strategy: "Turn a business goal into structured strategy, milestones, risks, and next actions.",
+  campaign_mission: "Build a commercial campaign mission with proof, review, rewards, growth loops, and risk controls.",
+  content_engine: "Generate launch-ready content assets, hooks, social posts, CTAs, hashtags, and variants.",
+  support_brain: "Generate customer support or community replies with intent, confidence, suggested action, and memory update.",
+  market_research: "Create a structured market research brief from product, audience, competitors, and constraints.",
+  decision_intelligence: "Turn context and options into a structured decision recommendation.",
+  execution_plan: "Create a safe execution-ready plan for external agents, tools, or teams without executing actions.",
+  custom_task_designer: "Design a custom Task Intelligence specification for a customer workflow.",
 };
 
 const TASK_TIERS: Record<string, TaskTier> = {
   market_decision: "pro",
   onefield_intelligence: "pro",
   oneclaw_execute: "pro",
+  campaign_mission: "pro",
+  support_brain: "pro",
+  market_research: "pro",
+  decision_intelligence: "pro",
+  execution_plan: "team",
+  custom_task_designer: "team",
 };
 
 const TASK_CATEGORIES: Record<string, TaskCategory> = {
@@ -42,6 +56,14 @@ const TASK_CATEGORIES: Record<string, TaskCategory> = {
   onefield_intelligence: "community",
   one_mirror: "community",
   tweet: "growth",
+  business_strategy: "core",
+  campaign_mission: "growth",
+  content_engine: "growth",
+  support_brain: "community",
+  market_research: "market",
+  decision_intelligence: "core",
+  execution_plan: "execution_planning",
+  custom_task_designer: "core",
   daily_vibe: "growth",
   "lite/cta": "growth",
   "lite/debate": "growth",
@@ -71,6 +93,14 @@ const STABLE_TASKS = new Set([
   "market_decision",
   "tweet",
   "mission",
+  "business_strategy",
+  "campaign_mission",
+  "content_engine",
+  "support_brain",
+  "market_research",
+  "decision_intelligence",
+  "execution_plan",
+  "custom_task_designer",
 ]);
 
 function titleize(task: string): string {

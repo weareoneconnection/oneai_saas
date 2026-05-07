@@ -14,9 +14,20 @@ import { listModelProfiles } from "../core/llm/modelRegistry.js";
 import { applyTaskDifficultyRouting } from "../core/llm/taskDifficulty.js";
 import { getLLMConfigSummary } from "../core/llm/configSummary.js";
 import { getTaskCatalogItem } from "../core/tasks/catalog.js";
+import { validateTaskInput } from "../core/tasks/inputValidation.js";
 import { applyPlanPolicyOverrides, getPlanPolicy } from "../core/billing/planPolicy.js";
 
 const router = Router();
+const PUBLIC_COMMERCIAL_TASKS = new Set([
+  "business_strategy",
+  "campaign_mission",
+  "content_engine",
+  "support_brain",
+  "market_research",
+  "decision_intelligence",
+  "execution_plan",
+  "custom_task_designer",
+]);
 
 /**
  * 启动检查
@@ -57,6 +68,14 @@ function safeJsonStringify(value: unknown): string {
 
 function sha256(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");
+}
+
+function shouldExposeDetails(r: AuthedRequest, debug?: boolean): boolean {
+  return !!r.auth?.isAdmin || !!debug || process.env.ONEAI_EXPOSE_ERROR_DETAILS === "1";
+}
+
+function shouldValidateTaskInput(task: string): boolean {
+  return PUBLIC_COMMERCIAL_TASKS.has(task) || process.env.ONEAI_VALIDATE_ALL_TASK_INPUTS === "1";
 }
 
 function normalizeEstimatedCostUsd(result: any): number {
@@ -177,6 +196,16 @@ function classifyError(err: unknown): {
     };
   }
 
+  if (lower.includes("no workflow registered for task")) {
+    return {
+      statusCode: 404,
+      publicMessage: "Task is not available",
+      code: "TASK_NOT_FOUND",
+      details: message,
+      retryable: false,
+    };
+  }
+
   return {
     statusCode: 500,
     publicMessage: "Internal task failure",
@@ -227,16 +256,11 @@ async function getTaskTier(taskType: string) {
   try {
     const task = await prisma.taskRegistry.findUnique({
       where: { task: taskType },
-      select: { tier: true, enabled: true },
+      select: { tier: true },
     });
-
-    if (task && !task.enabled) {
-      throw new Error(`Task ${taskType} is disabled`);
-    }
 
     if (task?.tier) return task.tier;
   } catch (err) {
-    if (err instanceof Error && err.message.includes("disabled")) throw err;
     console.error("[OneAI][router] failed to read TaskRegistry tier", {
       task: taskType,
       error: err instanceof Error ? err.message : String(err),
@@ -415,6 +439,31 @@ router.post("/", async (req, res) => {
     });
 
     const parsed = requestSchema.parse(req.body);
+    const exposeDetails = shouldExposeDetails(r, parsed.options?.debug);
+
+    if (!getTaskCatalogItem(parsed.type)) {
+      return res.status(404).json({
+        success: false,
+        requestId,
+        error: "Task is not available",
+        code: "TASK_NOT_FOUND",
+        retryable: false,
+      });
+    }
+
+    const inputValidation = shouldValidateTaskInput(parsed.type)
+      ? validateTaskInput(parsed.type, parsed.input)
+      : { ok: true, errors: null };
+    if (!inputValidation.ok) {
+      return res.status(400).json({
+        success: false,
+        requestId,
+        error: "Invalid task input",
+        code: "INVALID_TASK_INPUT",
+        retryable: false,
+        ...(exposeDetails ? { details: inputValidation.errors } : {}),
+      });
+    }
 
     if (
       !r.auth?.isAdmin &&
@@ -454,13 +503,14 @@ router.post("/", async (req, res) => {
         error: isPolicyError ? "LLM provider/model not allowed" : "LLM provider not configured",
         code: isPolicyError ? "LLM_NOT_ALLOWED" : "UPSTREAM_CONFIG_ERROR",
         retryable: false,
-        details: message,
+        ...(exposeDetails ? { details: message } : {}),
       });
     }
 
     const orgId = getOrgId(r);
     const apiKeyId = getApiKeyId(r);
     const inputHash = sha256(safeJsonStringify(parsed.input));
+    const optionsHash = sha256(safeJsonStringify(parsed.options ?? {}));
 
     if (idempotencyKey && orgId) {
       const previous = await prisma.request.findFirst({
@@ -470,6 +520,23 @@ router.post("/", async (req, res) => {
 
       const previousAny = previous as any;
       if (previousAny?.outputJson) {
+        const previousInputHash = sha256(safeJsonStringify(previousAny.inputJson ?? null));
+        const previousOptionsHash = String(previousAny.outputJson?.oneai?.idempotency?.optionsHash || "");
+
+        if (
+          previousAny.task !== parsed.type ||
+          previousInputHash !== inputHash ||
+          (previousOptionsHash && previousOptionsHash !== optionsHash)
+        ) {
+          return res.status(409).json({
+            success: false,
+            requestId,
+            error: "Idempotency key was already used with a different request",
+            code: "IDEMPOTENCY_CONFLICT",
+            retryable: false,
+          });
+        }
+
         res.setHeader("x-request-id", previousAny.requestId || previousAny.id);
         res.setHeader("x-idempotent-replay", "true");
         return res.json(previousAny.outputJson);
@@ -491,9 +558,10 @@ router.post("/", async (req, res) => {
       return res.status(402).json({
         success: false,
         requestId,
-        error: message,
+        error: "Plan policy denied",
         code: "PLAN_LIMIT_EXCEEDED",
         retryable: false,
+        ...(exposeDetails ? { details: message } : {}),
       });
     }
 
@@ -555,7 +623,7 @@ router.post("/", async (req, res) => {
         error: classified.publicMessage,
         code: classified.code,
         retryable: classified.retryable,
-        details: classified.details,
+        ...(exposeDetails ? { details: classified.details } : {}),
       };
 
       return res.status(classified.statusCode).json(responseBody);
@@ -582,7 +650,7 @@ router.post("/", async (req, res) => {
         error: classified.publicMessage,
         code: classified.code,
         retryable: classified.retryable,
-        details: classified.details ?? result?.error ?? null,
+        ...(exposeDetails ? { details: classified.details ?? result?.error ?? null } : {}),
         usage: result?.usage ?? null,
         usageTotal: result?.usageTotal ?? null,
         ...(parsed.options?.debug ? { usageSteps: result?.usageSteps ?? null } : {}),
@@ -639,6 +707,15 @@ router.post("/", async (req, res) => {
       ...(parsed.options?.debug ? { llmTraceSteps: result?.llmTraceSteps ?? null } : {}),
       data: result?.data ?? null,
       latencyMs,
+      oneai: {
+        idempotency: idempotencyKey
+          ? {
+              keyHash: sha256(idempotencyKey),
+              inputHash,
+              optionsHash,
+            }
+          : null,
+      },
     };
 
     await persistRequestSafe({
@@ -682,7 +759,9 @@ router.post("/", async (req, res) => {
       error: classified.publicMessage,
       code: classified.code,
       retryable: classified.retryable,
-      details: classified.details,
+      ...(shouldExposeDetails(r, Boolean((req.body as any)?.options?.debug))
+        ? { details: classified.details }
+        : {}),
       latencyMs,
     });
   }

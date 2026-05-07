@@ -45,3 +45,5 @@ import "./marketIntelligenceWorkflow.js";
 import "./marketAnalysisWorkflow.js";
 import "./marketDecisionWorkflow.js";
 
+// Commercial public Task Intelligence workflows
+import "./commercialTaskWorkflows.js";

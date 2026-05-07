@@ -11,7 +11,8 @@
     "start": "node dist/index.js",
     "keys:sync": "node scripts/syncConfiguredApiKeys.mjs",
     "seed:admin": "tsx scripts/seedAdminKey.ts",
-    "launch:check": "node scripts/checkLaunchEnv.mjs"
+    "launch:check": "node scripts/checkLaunchEnv.mjs",
+    "tasks:public": "tsx prisma/seed-public-task-registry.ts"
   },
   "license": "MIT",
   "dependencies": {

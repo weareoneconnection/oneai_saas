@@ -1,0 +1,11 @@
+{
+  "$id": "campaignMissionInput",
+  "type": "object",
+  "properties": {
+    "goal": { "type": "string" },
+    "audience": { "type": "string" },
+    "brand": { "type": "string" },
+    "constraints": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

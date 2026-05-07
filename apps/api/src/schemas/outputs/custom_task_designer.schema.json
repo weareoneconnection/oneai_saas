@@ -1,0 +1,17 @@
+{
+  "$id": "customTaskDesignerOutput",
+  "type": "object",
+  "required": ["taskName", "useCase", "inputContract", "outputContract", "workflowSteps", "policyControls", "integrationPlan", "questions"],
+  "properties": {
+    "taskName": { "type": "string" },
+    "useCase": { "type": "string" },
+    "inputContract": { "type": "object" },
+    "outputContract": { "type": "object" },
+    "workflowSteps": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "policyControls": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "integrationPlan": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "questions": { "type": "array", "items": { "type": "string" } },
+    "pricingTierSuggestion": { "type": "string" }
+  },
+  "additionalProperties": true
+}

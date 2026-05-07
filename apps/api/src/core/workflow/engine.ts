@@ -10,9 +10,10 @@ export async function runWorkflow<TCtx extends WorkflowContext>(
   def: WorkflowDefinition<TCtx>,
   ctx: TCtx
 ): Promise<TCtx> {
-  ctx.maxAttempts = def.maxAttempts;
+  const maxAttempts = ctx.maxAttempts || def.maxAttempts;
+  ctx.maxAttempts = maxAttempts;
 
-  for (let attempt = 1; attempt <= def.maxAttempts; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     ctx.attempt = attempt;
     ctx.lastError = null;
 

@@ -1,0 +1,11 @@
+{
+  "$id": "supportBrainInput",
+  "type": "object",
+  "properties": {
+    "message": { "type": "string" },
+    "context": {},
+    "customer": { "type": "string" },
+    "recentMessages": {}
+  },
+  "additionalProperties": true
+}

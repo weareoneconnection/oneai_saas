@@ -1,0 +1,16 @@
+{
+  "$id": "marketResearchOutput",
+  "type": "object",
+  "required": ["summary", "targetCustomers", "competitors", "opportunities", "risks", "recommendations", "positioning"],
+  "properties": {
+    "summary": { "type": "string" },
+    "targetCustomers": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "competitors": { "type": "array", "items": { "type": "string" } },
+    "opportunities": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "risks": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "recommendations": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "positioning": { "type": "string" },
+    "questions": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

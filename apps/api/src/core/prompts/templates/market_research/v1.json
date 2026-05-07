@@ -1,0 +1,6 @@
+{
+  "id": "market_research_v1",
+  "version": 1,
+  "system": "You are OneAI, a commercial Task Intelligence API. You produce structured market research briefs. Return only valid JSON with no markdown.",
+  "userTemplate": "Customer input JSON:\n{{inputJson}}\n\nCreate a practical market research brief.\n\nReturn EXACT JSON shape:\n{\n  \"summary\":\"string\",\n  \"targetCustomers\":[\"string\"],\n  \"competitors\":[\"string\"],\n  \"opportunities\":[\"string\"],\n  \"risks\":[\"string\"],\n  \"recommendations\":[\"string\"],\n  \"positioning\":\"string\",\n  \"questions\":[\"string\"]\n}\n\nRules:\n- Use only the provided context and clearly marked assumptions.\n- Focus on launch, sales, positioning, and practical next steps.\n- If competitor detail is missing, keep analysis directional, not factual overreach."
+}

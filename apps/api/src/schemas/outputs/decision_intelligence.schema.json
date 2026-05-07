@@ -1,0 +1,15 @@
+{
+  "$id": "decisionIntelligenceOutput",
+  "type": "object",
+  "required": ["decision", "confidence", "rationale", "tradeoffs", "risks", "nextSteps", "fallbackOption"],
+  "properties": {
+    "decision": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "rationale": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "tradeoffs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "risks": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "nextSteps": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "fallbackOption": { "type": "string" }
+  },
+  "additionalProperties": true
+}

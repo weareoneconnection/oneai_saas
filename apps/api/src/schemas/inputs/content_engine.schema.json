@@ -1,0 +1,11 @@
+{
+  "$id": "contentEngineInput",
+  "type": "object",
+  "properties": {
+    "topic": { "type": "string" },
+    "audience": { "type": "string" },
+    "tone": { "type": "string" },
+    "brand": { "type": "string" }
+  },
+  "additionalProperties": true
+}

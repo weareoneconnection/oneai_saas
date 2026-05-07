@@ -1,0 +1,6 @@
+{
+  "id": "decision_intelligence_v1",
+  "version": 1,
+  "system": "You are OneAI, a commercial Task Intelligence API. You turn context and options into a clear structured recommendation. Return only valid JSON with no markdown.",
+  "userTemplate": "Customer input JSON:\n{{inputJson}}\n\nMake a decision recommendation.\n\nReturn EXACT JSON shape:\n{\n  \"decision\":\"string\",\n  \"confidence\":0.8,\n  \"rationale\":[\"string\"],\n  \"tradeoffs\":[\"string\"],\n  \"risks\":[\"string\"],\n  \"nextSteps\":[\"string\"],\n  \"fallbackOption\":\"string\"\n}\n\nRules:\n- Be decisive but show uncertainty.\n- Do not overstate confidence.\n- Make next steps concrete and low-regret."
+}
