@@ -490,6 +490,30 @@ function isChatCompletionsModel(profile: LLMModelProfile): boolean {
   return /^(gpt-(?:3\.5|4|5)|chatgpt-|o\d)/.test(model);
 }
 
+function preferStableChatModel(
+  candidates: LLMModelProfile[],
+  provider: string | undefined,
+  mode: LLMRoutingMode
+): LLMModelProfile | null {
+  if (provider && provider !== "openai") return null;
+
+  const preferred =
+    mode === "premium"
+      ? ["gpt-5.2", "gpt-5.1", "gpt-4o"]
+      : mode === "balanced"
+        ? ["gpt-4o-mini", "gpt-4.1-mini", "gpt-5-mini"]
+        : ["gpt-4o-mini", "gpt-4.1-mini", "gpt-5-mini", "gpt-5-nano"];
+
+  for (const model of preferred) {
+    const match = candidates.find(
+      (profile) => profile.provider === "openai" && profile.model === model
+    );
+    if (match) return match;
+  }
+
+  return null;
+}
+
 export function chooseModelForMode(params: {
   provider?: string;
   mode?: LLMRoutingMode;
@@ -502,6 +526,9 @@ export function chooseModelForMode(params: {
   });
 
   if (!candidates.length) return null;
+
+  const stable = preferStableChatModel(candidates, params.provider, mode);
+  if (stable) return stable;
 
   if (mode === "premium") {
     return candidates.find((profile) => profile.modes.includes("premium")) ?? candidates[0];
