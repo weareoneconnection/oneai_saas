@@ -58,7 +58,9 @@ function sampleInput(type: string) {
   }
 
   return {
-    goal: "Create a simple launch plan for OneAI SaaS",
+    goal: "为一个中国 SaaS 团队制定 30 天 AI API 上线策略",
+    audience: "中国开发者和 SaaS 创业团队",
+    lang: "zh",
   };
 }
 
@@ -139,44 +141,44 @@ export default function TasksPage() {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge>Infrastructure</Badge>
-            <Badge>Tasks</Badge>
+            <Badge>基础设施 Infrastructure</Badge>
+            <Badge>商用任务 Tasks</Badge>
             {err ? <span className="text-xs text-red-600">{err}</span> : null}
             {warning ? <span className="text-xs text-amber-700">{warning}</span> : null}
           </div>
           <h1 className="mt-3 text-2xl font-bold tracking-tight text-black">
-            Task Registry
+            商用 Task Registry
           </h1>
           <p className="mt-1 text-sm text-black/55">
-            Productized OneAI intelligence capabilities exposed through /v1/generate. Execution remains outside OneAI.
+            通过 /v1/generate 对外售卖的 OneAI 结构化智能能力。OneAI 负责智能协调，执行仍在外部系统。
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/playground" className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-900">
-            Open Playground
+            在线测试
           </Link>
           <Button variant="secondary" onClick={load} disabled={loading}>
-            {loading ? "Loading..." : "Refresh"}
+            {loading ? "加载中..." : "刷新"}
           </Button>
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Stat label="Total tasks" value={rows.length} />
-        <Stat label="Stable tasks" value={stableCount} />
-        <Stat label="Schema covered" value={schemaCount} />
-        <Stat label="Paid tiers" value={proCount} />
+        <Stat label="商用任务" value={rows.length} />
+        <Stat label="稳定任务" value={stableCount} />
+        <Stat label="Schema 覆盖" value={schemaCount} />
+        <Stat label="付费权限" value={proCount} />
       </div>
 
       <div className="rounded-lg border border-black/10 bg-white p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_180px_160px]">
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search task, description, type..." className="border-black/10 bg-white text-black placeholder:text-black/35" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="搜索 task、描述、类型..." className="border-black/10 bg-white text-black placeholder:text-black/35" />
           <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="all">All categories</option>
+            <option value="all">全部分类</option>
             {categories.map((item) => <option key={item} value={item}>{item}</option>)}
           </Select>
           <Select value={tier} onChange={(e) => setTier(e.target.value)}>
-            <option value="all">All tiers</option>
+            <option value="all">全部套餐</option>
             {tiers.map((item) => <option key={item} value={item}>{item}</option>)}
           </Select>
         </div>
@@ -216,7 +218,7 @@ export default function TasksPage() {
             })
           ) : (
             <div className="rounded-lg border border-black/10 p-5 text-sm text-black/60">
-              No task data loaded.
+              暂无 task 数据。
             </div>
           )}
         </div>

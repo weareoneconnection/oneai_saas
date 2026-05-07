@@ -34,21 +34,21 @@ function Header() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 bg-white text-sm font-bold">
             OA
           </div>
-          <div className="leading-tight">
-            <div className="text-sm font-bold">OneAI API</div>
-            <div className="text-xs text-black/50">Full-model AI brain</div>
-          </div>
+            <div className="leading-tight">
+              <div className="text-sm font-bold">OneAI API</div>
+            <div className="text-xs text-black/50">全模型 AI 智能大脑 · Full-model AI brain</div>
+            </div>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-black/65 md:flex">
           <Link href="/docs" className="hover:text-black">
-            Docs
+            文档 Docs
           </Link>
           <Link href="/pricing" className="hover:text-black">
-            Pricing
+            价格 Pricing
           </Link>
           <Link href="/security" className="hover:text-black">
-            Security
+            安全 Security
           </Link>
         </nav>
 
@@ -57,13 +57,13 @@ function Header() {
             href="/dashboard"
             className="hidden rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03] sm:inline-flex"
           >
-            Console
+            控制台 Console
           </Link>
           <Link
             href="/keys"
             className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-900"
           >
-            Get API Key
+            获取 API Key
           </Link>
         </div>
       </div>
@@ -98,19 +98,23 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.05fr_0.95fr] md:py-20">
           <div>
             <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-              OneAI only coordinates intelligence. OneClaw and bots execute.
+              OneAI 只做统一智能协调大脑，执行交给 OneClaw 和 Bot。
             </div>
             <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight md:text-6xl">
-              Full-model AI infrastructure with task intelligence built in.
+              全模型调用基础设施，内置 Task Intelligence 智能任务大脑。
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-black/65 md:text-lg">
-              OneAI gives developers one API for model routing, structured
-              workflows, cost controls, streaming chat, model health checks,
-              usage, and billing. Execution stays with OneClaw and bots.
+              OneAI 面向中国开发者、SaaS 团队和创业者，提供一个统一 API：
+              模型路由、结构化任务、成本控制、流式对话、模型健康检查、
+              用量统计和商业计费。OneAI 负责智能协调，外部系统负责执行。
             </p>
             <p className="mt-4 max-w-2xl text-base font-semibold leading-relaxed text-black md:text-lg">
               We provide customized Task Intelligence for customer needs,
               turning OneAI into the AI brain behind their applications.
+            </p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-black/55 md:text-base">
+              为客户按业务需求定制 Task Intelligence，让 OneAI 成为应用背后的
+              AI 智能大脑，而不是只做简单模型中转。
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -118,26 +122,26 @@ export default function HomePage() {
                 href="/docs/quickstart"
                 className="inline-flex items-center justify-center rounded-lg bg-black px-5 py-3 text-sm font-bold text-white hover:bg-neutral-900"
               >
-                Read Quickstart
+                快速开始 Quickstart
               </Link>
               <Link
                 href="/playground"
                 className="inline-flex items-center justify-center rounded-lg border border-black/15 px-5 py-3 text-sm font-bold hover:bg-black/[0.03]"
               >
-                Open Playground
+                在线测试 Playground
               </Link>
             </div>
 
             <div className="mt-12 grid gap-4 sm:grid-cols-3">
-              <Metric value="Full-model" label="OpenAI GPT-5, Anthropic, Gemini, xAI, DeepSeek, Qwen, Moonshot, Doubao, OpenRouter" />
-              <Metric value="Cost-aware" label="Mode routing, maxCostUsd, pricing coverage, model health, fallback telemetry" />
-              <Metric value="Commercial" label="API keys, plans, usage, billing, request IDs, idempotency, docs" />
+              <Metric value="全模型" label="OpenAI GPT-5, Anthropic, Gemini, xAI, DeepSeek, Qwen, Moonshot, Doubao, OpenRouter" />
+              <Metric value="省成本" label="模式路由、maxCostUsd、价格覆盖、模型健康检查、fallback 追踪" />
+              <Metric value="可商用" label="API keys、套餐、用量、计费、requestId、幂等、文档" />
             </div>
           </div>
 
           <div className="min-w-0 rounded-lg border border-black/10 bg-[#0f1115] p-4 text-white">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="text-sm font-semibold">Two commercial APIs</div>
+              <div className="text-sm font-semibold">两个商用 API · Two commercial APIs</div>
               <div className="text-xs text-white/45">task + chat</div>
             </div>
             <div className="mt-4 text-xs font-semibold text-white/70">Task intelligence</div>
@@ -155,29 +159,28 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <div className="max-w-2xl">
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-            Infrastructure scope
+            基础设施范围 · Infrastructure scope
           </div>
           <h2 className="mt-2 text-2xl font-bold tracking-tight md:text-4xl">
-            One platform, two reasons to buy.
+            一个 OneAI，两种购买理由。
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-black/60 md:text-base">
-            A normal model gateway gives access to models. OneAI adds
-            productized task intelligence, cost-aware routing, and a SaaS
-            console that customers can operate.
+            普通模型网关只解决“调用哪个模型”。OneAI 在模型网关之上，
+            增加产品化 Task Intelligence、成本感知路由和可运营的 SaaS 控制台。
           </p>
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <Feature
-            title="OpenAI-compatible gateway"
+            title="兼容 OpenAI 的模型网关"
             desc="Use /v1/chat/completions, streaming, Bearer auth, provider:model ids, model catalog sync, and health checks."
           />
           <Feature
-            title="Structured task intelligence"
-            desc="Expose agent_plan, mission_os, waoc_chat, OneClaw planning, and custom Task Intelligence designed around each customer's workflow."
+            title="结构化 Task Intelligence"
+            desc="对外提供 business_strategy、content_engine、support_brain 等商用任务，也支持按客户 workflow 定制智能大脑。"
           />
           <Feature
-            title="Commercial controls"
+            title="商业化权限与计费控制"
             desc="Track requestId, tokens, cost, latency, model, provider, API key usage, plan gates, and billing state."
           />
         </div>
@@ -191,15 +194,15 @@ export default function HomePage() {
                 Moat
               </div>
               <h2 className="mt-2 text-2xl font-bold tracking-tight md:text-4xl">
-                Gateway compatibility plus OneAI task intelligence.
+                模型网关兼容性，加上 OneAI 的任务智能。
               </h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {[
-                "Standard chat completions for easy migration",
-                "Task registry for structured business outputs",
-                "Model health and catalog sync for operations",
-                "Usage, cost, and plan policy for API revenue",
+                "标准 Chat Completions，方便迁移",
+                "商用 Task Registry，输出结构化业务结果",
+                "模型健康检查和目录同步，方便运营",
+                "用量、成本和套餐权限，支撑 API 收入",
               ].map((item) => (
                 <div key={item} className="rounded-lg border border-black/10 bg-white p-4 text-sm font-semibold text-black/75">
                   {item}

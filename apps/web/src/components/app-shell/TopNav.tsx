@@ -61,7 +61,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           <div className="min-w-0 leading-tight">
             <div className="truncate text-sm font-semibold">OneAI API</div>
             <div className="truncate text-xs text-black/50">
-              {email || "Commercial intelligence console"}
+              {email || "商用智能控制台 · Commercial intelligence console"}
             </div>
           </div>
         </Link>
@@ -69,19 +69,19 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
 
       <div className="flex shrink-0 items-center gap-1">
         <div className="hidden items-center gap-1 md:flex">
-          <NavLink href="/dashboard">Dashboard</NavLink>
-          <NavLink href="/playground">Playground</NavLink>
-          <NavLink href="/models">Models</NavLink>
-          <NavLink href="/tasks">Tasks</NavLink>
+          <NavLink href="/dashboard">控制台</NavLink>
+          <NavLink href="/playground">测试</NavLink>
+          <NavLink href="/models">模型</NavLink>
+          <NavLink href="/tasks">任务</NavLink>
           <NavLink href="/keys">Keys</NavLink>
-          <NavLink href="/usage">Usage</NavLink>
-          <NavLink href="/billing">Billing</NavLink>
+          <NavLink href="/usage">用量</NavLink>
+          <NavLink href="/billing">计费</NavLink>
         </div>
 
         <div className="mx-2 hidden h-6 w-px bg-black/10 md:block" />
 
         <div className="hidden items-center gap-1 md:flex">
-          <NavLink href="/docs">Docs</NavLink>
+          <NavLink href="/docs">文档</NavLink>
         </div>
 
         <div className="md:hidden">

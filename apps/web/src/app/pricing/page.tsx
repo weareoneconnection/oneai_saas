@@ -11,40 +11,40 @@ const plans = [
   {
     name: "Free",
     price: "$0",
-    desc: "For local testing, early integration, and validating structured tasks.",
-    features: ["1,000 requests / month", "$10 model cost guard", "30 RPM", "Cheap + balanced modes"],
+    desc: "免费测试和早期接入。For local testing and validating structured tasks.",
+    features: ["每月 1,000 次请求", "$10 模型成本保护", "30 RPM", "cheap + balanced 模式"],
   },
   {
     name: "Pro",
     price: "$29/mo",
-    desc: "For builders selling or shipping apps on top of OneAI API.",
+    desc: "适合正在上线产品的开发者和 SaaS 团队。For builders shipping apps on OneAI API.",
     features: [
-      "50,000 requests / month",
-      "$500 model cost guard",
+      "每月 50,000 次请求",
+      "$500 模型成本保护",
       "120 RPM",
-      "Cheap, balanced, fast, auto modes",
+      "cheap, balanced, fast, auto 模式",
     ],
   },
   {
     name: "Team",
     price: "$99/mo",
-    desc: "For teams that need shared billing, policy, and commercial controls.",
+    desc: "适合需要团队协作、调试和模型权限的商业团队。For teams needing shared billing and controls.",
     features: [
-      "250,000 requests / month",
-      "$2,500 model cost guard",
+      "每月 250,000 次请求",
+      "$2,500 模型成本保护",
       "600 RPM",
-      "Premium mode, debug trace, model registry",
+      "premium 模式、debug trace、模型注册表",
     ],
   },
   {
     name: "Enterprise",
     price: "Custom",
-    desc: "For production teams that need custom providers, higher limits, private policy, and support.",
+    desc: "适合需要私有策略、定制模型和更高额度的生产团队。For custom providers, limits, and support.",
     features: [
-      "Custom request volume",
-      "Custom model-cost guard",
-      "Dedicated provider policy",
-      "Custom models, health checks, support",
+      "定制请求量",
+      "定制模型成本保护",
+      "专属 provider 策略",
+      "定制模型、健康检查和支持",
     ],
   },
 ];
@@ -72,18 +72,18 @@ function Header() {
           </div>
           <div className="leading-tight">
             <div className="text-sm font-bold">OneAI API</div>
-            <div className="text-xs text-black/50">Pricing</div>
+            <div className="text-xs text-black/50">价格 Pricing</div>
           </div>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-black/65 md:flex">
           <Link href="/docs" className="hover:text-black">
-            Docs
+            文档 Docs
           </Link>
           <Link href="/security" className="hover:text-black">
-            Security
+            安全 Security
           </Link>
           <Link href="/dashboard" className="hover:text-black">
-            Console
+            控制台 Console
           </Link>
         </nav>
       </div>
@@ -99,15 +99,15 @@ export default function PricingPage() {
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-20">
         <div className="max-w-3xl">
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-            Commercial API pricing
+            商用 API 价格 · Commercial API pricing
           </div>
           <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight md:text-5xl">
-            Sell full-model intelligence with cost controls built in.
+            售卖全模型智能 API，同时内置成本控制。
           </h1>
           <p className="mt-5 text-base leading-relaxed text-black/65">
-            OneAI pricing is built around commercial API access: model routing,
-            structured outputs, customer usage, billing, and guardrails that
-            protect margin while supporting more providers.
+            OneAI 的价格体系围绕商用 API 设计：模型路由、结构化输出、
+            客户用量、计费和成本护栏。适合中国开发者先手动开通，
+            后续再接入自动支付。
           </p>
         </div>
 
@@ -148,17 +148,17 @@ export default function PricingPage() {
                     : "bg-black text-white hover:bg-neutral-900",
                 ].join(" ")}
               >
-                {plan.name === "Free" ? "Start free" : "Contact sales"}
+                {plan.name === "Free" ? "免费开始" : "联系开通"}
               </Link>
             </div>
           ))}
         </div>
 
         <div className="mt-6 rounded-lg border border-black/10 bg-black/[0.02] p-5">
-          <div className="text-sm font-bold text-black">Manual onboarding</div>
+          <div className="text-sm font-bold text-black">人工开通 · Manual onboarding</div>
           <p className="mt-2 text-sm leading-relaxed text-black/60">
-            Stripe checkout is temporarily hidden. For Pro, Team, or Enterprise
-            access, contact sales and we will activate the plan manually.
+            目前优先面向中国和亚洲用户，暂时采用人工开通。需要 Pro、Team
+            或 Enterprise 权限，请通过邮箱、Telegram 或 X 联系，我们会手动激活套餐。
           </p>
           <div className="mt-3 flex flex-wrap gap-4 text-sm font-semibold">
             <a href={CONTACT_SALES_HREF} className="text-black underline underline-offset-4">
@@ -176,16 +176,16 @@ export default function PricingPage() {
         <div className="mt-12">
           <div className="max-w-2xl">
             <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-              Permission matrix
+              权限矩阵 · Permission matrix
             </div>
             <h2 className="mt-2 text-2xl font-bold tracking-tight">
-              The same limits are enforced by the API.
+              页面展示的限制会由 API 实际执行。
             </h2>
           </div>
 
           <div className="mt-6 overflow-hidden rounded-lg border border-black/10">
             <div className="grid grid-cols-5 bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
-              <div>Capability</div>
+              <div>能力 Capability</div>
               <div>Free</div>
               <div>Pro</div>
               <div>Team</div>
@@ -208,24 +208,22 @@ export default function PricingPage() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">Model gateway</div>
+            <div className="text-sm font-bold">模型网关 · Model gateway</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
-              Chat completions, streaming, model catalog, model health, and
-              provider readiness are included in the commercial platform.
+              支持 Chat Completions、streaming、模型目录、模型健康检查和 provider 状态。
             </p>
           </div>
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">Cost controls</div>
+            <div className="text-sm font-bold">成本控制 · Cost controls</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
-              Provider costs are tracked per request and can be limited with
-              routing policy, plan gates, monthly budgets, and maxCostUsd.
+              每次请求都会统计模型成本，并通过路由策略、套餐、月度预算和 maxCostUsd 控制风险。
             </p>
           </div>
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">Task intelligence</div>
+            <div className="text-sm font-bold">任务智能 · Task intelligence</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
-              Generate structured outputs for planning, missions, WAOC chat,
-              OneClaw execution planning, and market decisions.
+              生成 business_strategy、content_engine、support_brain 等结构化业务输出，
+              也支持按客户需求定制 Task Intelligence。
             </p>
           </div>
         </div>
