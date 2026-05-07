@@ -108,6 +108,10 @@ export default function HomePage() {
               workflows, cost controls, streaming chat, model health checks,
               usage, and billing. Execution stays with OneClaw and bots.
             </p>
+            <p className="mt-4 max-w-2xl text-base font-semibold leading-relaxed text-black md:text-lg">
+              We provide customized Task Intelligence for customer needs,
+              turning OneAI into the AI brain behind their applications.
+            </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -170,7 +174,7 @@ export default function HomePage() {
           />
           <Feature
             title="Structured task intelligence"
-            desc="Expose agent_plan, mission_os, waoc_chat, and OneClaw planning as productized API capabilities."
+            desc="Expose agent_plan, mission_os, waoc_chat, OneClaw planning, and custom Task Intelligence designed around each customer's workflow."
           />
           <Feature
             title="Commercial controls"
