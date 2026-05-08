@@ -21,6 +21,10 @@ const infrastructureItems: Item[] = [
   { label: "Docs", href: "/docs", desc: "Quickstart and reference · 快速开始和 API 参考" },
 ];
 
+const operatorItems: Item[] = [
+  { label: "Customers", href: "/customers", desc: "Logins, keys, usage · 登录、密钥和用量" },
+];
+
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
   if (href === "/") return pathname === "/";
@@ -88,6 +92,12 @@ export function SideNav({ onNavigate }: { onNavigate?: () => void }) {
       <Group
         title="Infrastructure 基础设施"
         items={infrastructureItems}
+        onNavigate={onNavigate}
+      />
+      <div className="mx-4 my-2 h-px bg-black/10" />
+      <Group
+        title="Operator 运营"
+        items={operatorItems}
         onNavigate={onNavigate}
       />
       <div className="mx-4 my-2 h-px bg-black/10" />

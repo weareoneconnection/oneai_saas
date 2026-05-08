@@ -1,5 +1,6 @@
 // apps/web/src/app/api/tasks/route.ts
 import { NextResponse } from "next/server";
+import { requireConsoleEmail } from "@/lib/consoleIdentity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -109,6 +110,9 @@ function fallbackTasks(reason: string) {
 }
 
 export async function GET() {
+  const identity = await requireConsoleEmail();
+  if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
+
   const keys = apiKeys();
   if (!keys.length) {
     return NextResponse.json(

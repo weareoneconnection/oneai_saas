@@ -21,7 +21,6 @@ export type Lang = "en" | "zh";
 export type OutputItem = { title?: string; content: string };
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ONEAI_ADMIN_KEY || "";
 
 /** ---------------------------------------
  * Helpers
@@ -53,7 +52,6 @@ async function safeFetchJSON(url: string, options?: RequestInit) {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      ...(ADMIN_KEY ? { "x-api-key": ADMIN_KEY } : {}),
       ...(options?.headers || {}),
     },
     ...options,

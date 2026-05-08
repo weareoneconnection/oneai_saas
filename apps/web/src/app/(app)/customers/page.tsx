@@ -1,0 +1,236 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+
+type Customer = {
+  email: string;
+  orgId?: string | null;
+  keyCount: number;
+  activeKeyCount: number;
+  revokedKeyCount: number;
+  latestKeyCreatedAt?: string | null;
+  latestKeyUsedAt?: string | null;
+  latestLoginAt?: string | null;
+  requestCount: number;
+  totalTokens: number;
+  costUsd: number;
+  lastRequestAt?: string | null;
+  keys: Array<{
+    id: string;
+    name: string;
+    prefix: string;
+    status: string;
+    createdAt: string;
+    lastUsedAt?: string | null;
+    revokedAt?: string | null;
+    usage?: {
+      requests: number;
+      tokens: number;
+      costUsd: number;
+      lastRequestAt?: string | null;
+    };
+  }>;
+};
+
+type EventRow = {
+  id: string;
+  action: string;
+  target?: string | null;
+  userEmail?: string | null;
+  createdAt: string;
+};
+
+type Payload = {
+  success?: boolean;
+  error?: string;
+  hint?: string;
+  data?: {
+    customers: Customer[];
+    recentEvents: EventRow[];
+  };
+};
+
+function fmtNum(n?: number | null) {
+  return new Intl.NumberFormat("en-US").format(Number(n || 0));
+}
+
+function fmtUsd(n?: number | null) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 4,
+  }).format(Number(n || 0));
+}
+
+function fmtTime(v?: string | null) {
+  if (!v) return "-";
+  return new Date(v).toLocaleString();
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-black/10 bg-white/60 p-4">
+      <div className="text-xs text-black/45">{label}</div>
+      <div className="mt-2 text-2xl font-bold tracking-tight text-black">{value}</div>
+    </div>
+  );
+}
+
+export default function CustomersPage() {
+  const [rows, setRows] = useState<Customer[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [query, setQuery] = useState("");
+
+  async function load() {
+    setLoading(true);
+    setErr("");
+    try {
+      const res = await fetch("/api/customers", { cache: "no-store" });
+      const json = (await res.json()) as Payload;
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error || json.hint || "Failed to load customers");
+      }
+      setRows(json.data?.customers || []);
+      setEvents(json.data?.recentEvents || []);
+    } catch (error: any) {
+      setErr(error?.message || "Failed to load customers");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((row) => row.email.toLowerCase().includes(q));
+  }, [query, rows]);
+
+  const totals = useMemo(() => {
+    return rows.reduce(
+      (acc, row) => {
+        acc.customers += 1;
+        acc.keys += row.keyCount || 0;
+        acc.activeKeys += row.activeKeyCount || 0;
+        acc.requests += row.requestCount || 0;
+        acc.cost += row.costUsd || 0;
+        return acc;
+      },
+      { customers: 0, keys: 0, activeKeys: 0, requests: 0, cost: 0 }
+    );
+  }, [rows]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-wide text-black/40">
+            Operator view · 运营视角
+          </div>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">Customers</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-black/55">
+            See who signed in, created API keys, generated traffic, and spent model cost.
+            查看谁登录、谁创建 API Key、谁产生调用和成本。
+          </p>
+        </div>
+        <Button onClick={load} disabled={loading}>
+          {loading ? "Refreshing..." : "Refresh"}
+        </Button>
+      </div>
+
+      {err ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {err}
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-5">
+        <Stat label="Customers" value={fmtNum(totals.customers)} />
+        <Stat label="Total keys" value={fmtNum(totals.keys)} />
+        <Stat label="Active keys" value={fmtNum(totals.activeKeys)} />
+        <Stat label="Requests" value={fmtNum(totals.requests)} />
+        <Stat label="Model cost" value={fmtUsd(totals.cost)} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <CardTitle>Customer Accounts</CardTitle>
+              <CardDescription>Login, key, usage, and spend summary</CardDescription>
+            </div>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search email"
+              className="h-10 rounded-lg border border-black/10 bg-white px-3 text-sm outline-none focus:border-black/30 md:w-64"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-lg border border-black/10">
+            <div className="min-w-[940px]">
+              <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/55">
+                <div className="col-span-3">Email</div>
+                <div className="col-span-1 text-right">Keys</div>
+                <div className="col-span-2 text-right">Requests</div>
+                <div className="col-span-2 text-right">Cost</div>
+                <div className="col-span-2">Latest login</div>
+                <div className="col-span-2">Latest activity</div>
+              </div>
+              {filtered.length ? (
+                filtered.map((row) => (
+                  <div key={row.email} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-sm">
+                    <div className="col-span-3 min-w-0">
+                      <div className="truncate font-semibold text-black">{row.email}</div>
+                      <div className="mt-1 text-xs text-black/40">org: {row.orgId || "-"}</div>
+                    </div>
+                    <div className="col-span-1 text-right text-black/70">
+                      {fmtNum(row.activeKeyCount)} / {fmtNum(row.keyCount)}
+                    </div>
+                    <div className="col-span-2 text-right text-black/70">{fmtNum(row.requestCount)}</div>
+                    <div className="col-span-2 text-right font-semibold text-black">{fmtUsd(row.costUsd)}</div>
+                    <div className="col-span-2 text-black/60">{fmtTime(row.latestLoginAt)}</div>
+                    <div className="col-span-2 text-black/60">
+                      {fmtTime(row.lastRequestAt || row.latestKeyUsedAt || row.latestKeyCreatedAt)}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-sm text-black/55">No customers yet.</div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Events</CardTitle>
+          <CardDescription>Latest sign-in and API key lifecycle events</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {events.slice(0, 30).map((event) => (
+              <div key={event.id} className="flex flex-col gap-1 rounded-lg border border-black/10 bg-white/60 p-3 text-sm md:flex-row md:items-center md:justify-between">
+                <div>
+                  <span className="font-semibold text-black">{event.action}</span>
+                  <span className="ml-2 text-black/50">{event.userEmail || event.target || "-"}</span>
+                </div>
+                <div className="text-xs text-black/45">{fmtTime(event.createdAt)}</div>
+              </div>
+            ))}
+            {!events.length ? <div className="text-sm text-black/55">No events yet.</div> : null}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -1,6 +1,6 @@
 // apps/web/src/app/api/keys/route.ts
 import { NextResponse } from "next/server";
-import { getConsoleEmail } from "@/lib/consoleIdentity";
+import { requireConsoleEmail } from "@/lib/consoleIdentity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,9 +81,7 @@ function fail(payload: Json, status = 500) {
 }
 
 async function requireEmail() {
-  const email = await getConsoleEmail();
-  if (!email) return { ok: false as const, status: 401, error: "unauthorized" };
-  return { ok: true as const, email };
+  return requireConsoleEmail();
 }
 
 function safeRaw(raw: string, max = 1200) {

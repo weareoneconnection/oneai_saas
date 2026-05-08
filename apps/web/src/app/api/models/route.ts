@@ -1,5 +1,6 @@
 // apps/web/src/app/api/models/route.ts
 import { NextResponse } from "next/server";
+import { requireConsoleEmail } from "@/lib/consoleIdentity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -107,6 +108,9 @@ function normalizeModelsResponse(json: any) {
 }
 
 export async function GET() {
+  const identity = await requireConsoleEmail();
+  if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
+
   const keys = registryKey();
   if (!keys.length) {
     return NextResponse.json(
@@ -160,6 +164,9 @@ export async function GET() {
 }
 
 export async function POST() {
+  const identity = await requireConsoleEmail();
+  if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
+
   const key = registryKey()[0];
   if (!key) {
     return NextResponse.json(
@@ -180,6 +187,9 @@ export async function POST() {
 }
 
 export async function PUT(req: Request) {
+  const identity = await requireConsoleEmail();
+  if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
+
   const key = registryKey()[0];
   if (!key) {
     return NextResponse.json(
@@ -206,6 +216,9 @@ export async function PUT(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  const identity = await requireConsoleEmail();
+  if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
+
   const key = registryKey()[0];
   if (!key) {
     return NextResponse.json(

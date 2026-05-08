@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireConsoleEmail } from "@/lib/consoleIdentity";
 
 const API_BASE_RAW =
   process.env.ONEAI_API_BASE_URL ||
@@ -16,6 +17,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const identity = await requireConsoleEmail();
+    if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
+
     const body = await req.json();
 
     if (!API_KEY) {
