@@ -817,26 +817,28 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-black/10">
-              <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
-                <div className="col-span-5">Model</div>
-                <div className="col-span-3 text-right">Tokens</div>
-                <div className="col-span-2 text-right">Req</div>
-                <div className="col-span-2 text-right">Cost</div>
-              </div>
+            <div className="overflow-x-auto rounded-2xl border border-black/10">
+              <div className="min-w-[560px]">
+                <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
+                  <div className="col-span-5">Model</div>
+                  <div className="col-span-3 text-right">Tokens</div>
+                  <div className="col-span-2 text-right">Req</div>
+                  <div className="col-span-2 text-right">Cost</div>
+                </div>
 
-              {data.modelBreakdown.length ? (
-                data.modelBreakdown.map((m) => (
-                  <div key={`${m.provider || "unknown"}:${m.model}`} className="grid grid-cols-12 px-3 py-2 text-sm text-black/75">
-                    <div className="col-span-5 font-medium text-black">{m.model}</div>
-                    <div className="col-span-3 text-right">{fmtNum(m.tokens)}</div>
-                    <div className="col-span-2 text-right">{fmtNum(m.requests)}</div>
-                    <div className="col-span-2 text-right">{fmtUSD(m.costUSD)}</div>
-                  </div>
-                ))
-              ) : (
-                <div className="px-3 py-6 text-sm text-black/45">No rows.</div>
-              )}
+                {data.modelBreakdown.length ? (
+                  data.modelBreakdown.map((m) => (
+                    <div key={`${m.provider || "unknown"}:${m.model}`} className="grid grid-cols-12 px-3 py-2 text-sm text-black/75">
+                      <div className="col-span-5 font-medium text-black">{m.model}</div>
+                      <div className="col-span-3 text-right">{fmtNum(m.tokens)}</div>
+                      <div className="col-span-2 text-right">{fmtNum(m.requests)}</div>
+                      <div className="col-span-2 text-right">{fmtUSD(m.costUSD)}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-3 py-6 text-sm text-black/45">No rows.</div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -909,18 +911,19 @@ export default function DashboardPage() {
         </CardHeader>
 
         <CardContent>
-          <div className="overflow-hidden rounded-2xl border border-black/10">
-            <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
-              <div className="col-span-4">Key</div>
-              <div className="col-span-2">Env</div>
-              <div className="col-span-2 text-right">Requests</div>
-              <div className="col-span-2 text-right">Tokens</div>
-              <div className="col-span-2 text-right">Cost</div>
-            </div>
+          <div className="overflow-x-auto rounded-2xl border border-black/10">
+            <div className="min-w-[680px]">
+              <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
+                <div className="col-span-4">Key</div>
+                <div className="col-span-2">Env</div>
+                <div className="col-span-2 text-right">Requests</div>
+                <div className="col-span-2 text-right">Tokens</div>
+                <div className="col-span-2 text-right">Cost</div>
+              </div>
 
-            {topKeys.length ? (
-              topKeys.map((k) => (
-                <div key={k.key} className="grid grid-cols-12 px-3 py-2 text-sm">
+              {topKeys.length ? (
+                topKeys.map((k) => (
+                  <div key={k.key} className="grid grid-cols-12 px-3 py-2 text-sm">
                   <div className="col-span-4">
                     <div className="font-medium text-black">{k.key}</div>
                     <div className="text-xs text-black/45">
@@ -939,13 +942,14 @@ export default function DashboardPage() {
                   <div className="col-span-2 text-right font-semibold text-black">
                     {fmtUSD(k.costUSD)}
                   </div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-3 py-6 text-sm text-black/45">
+                  No key-level usage yet.
                 </div>
-              ))
-            ) : (
-              <div className="px-3 py-6 text-sm text-black/45">
-                No key-level usage yet.
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

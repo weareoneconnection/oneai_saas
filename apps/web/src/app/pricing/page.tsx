@@ -65,14 +65,14 @@ const matrix = [
 function Header() {
   return (
     <header className="border-b border-black/10">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
-        <Link href="/" className="flex items-center gap-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 text-sm font-bold">
             OA
           </div>
-          <div className="leading-tight">
+          <div className="min-w-0 leading-tight">
             <div className="text-sm font-bold">OneAI API</div>
-            <div className="text-xs text-black/50">Pricing 价格</div>
+            <div className="truncate text-xs text-black/50">Pricing 价格</div>
           </div>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-black/65 md:flex">
@@ -101,7 +101,7 @@ export default function PricingPage() {
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
             Commercial API pricing · 商用 API 价格
           </div>
-          <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+          <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl md:text-5xl">
             Sell full-model intelligence with cost controls built in.
           </h1>
           <p className="mt-5 text-base leading-relaxed text-black/65">
@@ -116,7 +116,7 @@ export default function PricingPage() {
             <div
               key={plan.name}
               className={[
-                "rounded-lg border p-6",
+                "min-w-0 rounded-lg border p-5 sm:p-6",
                 plan.name === "Pro" ? "border-black bg-black text-white" : "border-black/10 bg-white",
               ].join(" ")}
             >
@@ -184,26 +184,28 @@ export default function PricingPage() {
             </h2>
           </div>
 
-          <div className="mt-6 overflow-hidden rounded-lg border border-black/10">
-            <div className="grid grid-cols-5 bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
-              <div>Capability 能力</div>
-              <div>Free</div>
-              <div>Pro</div>
-              <div>Team</div>
-              <div>Enterprise</div>
-            </div>
-            {matrix.map((row) => (
-              <div
-                key={row[0]}
-                className="grid grid-cols-5 border-t border-black/10 px-4 py-3 text-sm"
-              >
-                <div className="font-medium text-black">{row[0]}</div>
-                <div className="text-black/65">{row[1]}</div>
-                <div className="text-black/65">{row[2]}</div>
-                <div className="text-black/65">{row[3]}</div>
-                <div className="text-black/65">{row[4]}</div>
+          <div className="mt-6 overflow-x-auto rounded-lg border border-black/10">
+            <div className="min-w-[760px]">
+              <div className="grid grid-cols-[1.4fr_repeat(4,1fr)] bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
+                <div>Capability 能力</div>
+                <div>Free</div>
+                <div>Pro</div>
+                <div>Team</div>
+                <div>Enterprise</div>
               </div>
-            ))}
+              {matrix.map((row) => (
+                <div
+                  key={row[0]}
+                  className="grid grid-cols-[1.4fr_repeat(4,1fr)] border-t border-black/10 px-4 py-3 text-sm"
+                >
+                  <div className="font-medium text-black">{row[0]}</div>
+                  <div className="text-black/65">{row[1]}</div>
+                  <div className="text-black/65">{row[2]}</div>
+                  <div className="text-black/65">{row[3]}</div>
+                  <div className="text-black/65">{row[4]}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

@@ -622,23 +622,25 @@ export default function BillingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-hidden rounded-lg border border-black/10">
-            <div className="grid grid-cols-5 bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
-              <div>Capability</div>
-              <div>Free</div>
-              <div>Pro</div>
-              <div>Team</div>
-              <div>Enterprise</div>
-            </div>
-            {planMatrix.map((row) => (
-              <div key={row[0]} className="grid grid-cols-5 border-t border-black/10 px-4 py-3 text-sm text-black/65">
-                <div className="font-medium text-black">{row[0]}</div>
-                <div>{row[1]}</div>
-                <div>{row[2]}</div>
-                <div>{row[3]}</div>
-                <div>{row[4]}</div>
+          <div className="overflow-x-auto rounded-lg border border-black/10">
+            <div className="min-w-[760px]">
+              <div className="grid grid-cols-[1.4fr_repeat(4,1fr)] bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
+                <div>Capability</div>
+                <div>Free</div>
+                <div>Pro</div>
+                <div>Team</div>
+                <div>Enterprise</div>
               </div>
-            ))}
+              {planMatrix.map((row) => (
+                <div key={row[0]} className="grid grid-cols-[1.4fr_repeat(4,1fr)] border-t border-black/10 px-4 py-3 text-sm text-black/65">
+                  <div className="font-medium text-black">{row[0]}</div>
+                  <div>{row[1]}</div>
+                  <div>{row[2]}</div>
+                  <div>{row[3]}</div>
+                  <div>{row[4]}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>

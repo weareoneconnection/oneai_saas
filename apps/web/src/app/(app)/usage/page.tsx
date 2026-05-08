@@ -221,18 +221,19 @@ export default function UsagePage() {
             </CardHeader>
 
             <CardContent>
-              <div className="overflow-hidden rounded-2xl border border-black/10 bg-white/60">
-                <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
-                  <div className="col-span-4">Name</div>
-                  <div className="col-span-2 text-right">Requests</div>
-                  <div className="col-span-2 text-right">Errors</div>
-                  <div className="col-span-2 text-right">Tokens</div>
-                  <div className="col-span-2 text-right">Cost</div>
-                </div>
+              <div className="overflow-x-auto rounded-2xl border border-black/10 bg-white/60">
+                <div className="min-w-[680px]">
+                  <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
+                    <div className="col-span-4">Name</div>
+                    <div className="col-span-2 text-right">Requests</div>
+                    <div className="col-span-2 text-right">Errors</div>
+                    <div className="col-span-2 text-right">Tokens</div>
+                    <div className="col-span-2 text-right">Cost</div>
+                  </div>
 
-                {sortedRows.length ? (
-                  sortedRows.map((m) => (
-                    <div key={m.key} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-sm">
+                  {sortedRows.length ? (
+                    sortedRows.map((m) => (
+                      <div key={m.key} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-sm">
                       <div className="col-span-4 min-w-0">
                         <code className="break-all rounded-lg border border-black/10 bg-white px-2 py-1 text-xs text-black/75">
                           {m.label}
@@ -243,11 +244,12 @@ export default function UsagePage() {
                       <div className="col-span-2 text-right text-black/75">{fmtNum(m.errors)}</div>
                       <div className="col-span-2 text-right text-black/75">{fmtNum(m.tokens)}</div>
                       <div className="col-span-2 text-right font-semibold text-black">{fmtUSD(m.costUSD)}</div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-sm text-black/60">No usage for this breakdown yet.</div>
-                )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-sm text-black/60">No usage for this breakdown yet.</div>
+                  )}
+                </div>
               </div>
               {topModels.length ? (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-black/50">
@@ -270,19 +272,20 @@ export default function UsagePage() {
             </CardHeader>
 
             <CardContent>
-              <div className="overflow-hidden rounded-2xl border border-black/10 bg-white/60">
-                <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
-                  <div className="col-span-2">ID</div>
-                  <div className="col-span-2">Type</div>
-                  <div className="col-span-3">Model</div>
-                  <div className="col-span-2 text-right">Tokens</div>
-                  <div className="col-span-1 text-right">Status</div>
-                  <div className="col-span-2 text-right">Time</div>
-                </div>
+              <div className="overflow-x-auto rounded-2xl border border-black/10 bg-white/60">
+                <div className="min-w-[760px]">
+                  <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
+                    <div className="col-span-2">ID</div>
+                    <div className="col-span-2">Type</div>
+                    <div className="col-span-3">Model</div>
+                    <div className="col-span-2 text-right">Tokens</div>
+                    <div className="col-span-1 text-right">Status</div>
+                    <div className="col-span-2 text-right">Time</div>
+                  </div>
 
-                {data.recent?.length ? (
-                  data.recent.map((r) => (
-                    <div key={r.id} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-sm">
+                  {data.recent?.length ? (
+                    data.recent.map((r) => (
+                      <div key={r.id} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-sm">
                       <div className="col-span-2">
                         <code className="text-xs text-black/75">{r.id.slice(0, 8)}</code>
                       </div>
@@ -299,11 +302,12 @@ export default function UsagePage() {
                         {r.latencyMs ? <div className="mt-1 text-xs text-black/35">{r.latencyMs}ms</div> : null}
                       </div>
                       <div className="col-span-2 text-right text-black/55">{fmtTime(r.createdAt)}</div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-sm text-black/60">No recent requests.</div>
-                )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-sm text-black/60">No recent requests.</div>
+                  )}
+                </div>
               </div>
 
               <div className="mt-3 text-xs text-black/45">

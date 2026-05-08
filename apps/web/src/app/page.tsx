@@ -29,15 +29,15 @@ const chatCode = `curl https://oneai-saas-api-production.up.railway.app/v1/chat/
 function Header() {
   return (
     <header className="border-b border-black/10 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
-        <Link href="/" className="flex items-center gap-3">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
+        <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 bg-white text-sm font-bold">
             OA
           </div>
-            <div className="leading-tight">
-              <div className="text-sm font-bold">OneAI API</div>
-            <div className="text-xs text-black/50">Full-model AI brain · 全模型 AI 智能大脑</div>
-            </div>
+          <div className="min-w-0 leading-tight">
+            <div className="text-sm font-bold">OneAI API</div>
+            <div className="max-w-[180px] text-xs text-black/50 sm:max-w-none">Full-model AI brain · 全模型 AI 智能大脑</div>
+          </div>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-black/65 md:flex">
@@ -52,7 +52,7 @@ function Header() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <Link
             href="/dashboard"
             className="hidden rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03] sm:inline-flex"
@@ -61,9 +61,9 @@ function Header() {
           </Link>
           <Link
             href="/keys"
-            className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-900"
+            className="rounded-lg bg-black px-3 py-2 text-sm font-semibold text-white hover:bg-neutral-900 sm:px-4"
           >
-            获取 API Key
+            API Key
           </Link>
         </div>
       </div>
@@ -95,12 +95,12 @@ export default function HomePage() {
       <Header />
 
       <section className="border-b border-black/10">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.05fr_0.95fr] md:py-20">
-          <div>
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.05fr_0.95fr] md:gap-10 md:py-20">
+          <div className="min-w-0">
             <div className="text-xs font-bold uppercase tracking-wide text-black/45">
               OneAI coordinates intelligence. OneClaw and bots execute. · OneAI 负责智能协调，执行交给 OneClaw 和 Bot。
             </div>
-            <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight md:text-6xl">
+            <h1 className="mt-5 max-w-3xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl md:text-6xl">
               Full-model AI infrastructure with Task Intelligence built in.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-black/65 md:text-lg">
@@ -139,17 +139,17 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="min-w-0 rounded-lg border border-black/10 bg-[#0f1115] p-4 text-white">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="min-w-0 rounded-lg border border-black/10 bg-[#0f1115] p-3 text-white sm:p-4">
+            <div className="flex flex-col gap-1 border-b border-white/10 pb-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm font-semibold">Two commercial APIs · 两个商用 API</div>
               <div className="text-xs text-white/45">task + chat</div>
             </div>
             <div className="mt-4 text-xs font-semibold text-white/70">Task intelligence</div>
-            <pre className="mt-2 overflow-auto text-xs leading-relaxed text-white/75">
+            <pre className="mt-2 max-w-full overflow-x-auto rounded-md text-[11px] leading-relaxed text-white/75 sm:text-xs">
               <code>{code}</code>
             </pre>
             <div className="mt-5 border-t border-white/10 pt-4 text-xs font-semibold text-white/70">Model gateway</div>
-            <pre className="mt-2 overflow-auto text-xs leading-relaxed text-white/75">
+            <pre className="mt-2 max-w-full overflow-x-auto rounded-md text-[11px] leading-relaxed text-white/75 sm:text-xs">
               <code>{chatCode}</code>
             </pre>
           </div>

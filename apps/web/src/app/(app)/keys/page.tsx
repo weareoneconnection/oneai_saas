@@ -305,21 +305,22 @@ export default function KeysPage() {
             </Select>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-black/10 bg-white/60">
-            <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
-              <div className="col-span-3">Name</div>
-              <div className="col-span-1">Env</div>
-              <div className="col-span-1">Status</div>
-              <div className="col-span-2">Prefix</div>
-              <div className="col-span-2 text-right">Policy</div>
-              <div className="col-span-2">Last used</div>
-              <div className="col-span-1 text-right">Action</div>
-            </div>
+          <div className="overflow-x-auto rounded-2xl border border-black/10 bg-white/60">
+            <div className="min-w-[820px]">
+              <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
+                <div className="col-span-3">Name</div>
+                <div className="col-span-1">Env</div>
+                <div className="col-span-1">Status</div>
+                <div className="col-span-2">Prefix</div>
+                <div className="col-span-2 text-right">Policy</div>
+                <div className="col-span-2">Last used</div>
+                <div className="col-span-1 text-right">Action</div>
+              </div>
 
-            {filteredRows.length === 0 ? (
-              <div className="p-4 text-sm text-black/55">No keys yet. Create one above.</div>
-            ) : (
-              filteredRows.map((r) => {
+              {filteredRows.length === 0 ? (
+                <div className="p-4 text-sm text-black/55">No keys yet. Create one above.</div>
+              ) : (
+                filteredRows.map((r) => {
                 const revoked = !!r.revokedAt;
                 const env = envOf(r.name);
                 return (
@@ -377,8 +378,9 @@ export default function KeysPage() {
                     </div>
                   </div>
                 );
-              })
-            )}
+                })
+              )}
+            </div>
           </div>
 
           <div className="mt-3 text-xs text-black/45">

@@ -76,7 +76,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="min-w-0 md:col-span-9 lg:col-span-10">
             <div className="rounded-lg border border-black/10 bg-white">
               <div className="border-b border-black/5 px-4 py-3 sm:px-5 sm:py-4 md:px-6">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                   <div className="text-sm font-semibold tracking-tight">
                     Developer Console
                   </div>

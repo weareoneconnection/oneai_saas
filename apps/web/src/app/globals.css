@@ -29,10 +29,21 @@ html, body{
   padding:0;
   background: var(--bg);
   color: var(--text);
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 *{
   box-sizing: border-box;
+}
+
+p, h1, h2, h3, h4, h5, h6, div, span, a, button{
+  overflow-wrap: anywhere;
+}
+
+pre, code{
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 a{

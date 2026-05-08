@@ -22,26 +22,28 @@ export default function Page() {
 
       <div className="mt-10">
         <DocSectionTitle title="Plan gates" desc="Plans can control task tiers, routing modes, explicit model selection, debug traces, and model registry access." />
-        <div className="mt-6 overflow-hidden rounded-lg border border-black/10 bg-white">
-          <div className="grid grid-cols-12 bg-black/[0.03] px-4 py-3 text-xs font-bold text-black/60">
-            <div className="col-span-3">Plan</div>
-            <div className="col-span-3">Modes</div>
-            <div className="col-span-3">Model selection</div>
-            <div className="col-span-3">Debug / registry</div>
-          </div>
-          {[
-            ["Free", "cheap, balanced", "Locked", "Locked"],
-            ["Pro", "cheap, balanced, fast, auto", "Locked", "Locked"],
-            ["Team", "cheap, balanced, fast, premium, auto", "Allowed", "Allowed"],
-            ["Enterprise", "all commercial modes", "Allowed", "Allowed"],
-          ].map((row) => (
-            <div key={row[0]} className="grid grid-cols-12 border-t border-black/10 px-4 py-3 text-sm text-black/70">
-              <div className="col-span-3 font-semibold text-black">{row[0]}</div>
-              <div className="col-span-3">{row[1]}</div>
-              <div className="col-span-3">{row[2]}</div>
-              <div className="col-span-3">{row[3]}</div>
+        <div className="mt-6 overflow-x-auto rounded-lg border border-black/10 bg-white">
+          <div className="min-w-[680px]">
+            <div className="grid grid-cols-12 bg-black/[0.03] px-4 py-3 text-xs font-bold text-black/60">
+              <div className="col-span-3">Plan</div>
+              <div className="col-span-3">Modes</div>
+              <div className="col-span-3">Model selection</div>
+              <div className="col-span-3">Debug / registry</div>
             </div>
-          ))}
+            {[
+              ["Free", "cheap, balanced", "Locked", "Locked"],
+              ["Pro", "cheap, balanced, fast, auto", "Locked", "Locked"],
+              ["Team", "cheap, balanced, fast, premium, auto", "Allowed", "Allowed"],
+              ["Enterprise", "all commercial modes", "Allowed", "Allowed"],
+            ].map((row) => (
+              <div key={row[0]} className="grid grid-cols-12 border-t border-black/10 px-4 py-3 text-sm text-black/70">
+                <div className="col-span-3 font-semibold text-black">{row[0]}</div>
+                <div className="col-span-3">{row[1]}</div>
+                <div className="col-span-3">{row[2]}</div>
+                <div className="col-span-3">{row[3]}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </DocShell>

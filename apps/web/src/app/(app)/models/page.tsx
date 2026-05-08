@@ -319,19 +319,20 @@ export default function ModelsPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-black/10">
-        <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
-          <div className="col-span-2">Provider</div>
-          <div className="col-span-4">Model</div>
-          <div className="col-span-2">Modes</div>
-          <div className="col-span-1 text-right">Ready</div>
-          <div className="col-span-1 text-right">JSON</div>
-          <div className="col-span-1 text-right">Tools</div>
-          <div className="col-span-1 text-right">Price</div>
-        </div>
-        {filtered.length ? (
-          filtered.map((row) => (
-            <div key={`${row.provider}:${row.model}`} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-sm">
+      <div className="overflow-x-auto rounded-lg border border-black/10">
+        <div className="min-w-[860px]">
+          <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
+            <div className="col-span-2">Provider</div>
+            <div className="col-span-4">Model</div>
+            <div className="col-span-2">Modes</div>
+            <div className="col-span-1 text-right">Ready</div>
+            <div className="col-span-1 text-right">JSON</div>
+            <div className="col-span-1 text-right">Tools</div>
+            <div className="col-span-1 text-right">Price</div>
+          </div>
+          {filtered.length ? (
+            filtered.map((row) => (
+              <div key={`${row.provider}:${row.model}`} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-sm">
               <div className="col-span-2 text-black/70">{row.provider}</div>
               <div className="col-span-4 min-w-0"><code className="break-all text-xs text-black/80">{row.model}</code>{row.contextTokens ? <div className="mt-1 text-xs text-black/40">ctx {fmtNum(row.contextTokens)}</div> : null}</div>
               <div className="col-span-2 text-black/60">{(row.modes || []).join(", ") || "-"}</div>
@@ -359,11 +360,12 @@ export default function ModelsPage() {
                   yesNo(row.hasPricing)
                 )}
               </div>
-            </div>
-          ))
-        ) : (
-          <div className="p-4 text-sm text-black/60">No model data loaded.</div>
-        )}
+              </div>
+            ))
+          ) : (
+            <div className="p-4 text-sm text-black/60">No model data loaded.</div>
+          )}
+        </div>
       </div>
     </div>
   );
