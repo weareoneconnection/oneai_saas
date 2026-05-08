@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CommercialPreview } from "@/components/home/CommercialPreview";
 
 const CONTACT_EMAIL = "info@weareoneconnection.com";
 const CONTACT_TELEGRAM = "https://t.me/waocfounder";
@@ -390,7 +391,7 @@ export default function HomePage() {
 
       <section id="commercial" className="border-y border-black/10 bg-black text-white">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20">
-          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr]">
             <div>
               <div className="text-xs font-black uppercase tracking-wide text-white/40">Commercial operation 商业运营</div>
               <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight md:text-5xl">
@@ -414,19 +415,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                ["Customers", "Know who signed in, created keys, converted to usage, and generated cost."],
-                ["Usage", "Track requests, tokens, model, provider, cost, latency, errors, and recent activity."],
-                ["Policy", "Gate task tiers, routing modes, debug traces, explicit model choice, and budgets."],
-                ["Trust", "Request IDs, idempotency keys, schema outputs, audit events, and execution boundaries."],
-              ].map((item) => (
-                <div key={item[0]} className="rounded-lg border border-white/10 bg-white/[0.06] p-5">
-                  <div className="text-lg font-black">{item[0]}</div>
-                  <p className="mt-2 text-sm leading-relaxed text-white/55">{item[1]}</p>
-                </div>
-              ))}
-            </div>
+            <CommercialPreview />
           </div>
         </div>
       </section>
