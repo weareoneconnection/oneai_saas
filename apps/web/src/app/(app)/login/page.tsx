@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 const capabilities = [
-  "创建和轮换 API keys",
-  "追踪用量、成本、模型、provider 和 requestId",
-  "查看模型注册表和商用 task catalog",
-  "在 Playground 测试结构化生成",
-  "管理计费和客户套餐",
+  "Create and rotate API keys · 创建和轮换 API keys",
+  "Track usage, cost, model, provider, and requestId · 追踪用量、成本和请求",
+  "Inspect model registry and task catalog · 查看模型和任务注册表",
+  "Test structured generation in Playground · 测试结构化生成",
+  "Manage billing and customer plans · 管理计费和套餐",
 ];
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -87,19 +87,19 @@ function LoginPageContent() {
             </div>
             <div className="leading-tight">
               <div className="text-sm font-bold">OneAI API</div>
-              <div className="text-xs text-black/50">开发者控制台 · Developer Console</div>
+              <div className="text-xs text-black/50">Developer Console · 开发者控制台</div>
             </div>
           </Link>
 
           <div className="flex items-center gap-2">
             <Link href="/docs">
               <Button variant="ghost" size="sm">
-                文档
+                Docs
               </Button>
             </Link>
             <Link href="/pricing">
               <Button variant="secondary" size="sm">
-                价格
+                Pricing
               </Button>
             </Link>
           </div>
@@ -109,24 +109,25 @@ function LoginPageContent() {
       <main className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1fr_420px] md:py-20">
         <section>
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-            登录商用 API 控制台 · Commercial API operations
+            Commercial API operations · 商用 API 控制台
           </div>
           <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight md:text-5xl">
-            管理 OneAI 全模型 AI 基础设施。
+            Manage OneAI as full-model AI infrastructure.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-black/60">
-            OneAI 是统一智能协调大脑。你可以在控制台管理访问权限、测试商用
-            task、查看模型、控制成本，并管理 API 用量和套餐。
+            OneAI is the intelligent coordination layer. The console is where
+            customers manage access, test tasks, inspect models, control cost,
+            and operate API usage and plans. OneAI 是智能协调层，控制台负责运营。
           </p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            <Stat label="产品" value="API 优先" />
-            <Stat label="路由" value="全模型" />
-            <Stat label="商业" value="用量 + 计费" />
+            <Stat label="Product 产品" value="API first" />
+            <Stat label="Routing 路由" value="Full-model" />
+            <Stat label="Business 商业" value="Usage + billing" />
           </div>
 
           <div className="mt-8 rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">控制台能力 · Console includes</div>
+            <div className="text-sm font-bold">Console includes · 控制台能力</div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {capabilities.map((item) => (
                 <div key={item} className="text-sm text-black/65">
@@ -138,9 +139,9 @@ function LoginPageContent() {
         </section>
 
         <aside className="rounded-lg border border-black/10 bg-white p-6 shadow-sm">
-          <div className="text-sm font-bold">登录 Sign in</div>
+          <div className="text-sm font-bold">Sign in · 登录</div>
           <p className="mt-2 text-sm leading-relaxed text-black/55">
-            继续进入 OneAI 开发者控制台。
+            Continue to the OneAI developer console. 继续进入 OneAI 开发者控制台。
           </p>
 
           {authError || localError ? (

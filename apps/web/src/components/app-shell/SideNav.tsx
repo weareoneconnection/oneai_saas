@@ -8,17 +8,17 @@ import { usePathname } from "next/navigation";
 type Item = { label: string; href: string; desc?: string };
 
 const consoleItems: Item[] = [
-  { label: "控制台 Dashboard", href: "/dashboard", desc: "API 健康和成本" },
-  { label: "测试 Playground", href: "/playground", desc: "测试生成和模型调用" },
-  { label: "API Keys", href: "/keys", desc: "创建和轮换访问密钥" },
-  { label: "用量 Usage", href: "/usage", desc: "请求、tokens、花费" },
-  { label: "计费 Billing", href: "/billing", desc: "套餐和订阅" },
+  { label: "Dashboard", href: "/dashboard", desc: "API health and cost · API 健康和成本" },
+  { label: "Playground", href: "/playground", desc: "Test generate calls · 测试生成和模型调用" },
+  { label: "API Keys", href: "/keys", desc: "Create and rotate access · 创建和轮换访问密钥" },
+  { label: "Usage", href: "/usage", desc: "Requests, tokens, spend · 请求、tokens、花费" },
+  { label: "Billing", href: "/billing", desc: "Plan and subscription · 套餐和订阅" },
 ];
 
 const infrastructureItems: Item[] = [
-  { label: "模型 Models", href: "/models", desc: "Provider 和模型注册表" },
-  { label: "任务 Tasks", href: "/tasks", desc: "对外商用 workflow" },
-  { label: "文档 Docs", href: "/docs", desc: "快速开始和 API 参考" },
+  { label: "Models", href: "/models", desc: "Provider registry · Provider 和模型注册表" },
+  { label: "Tasks", href: "/tasks", desc: "Commercial workflows · 对外商用 workflow" },
+  { label: "Docs", href: "/docs", desc: "Quickstart and reference · 快速开始和 API 参考" },
 ];
 
 function isActive(pathname: string | null, href: string) {
@@ -83,10 +83,10 @@ function Group({
 export function SideNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="py-2">
-      <Group title="控制台 Console" items={consoleItems} onNavigate={onNavigate} />
+      <Group title="Console 控制台" items={consoleItems} onNavigate={onNavigate} />
       <div className="mx-4 my-2 h-px bg-black/10" />
       <Group
-        title="基础设施 Infrastructure"
+        title="Infrastructure 基础设施"
         items={infrastructureItems}
         onNavigate={onNavigate}
       />
@@ -98,11 +98,12 @@ export function SideNav({ onNavigate }: { onNavigate?: () => void }) {
           onClick={() => onNavigate?.()}
           className="block rounded-lg bg-black/5 px-3 py-2 text-sm font-medium text-black/70 hover:bg-black/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
         >
-          账号 / 登录
+          Account / Login
         </Link>
 
         <div className="mt-3 rounded-lg border border-black/10 bg-white p-3 text-xs leading-relaxed text-black/55">
-          OneAI 负责模型路由和结构化智能，执行交给 OneClaw 和 Bot。
+          OneAI handles model routing and structured intelligence. Execution
+          stays with OneClaw and bots. OneAI 负责智能，外部系统负责执行。
         </div>
       </div>
     </div>

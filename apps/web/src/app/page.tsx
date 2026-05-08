@@ -36,16 +36,16 @@ function Header() {
           </div>
             <div className="leading-tight">
               <div className="text-sm font-bold">OneAI API</div>
-            <div className="text-xs text-black/50">全模型 AI 智能大脑 · Full-model AI brain</div>
+            <div className="text-xs text-black/50">Full-model AI brain · 全模型 AI 智能大脑</div>
             </div>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-black/65 md:flex">
           <Link href="/docs" className="hover:text-black">
-            文档 Docs
+            Docs 文档
           </Link>
           <Link href="/pricing" className="hover:text-black">
-            价格 Pricing
+            Pricing 价格
           </Link>
           <Link href="/security" className="hover:text-black">
             安全 Security
@@ -57,7 +57,7 @@ function Header() {
             href="/dashboard"
             className="hidden rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03] sm:inline-flex"
           >
-            控制台 Console
+            Console 控制台
           </Link>
           <Link
             href="/keys"
@@ -98,23 +98,23 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.05fr_0.95fr] md:py-20">
           <div>
             <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-              OneAI 只做统一智能协调大脑，执行交给 OneClaw 和 Bot。
+              OneAI coordinates intelligence. OneClaw and bots execute. · OneAI 负责智能协调，执行交给 OneClaw 和 Bot。
             </div>
             <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight md:text-6xl">
-              全模型调用基础设施，内置 Task Intelligence 智能任务大脑。
+              Full-model AI infrastructure with Task Intelligence built in.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-black/65 md:text-lg">
-              OneAI 面向中国开发者、SaaS 团队和创业者，提供一个统一 API：
-              模型路由、结构化任务、成本控制、流式对话、模型健康检查、
-              用量统计和商业计费。OneAI 负责智能协调，外部系统负责执行。
+              OneAI gives teams one API for model routing, structured tasks,
+              cost controls, streaming chat, model health, usage, and billing.
+              一个统一 API，覆盖模型路由、结构化任务、成本控制、流式对话、模型健康和商业计费。
             </p>
             <p className="mt-4 max-w-2xl text-base font-semibold leading-relaxed text-black md:text-lg">
               We provide customized Task Intelligence for customer needs,
               turning OneAI into the AI brain behind their applications.
             </p>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-black/55 md:text-base">
-              为客户按业务需求定制 Task Intelligence，让 OneAI 成为应用背后的
-              AI 智能大脑，而不是只做简单模型中转。
+              Custom Task Intelligence can be designed around each customer workflow.
+              可按客户业务流程定制任务智能，让 OneAI 成为应用背后的 AI brain。
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -122,26 +122,26 @@ export default function HomePage() {
                 href="/docs/quickstart"
                 className="inline-flex items-center justify-center rounded-lg bg-black px-5 py-3 text-sm font-bold text-white hover:bg-neutral-900"
               >
-                快速开始 Quickstart
+                Quickstart 快速开始
               </Link>
               <Link
                 href="/playground"
                 className="inline-flex items-center justify-center rounded-lg border border-black/15 px-5 py-3 text-sm font-bold hover:bg-black/[0.03]"
               >
-                在线测试 Playground
+                Playground 在线测试
               </Link>
             </div>
 
             <div className="mt-12 grid gap-4 sm:grid-cols-3">
-              <Metric value="全模型" label="OpenAI GPT-5, Anthropic, Gemini, xAI, DeepSeek, Qwen, Moonshot, Doubao, OpenRouter" />
-              <Metric value="省成本" label="模式路由、maxCostUsd、价格覆盖、模型健康检查、fallback 追踪" />
-              <Metric value="可商用" label="API keys、套餐、用量、计费、requestId、幂等、文档" />
+              <Metric value="Full-model" label="OpenAI GPT-5, Anthropic, Gemini, xAI, DeepSeek, Qwen, Moonshot, Doubao, OpenRouter · 全模型接入" />
+              <Metric value="Cost-aware" label="Mode routing, maxCostUsd, pricing, model health, fallback telemetry · 成本感知路由" />
+              <Metric value="Commercial" label="API keys, plans, usage, billing, request IDs, idempotency, docs · 商业化 API 基础设施" />
             </div>
           </div>
 
           <div className="min-w-0 rounded-lg border border-black/10 bg-[#0f1115] p-4 text-white">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="text-sm font-semibold">两个商用 API · Two commercial APIs</div>
+              <div className="text-sm font-semibold">Two commercial APIs · 两个商用 API</div>
               <div className="text-xs text-white/45">task + chat</div>
             </div>
             <div className="mt-4 text-xs font-semibold text-white/70">Task intelligence</div>
@@ -159,28 +159,29 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
         <div className="max-w-2xl">
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-            基础设施范围 · Infrastructure scope
+            Infrastructure scope · 基础设施范围
           </div>
           <h2 className="mt-2 text-2xl font-bold tracking-tight md:text-4xl">
-            一个 OneAI，两种购买理由。
+            One platform, two reasons to buy.
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-black/60 md:text-base">
-            普通模型网关只解决“调用哪个模型”。OneAI 在模型网关之上，
-            增加产品化 Task Intelligence、成本感知路由和可运营的 SaaS 控制台。
+            A normal model gateway gives access to models. OneAI adds
+            productized Task Intelligence, cost-aware routing, and an operator-ready SaaS console.
+            普通模型网关解决模型调用，OneAI 进一步提供任务智能、成本路由和商业控制台。
           </p>
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <Feature
-            title="兼容 OpenAI 的模型网关"
+            title="OpenAI-compatible gateway · 兼容 OpenAI 的模型网关"
             desc="Use /v1/chat/completions, streaming, Bearer auth, provider:model ids, model catalog sync, and health checks."
           />
           <Feature
-            title="结构化 Task Intelligence"
-            desc="对外提供 business_strategy、content_engine、support_brain 等商用任务，也支持按客户 workflow 定制智能大脑。"
+            title="Structured Task Intelligence · 结构化任务智能"
+            desc="Business strategy, content engine, support brain, execution planning, and custom workflow intelligence. 支持商用任务和客户 workflow 定制。"
           />
           <Feature
-            title="商业化权限与计费控制"
+            title="Commercial controls · 商业权限与计费"
             desc="Track requestId, tokens, cost, latency, model, provider, API key usage, plan gates, and billing state."
           />
         </div>
@@ -194,15 +195,15 @@ export default function HomePage() {
                 Moat
               </div>
               <h2 className="mt-2 text-2xl font-bold tracking-tight md:text-4xl">
-                模型网关兼容性，加上 OneAI 的任务智能。
+                Gateway compatibility plus OneAI Task Intelligence.
               </h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               {[
-                "标准 Chat Completions，方便迁移",
-                "商用 Task Registry，输出结构化业务结果",
-                "模型健康检查和目录同步，方便运营",
-                "用量、成本和套餐权限，支撑 API 收入",
+                "Standard Chat Completions · 标准模型网关",
+                "Commercial Task Registry · 商用任务注册表",
+                "Model health and catalog sync · 模型健康和目录同步",
+                "Usage, cost, and plan policy · 用量、成本和套餐权限",
               ].map((item) => (
                 <div key={item} className="rounded-lg border border-black/10 bg-white p-4 text-sm font-semibold text-black/75">
                   {item}

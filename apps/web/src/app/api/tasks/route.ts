@@ -32,9 +32,9 @@ function fallbackTasks(reason: string) {
     data: [
       {
         type: "business_strategy",
-        name: "商业策略规划 · Business Strategy",
+        name: "Business Strategy · 商业策略",
         description:
-          "把业务目标转成结构化策略、里程碑、风险、下一步行动和成功指标。",
+          "Turn business goals into structured strategy, milestones, risks, next actions, and success metrics. 将业务目标转成结构化策略。",
         category: "business",
         tier: "free",
         route: "/v1/generate",
@@ -47,9 +47,9 @@ function fallbackTasks(reason: string) {
       },
       {
         type: "content_engine",
-        name: "内容引擎 · Content Engine",
+        name: "Content Engine · 内容引擎",
         description:
-          "生成产品发布、营销活动和社媒传播所需的 hooks、posts、CTA 和变体。",
+          "Generate hooks, posts, CTAs, hashtags, and content variants for product launches and campaigns. 生成发布和营销内容。",
         category: "marketing",
         tier: "free",
         route: "/v1/generate",
@@ -62,9 +62,9 @@ function fallbackTasks(reason: string) {
       },
       {
         type: "campaign_mission",
-        name: "活动任务设计 · Campaign Mission",
+        name: "Campaign Mission · 活动任务",
         description:
-          "设计带步骤、证明、审核、奖励、增长循环和风险控制的活动任务。",
+          "Design campaign missions with steps, proof, review policy, rewards, growth loops, and risk controls. 设计可验证活动任务。",
         category: "growth",
         tier: "pro",
         route: "/v1/generate",
@@ -77,9 +77,9 @@ function fallbackTasks(reason: string) {
       },
       {
         type: "support_brain",
-        name: "客服智能大脑 · Support Brain",
+        name: "Support Brain · 客服智能",
         description:
-          "为客服或社区场景生成回复、意图识别、建议动作和记忆更新。",
+          "Generate support or community replies with intent, confidence, suggested action, and memory update. 生成客服和社区回复。",
         category: "support",
         tier: "pro",
         route: "/v1/generate",
@@ -92,8 +92,8 @@ function fallbackTasks(reason: string) {
       },
       {
         type: "execution_plan",
-        name: "执行计划 · Execution Plan",
-        description: "为外部团队、Bot 或 OneClaw 生成可验证执行计划，OneAI 不直接执行。",
+        name: "Execution Plan · 执行计划",
+        description: "Create verifiable execution plans for teams, bots, or OneClaw. OneAI does not execute directly. 为外部执行系统生成计划。",
         category: "operations",
         tier: "pro",
         route: "/v1/generate",
