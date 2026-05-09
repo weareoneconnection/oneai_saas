@@ -180,12 +180,27 @@ const DEFAULT_PROFILES: LLMModelProfile[] = [
     provider: "deepseek",
     model: "deepseek-chat",
     modes: ["cheap", "balanced", "auto"],
+    inputCostPerToken: 0.00000028,
+    outputCostPerToken: 0.00000042,
+    contextTokens: 128_000,
     supportsJson: true,
   },
   {
     provider: "deepseek",
     model: "deepseek-reasoner",
     modes: ["balanced", "premium", "auto"],
+    inputCostPerToken: 0.00000028,
+    outputCostPerToken: 0.00000042,
+    contextTokens: 128_000,
+    supportsJson: true,
+  },
+  {
+    provider: "deepseek",
+    model: "deepseek-v4-flash",
+    modes: ["cheap", "fast", "balanced", "auto"],
+    inputCostPerToken: 0.00000014,
+    outputCostPerToken: 0.00000028,
+    contextTokens: 1_000_000,
     supportsJson: true,
   },
   {
@@ -462,9 +477,15 @@ export function getModelCatalogSyncState() {
 }
 
 export function findModelProfile(provider: string, model: string) {
-  return listModelProfiles().find(
+  const exact = listModelProfiles().find(
     (profile) => profile.provider === provider && profile.model === model
   );
+  if (exact) return exact;
+
+  return listModelProfiles()
+    .filter((profile) => profile.provider === provider)
+    .sort((a, b) => b.model.length - a.model.length)
+    .find((profile) => model.startsWith(profile.model));
 }
 
 function isChatCompletionsModel(profile: LLMModelProfile): boolean {

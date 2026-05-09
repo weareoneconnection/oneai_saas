@@ -38,6 +38,54 @@ const DEFAULT_PRICING: Record<string, ModelPricing> = {
     prompt: 0.0000025,
     completion: 0.00001,
   },
+  "openai/gpt-5.2": {
+    prompt: 0.00000125,
+    completion: 0.00001,
+  },
+  "openai/gpt-5.1": {
+    prompt: 0.00000125,
+    completion: 0.00001,
+  },
+  "openai/gpt-5-mini": {
+    prompt: 0.00000025,
+    completion: 0.000002,
+  },
+  "openai/gpt-5-nano": {
+    prompt: 0.00000005,
+    completion: 0.0000004,
+  },
+  "openai/gpt-4o-mini": {
+    prompt: 0.00000015,
+    completion: 0.0000006,
+  },
+  "openai/gpt-4o": {
+    prompt: 0.0000025,
+    completion: 0.00001,
+  },
+  "deepseek-chat": {
+    prompt: 0.00000028,
+    completion: 0.00000042,
+  },
+  "deepseek-reasoner": {
+    prompt: 0.00000028,
+    completion: 0.00000042,
+  },
+  "deepseek-v4-flash": {
+    prompt: 0.00000014,
+    completion: 0.00000028,
+  },
+  "deepseek/deepseek-chat": {
+    prompt: 0.00000028,
+    completion: 0.00000042,
+  },
+  "deepseek/deepseek-reasoner": {
+    prompt: 0.00000028,
+    completion: 0.00000042,
+  },
+  "deepseek/deepseek-v4-flash": {
+    prompt: 0.00000014,
+    completion: 0.00000028,
+  },
 };
 
 function findPricing(model: string): ModelPricing | null {

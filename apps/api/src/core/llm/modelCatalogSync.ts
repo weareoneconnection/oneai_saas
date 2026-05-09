@@ -28,12 +28,22 @@ function normalizeModel(provider: string, item: any): LLMModelProfile | null {
   const model = String(item?.id || item?.name || item?.model || "").trim();
   if (!model) return null;
 
+  const promptPrice = Number(item?.pricing?.prompt);
+  const completionPrice = Number(item?.pricing?.completion);
+  const hasPricing = Number.isFinite(promptPrice) || Number.isFinite(completionPrice);
+
   return {
     provider,
     model,
     modes: inferModes(provider, model),
     supportsJson: true,
     supportsTools: /gpt|claude|gemini|grok|mistral|glm/i.test(model),
+    ...(hasPricing
+      ? {
+          inputCostPerToken: Number.isFinite(promptPrice) ? promptPrice : 0,
+          outputCostPerToken: Number.isFinite(completionPrice) ? completionPrice : 0,
+        }
+      : {}),
   };
 }
 
@@ -110,4 +120,3 @@ export async function syncModelCatalog(): Promise<SyncResult> {
     errors,
   };
 }
-
