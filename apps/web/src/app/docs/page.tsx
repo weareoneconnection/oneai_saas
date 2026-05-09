@@ -2,6 +2,7 @@
 import Link from "next/link";
 
 const quick = [
+  { title: "产品使用说明", desc: "中文版产品定位、API 能力、任务列表、成本控制和商业使用方式。", href: "/docs/product-guide" },
   { title: "Quickstart", desc: "Make the first /v1/generate call.", href: "/docs/quickstart" },
   { title: "API Basics", desc: "Auth, request shape, response metadata.", href: "/docs/api" },
   { title: "Generate Reference", desc: "Task input, options, usage, trace.", href: "/docs/reference/generate" },
@@ -47,6 +48,10 @@ export default function DocsHomePage() {
             Use /v1/generate for task intelligence, /v1/chat/completions
             for standard model gateway calls, and /v1/models for catalog
             discovery.
+          </p>
+          <p className="mt-3 text-base leading-relaxed text-black/65">
+            中文用户可以先阅读产品使用说明，了解 OneAI 如何作为统一全模型调用、
+            成本控制和 Task Intelligence 的 AI 智能大脑基础设施。
           </p>
         </div>
 
