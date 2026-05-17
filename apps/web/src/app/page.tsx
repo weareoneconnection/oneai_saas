@@ -49,7 +49,7 @@ const navItems = [
 ];
 
 const heroStats = [
-  ["2", "API surfaces", "Gateway + structured task intelligence"],
+  ["3", "API surfaces", "Generate + Chat + Messages"],
   ["480+", "model catalog target", "Provider choice without product rewrites"],
   ["4", "routing modes", "Cheap, balanced, premium, explicit"],
   ["1", "control plane", "Keys, usage, customers, costs, billing"],
