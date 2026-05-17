@@ -79,6 +79,13 @@ const systemLayers = [
   },
   {
     number: "04",
+    label: "Agent OS",
+    title: "Planning & Handoff",
+    desc: "Preview agent plans, context packets, and handoff contracts while keeping execution outside OneAI.",
+    items: ["/v1/capabilities", "/v1/agent-plans", "/v1/handoff/preview", "/v1/context/preview"],
+  },
+  {
+    number: "05",
     label: "Revenue",
     title: "Commercial Console",
     desc: "Operate AI like a SaaS product with API keys, customers, usage, billing readiness, and analytics.",
@@ -553,7 +560,14 @@ export default function HomePage() {
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/62 sm:text-lg md:text-xl">
               OneAI helps SaaS teams turn raw model access into paid, governed,
               measurable AI features with model routing, structured outputs,
-              API keys, usage visibility, cost controls, and billing-ready operations.
+              Agent OS handoff infrastructure, API keys, usage visibility, cost
+              controls, and billing-ready operations.
+            </p>
+
+            <p className="mt-4 max-w-2xl text-sm font-semibold leading-relaxed text-white/52 sm:text-base">
+              OneAI is the intelligent coordination brain for model routing,
+              Task Intelligence, and Agent OS handoff. OneClaw, bots, external
+              agents, or human operators handle execution.
             </p>
 
             <p className="mt-4 max-w-2xl text-sm font-bold leading-relaxed text-emerald-100/80 sm:text-base">

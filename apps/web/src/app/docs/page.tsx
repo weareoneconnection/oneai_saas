@@ -6,6 +6,7 @@ const quick = [
   { title: "Use Cases", desc: "Customer-facing scenarios for strategy, content, support, market intelligence, and custom tasks.", href: "/use-cases" },
   { title: "Production Checklist", desc: "Security, cost controls, idempotency, usage, and launch verification.", href: "/docs/guides/production-checklist" },
   { title: "Task Examples", desc: "Copyable request and output examples for commercial tasks.", href: "/docs/examples" },
+  { title: "Agent OS Preview", desc: "Capabilities, agent plans, handoff preview, and context preview without execution.", href: "/docs/reference/agent-os" },
   { title: "Quickstart", desc: "Make the first /v1/generate call.", href: "/docs/quickstart" },
   { title: "API Basics", desc: "Auth, request shape, response metadata.", href: "/docs/api" },
   { title: "Generate Reference", desc: "Task input, options, usage, trace.", href: "/docs/reference/generate" },

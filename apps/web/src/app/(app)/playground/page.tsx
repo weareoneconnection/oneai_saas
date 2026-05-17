@@ -16,7 +16,8 @@ import {
 
 type TaskKey = string;
 type Mode = "cheap" | "balanced" | "fast" | "premium" | "auto";
-type PlaygroundMode = "task" | "chat";
+type PlaygroundMode = "task" | "chat" | "agent";
+type AgentEndpoint = "/v1/agent-plans" | "/v1/handoff/preview" | "/v1/context/preview";
 type Result = Record<string, any> | null;
 
 type PlaygroundPreset = {
@@ -194,6 +195,29 @@ const DEFAULT_MODE: Mode = "balanced";
 const DEFAULT_PROVIDER = "openai";
 const DEFAULT_MODEL = "gpt-4o-mini";
 const DEFAULT_MAX_COST_USD = "0.03";
+const DEFAULT_AGENT_ENDPOINT: AgentEndpoint = "/v1/agent-plans";
+
+const agentExamples: Record<AgentEndpoint, unknown> = {
+  "/v1/agent-plans": {
+    objective: "Prepare a production launch checklist for OneAI",
+    constraints: ["Do not execute actions", "Every action must be verifiable"],
+    targetExecutor: "oneclaw",
+    riskLevel: "medium",
+  },
+  "/v1/handoff/preview": {
+    objective: "Hand off a launch checklist to OneClaw",
+    targetExecutor: "oneclaw",
+    approvalRequired: true,
+    proofRequired: ["deployment log", "health check result"],
+  },
+  "/v1/context/preview": {
+    threadId: "launch-thread-001",
+    customerId: "customer_123",
+    memoryHints: ["Customer prefers short practical plans"],
+    retrievalContext: [{ title: "Launch notes", text: "Ship API docs first." }],
+    policyHints: ["Do not execute external actions"],
+  },
+};
 
 function asJson(value: unknown) {
   return JSON.stringify(value, null, 2);
@@ -296,6 +320,8 @@ export default function PlaygroundPage() {
       max_completion_tokens: 300,
     })
   );
+  const [agentEndpoint, setAgentEndpoint] = useState<AgentEndpoint>(DEFAULT_AGENT_ENDPOINT);
+  const [agentInput, setAgentInput] = useState(asJson(agentExamples[DEFAULT_AGENT_ENDPOINT]));
 
   const [result, setResult] = useState<Result>(null);
   const [raw, setRaw] = useState("");
@@ -415,20 +441,34 @@ export default function PlaygroundPage() {
     }
   }, [chatInput]);
 
+  const agentPayload = useMemo(() => {
+    try {
+      return JSON.parse(agentInput);
+    } catch {
+      return "<invalid-json>";
+    }
+  }, [agentInput]);
+
   const curlPreview = useMemo(() => {
+    if (playgroundMode === "agent") {
+      return `curl -s https://oneai-saas-api-production.up.railway.app${agentEndpoint} \\\n  -H "Content-Type: application/json" \\\n  -H "x-api-key: YOUR_API_KEY" \\\n  -d '${JSON.stringify(agentPayload)}' | jq`;
+    }
+
     if (playgroundMode === "chat") {
       return `curl -s https://oneai-saas-api-production.up.railway.app/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer YOUR_API_KEY" \\\n  -d '${JSON.stringify(chatPayload)}' | jq`;
     }
 
     return `curl -s https://oneai-saas-api-production.up.railway.app/v1/generate \\\n  -H "Content-Type: application/json" \\\n  -H "x-api-key: YOUR_API_KEY" \\\n  -d '${JSON.stringify(taskPayload)}' | jq`;
-  }, [chatPayload, playgroundMode, taskPayload]);
+  }, [agentEndpoint, agentPayload, chatPayload, playgroundMode, taskPayload]);
 
   const nodePreview = useMemo(() => {
     const endpoint =
-      playgroundMode === "chat"
+      playgroundMode === "agent"
+        ? `https://oneai-saas-api-production.up.railway.app${agentEndpoint}`
+        : playgroundMode === "chat"
         ? "https://oneai-saas-api-production.up.railway.app/v1/chat/completions"
         : "https://oneai-saas-api-production.up.railway.app/v1/generate";
-    const payload = playgroundMode === "chat" ? chatPayload : taskPayload;
+    const payload = playgroundMode === "agent" ? agentPayload : playgroundMode === "chat" ? chatPayload : taskPayload;
     const authHeader =
       playgroundMode === "chat"
         ? `"Authorization": \`Bearer \${process.env.ONEAI_API_KEY}\`,`
@@ -449,14 +489,16 @@ if (!res.ok || data.success === false) {
 }
 
 console.log(data);`;
-  }, [chatPayload, playgroundMode, taskPayload]);
+  }, [agentEndpoint, agentPayload, chatPayload, playgroundMode, taskPayload]);
 
   const pythonPreview = useMemo(() => {
     const endpoint =
-      playgroundMode === "chat"
+      playgroundMode === "agent"
+        ? `https://oneai-saas-api-production.up.railway.app${agentEndpoint}`
+        : playgroundMode === "chat"
         ? "https://oneai-saas-api-production.up.railway.app/v1/chat/completions"
         : "https://oneai-saas-api-production.up.railway.app/v1/generate";
-    const payload = playgroundMode === "chat" ? chatPayload : taskPayload;
+    const payload = playgroundMode === "agent" ? agentPayload : playgroundMode === "chat" ? chatPayload : taskPayload;
     const authHeader =
       playgroundMode === "chat"
         ? `"Authorization": f"Bearer {os.environ['ONEAI_API_KEY']}",`
@@ -479,7 +521,7 @@ if not res.ok or data.get("success") is False:
     raise RuntimeError(data.get("error", "OneAI request failed"))
 
 print(data)`;
-  }, [chatPayload, playgroundMode, taskPayload]);
+  }, [agentEndpoint, agentPayload, chatPayload, playgroundMode, taskPayload]);
 
   const routingWarning =
     playgroundMode === "task" && ["cheap", "auto"].includes(mode) && (!provider.trim() || !model.trim())
@@ -516,6 +558,14 @@ print(data)`;
     setToast(`${preset.title} preset loaded.`);
   }
 
+  function switchAgentEndpoint(next: AgentEndpoint) {
+    setAgentEndpoint(next);
+    setAgentInput(asJson(agentExamples[next]));
+    setResult(null);
+    setRaw("");
+    setParseError("");
+  }
+
   async function copyText(label: string, value: string) {
     try {
       await navigator.clipboard.writeText(value);
@@ -532,6 +582,26 @@ print(data)`;
     setParseError("");
 
     try {
+      if (playgroundMode === "agent") {
+        const parsedAgent = JSON.parse(agentInput);
+
+        const res = await fetch("/api/agent-os", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            endpoint: agentEndpoint,
+            payload: parsedAgent,
+          }),
+        });
+
+        const text = await res.text();
+        setRaw(text);
+
+        const json = text ? JSON.parse(text) : null;
+        setResult(json || { success: false, error: "empty_response" });
+        return;
+      }
+
       if (playgroundMode === "chat") {
         const parsedChat = JSON.parse(chatInput);
 
@@ -617,7 +687,11 @@ print(data)`;
             <Badge>Console</Badge>
             <Badge>Playground</Badge>
             <span className="text-xs text-black/45">
-              {playgroundMode === "task" ? "Structured generation tester" : "Model gateway tester"}
+              {playgroundMode === "task"
+                ? "Structured generation tester"
+                : playgroundMode === "chat"
+                  ? "Model gateway tester"
+                  : "Agent OS preview tester"}
             </span>
             {taskLoadWarning ? <span className="text-xs text-amber-700">{taskLoadWarning}</span> : null}
           </div>
@@ -664,6 +738,19 @@ print(data)`;
           className={["rounded-md px-3 py-1.5 text-sm font-semibold", playgroundMode === "chat" ? "bg-black text-white" : "text-black/60"].join(" ")}
         >
           Chat API
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setPlaygroundMode("agent");
+            setResult(null);
+            setRaw("");
+            setParseError("");
+          }}
+          className={["rounded-md px-3 py-1.5 text-sm font-semibold", playgroundMode === "agent" ? "bg-black text-white" : "text-black/60"].join(" ")}
+        >
+          Agent OS
         </button>
       </div>
 
@@ -737,12 +824,50 @@ print(data)`;
             <CardHeader>
               <CardTitle>Request</CardTitle>
               <CardDescription>
-                {playgroundMode === "task" ? selectedTask.description : "OpenAI-compatible chat completions through OneAI routing."}
+                {playgroundMode === "task"
+                  ? selectedTask.description
+                  : playgroundMode === "chat"
+                    ? "OpenAI-compatible chat completions through OneAI routing."
+                    : "Agent OS preview endpoints for plans, handoff, and context. OneAI does not execute external actions."}
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {playgroundMode === "task" ? (
+              {playgroundMode === "agent" ? (
+                <>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <Stat label="Boundary" value="preview_only" />
+                    <Stat label="Execution" value="disabled" />
+                    <Stat label="Owner" value="OneAI brain" />
+                  </div>
+
+                  <label className="block">
+                    <div className="mb-1 text-xs text-black/50">Agent OS endpoint</div>
+                    <Select value={agentEndpoint} onChange={(e) => switchAgentEndpoint(e.target.value as AgentEndpoint)}>
+                      <option value="/v1/agent-plans">/v1/agent-plans</option>
+                      <option value="/v1/handoff/preview">/v1/handoff/preview</option>
+                      <option value="/v1/context/preview">/v1/context/preview</option>
+                    </Select>
+                  </label>
+
+                  <label className="block">
+                    <div className="mb-1 flex items-center justify-between gap-2 text-xs text-black/50">
+                      <span>Preview JSON</span>
+                      <span className="flex items-center gap-3">
+                        {parseError ? <span className="text-red-600">Invalid JSON: {parseError}</span> : null}
+                        <button
+                          type="button"
+                          onClick={() => copyText("Agent OS JSON", agentInput)}
+                          className="font-semibold text-black hover:underline"
+                        >
+                          Copy JSON
+                        </button>
+                      </span>
+                    </div>
+                    <Textarea value={agentInput} onChange={(e) => setAgentInput(e.target.value)} className="min-h-[380px] font-mono text-xs" />
+                  </label>
+                </>
+              ) : playgroundMode === "task" ? (
                 <>
                   <div className="grid gap-3 md:grid-cols-3">
                     <Stat label="Selected task" value={<code>{type}</code>} />

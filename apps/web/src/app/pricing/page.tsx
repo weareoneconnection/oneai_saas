@@ -34,6 +34,7 @@ const plans = [
       "$2,500 model cost guard · 模型成本保护",
       "600 RPM",
       "premium mode, debug trace, model registry",
+      "Agent OS preview + handoff contracts · Agent OS 预览和交接合同",
     ],
   },
   {
@@ -45,6 +46,7 @@ const plans = [
       "Custom model-cost guard · 定制模型成本保护",
       "Dedicated provider policy · 专属 provider 策略",
       "Custom models, health checks, support · 定制模型、健康检查和支持",
+      "Private handoff protocol · 私有 Agent OS 交接协议",
     ],
   },
 ];
@@ -59,7 +61,11 @@ const matrix = [
   ["Debug trace", "locked", "locked", "enabled", "enabled"],
   ["Explicit provider/model", "locked", "locked", "enabled", "enabled"],
   ["Model registry and health", "locked", "locked", "enabled", "enabled"],
+  ["Agent OS preview", "locked", "locked", "enabled", "enabled"],
+  ["Handoff contracts", "locked", "locked", "preview", "custom"],
+  ["Context preview", "locked", "locked", "enabled", "custom"],
   ["Custom provider policy", "locked", "locked", "limited", "enabled"],
+  ["Private executor policy", "locked", "locked", "locked", "enabled"],
 ];
 
 function Header() {
@@ -193,8 +199,8 @@ export default function PricingPage() {
             {[
               ["Free", "Test", "business_strategy and content_engine for API validation."],
               ["Pro", "Launch", "support_brain, market_research, campaign_mission, decision_intelligence."],
-              ["Team", "Operate", "custom tasks, debug traces, model controls, higher limits."],
-              ["Enterprise", "Scale", "dedicated policy, private provider setup, launch support."],
+              ["Team", "Operate", "custom tasks, debug traces, model controls, Agent OS preview."],
+              ["Enterprise", "Scale", "dedicated policy, private provider setup, private handoff protocol."],
             ].map(([tier, label, desc]) => (
               <div key={tier} className="rounded-lg border border-black/10 bg-black/[0.02] p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -255,7 +261,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
             <div className="text-sm font-bold">Model gateway · 模型网关</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
@@ -275,6 +281,14 @@ export default function PricingPage() {
             <p className="mt-2 text-sm leading-relaxed text-black/60">
               Generate business_strategy, content_engine, support_brain, and custom
               workflow intelligence. 支持结构化业务输出和客户 workflow 定制。
+            </p>
+          </div>
+          <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
+            <div className="text-sm font-bold">Agent OS handoff · Agent OS 交接</div>
+            <p className="mt-2 text-sm leading-relaxed text-black/60">
+              Team and Enterprise plans can preview agent plans, context packets,
+              and handoff contracts. OneAI plans; external executors act.
+              Team 和企业版支持计划、上下文和交接预览。
             </p>
           </div>
         </div>

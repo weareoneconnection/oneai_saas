@@ -7,7 +7,7 @@ export default function Page() {
       description="POST /v1/messages — Anthropic-style Messages API through OneAI model routing, usage tracking, and cost controls."
       pills={["Anthropic-style", "streaming", "x-api-key auth", "model routing"]}
       prev={{ href: "/docs/reference/chat", label: "Chat Completions" }}
-      next={{ href: "/docs/reference/models", label: "Models" }}
+      next={{ href: "/docs/reference/agent-os", label: "Agent OS Preview" }}
     >
       <DocSectionTitle
         title="Request"

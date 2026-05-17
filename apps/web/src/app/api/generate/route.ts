@@ -8,9 +8,9 @@ const API_BASE_RAW =
   "https://oneai-saas-api-production.up.railway.app";
 const API_BASE = API_BASE_RAW.replace(/\/$/, "");
 const API_KEY =
-  process.env.ONEAI_API_KEY ||
   process.env.ONEAI_ADMIN_API_KEY ||
   process.env.ONEAI_ADMIN_KEY ||
+  process.env.ONEAI_API_KEY ||
   "";
 
 export async function POST(req: NextRequest) {

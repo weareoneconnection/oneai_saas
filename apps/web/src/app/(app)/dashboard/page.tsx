@@ -523,6 +523,44 @@ export default function DashboardPage() {
     },
   ];
 
+  const agentOsReadiness = [
+    {
+      label: "Capabilities",
+      value: "/v1/capabilities",
+      desc: "Capability directory is available beside existing task registry.",
+      href: "/agent-os",
+      good: true,
+    },
+    {
+      label: "Agent plans",
+      value: "/v1/agent-plans",
+      desc: "Plan contracts can be generated without executing actions.",
+      href: "/playground",
+      good: true,
+    },
+    {
+      label: "Handoff preview",
+      value: "/v1/handoff/preview",
+      desc: "Plans can be packaged for OneClaw, bots, agents, or humans.",
+      href: "/agent-os",
+      good: true,
+    },
+    {
+      label: "Context preview",
+      value: "/v1/context/preview",
+      desc: "Thread, customer, memory, retrieval, and policy context can be normalized.",
+      href: "/playground",
+      good: true,
+    },
+    {
+      label: "Execution boundary",
+      value: "Disabled by default",
+      desc: "OneAI coordinates intelligence. Execution stays outside OneAI.",
+      href: "/docs/reference/agent-os",
+      good: true,
+    },
+  ];
+
   const operatorSignals = useMemo(() => {
     const requests = data.kpis.requests24h || 0;
     const cost = data.kpis.cost24hUSD || 0;
@@ -743,6 +781,45 @@ export default function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle>Agent OS Readiness</CardTitle>
+              <CardDescription>
+                Sidecar infrastructure for plans, handoff previews, context previews, and clear execution boundaries.
+              </CardDescription>
+            </div>
+            <Link
+              href="/agent-os"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-black px-3 text-sm font-semibold text-white transition hover:bg-neutral-900"
+            >
+              Open Agent OS
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {agentOsReadiness.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="rounded-2xl border border-black/10 bg-white/70 p-4 transition hover:border-black/25 hover:bg-black/[0.02]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="text-sm font-black text-black">{item.label}</div>
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                    Ready
+                  </span>
+                </div>
+                <code className="mt-3 block break-all text-xs font-semibold text-black/55">{item.value}</code>
+                <p className="mt-2 text-sm leading-relaxed text-black/55">{item.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_0.74fr]">
         <Card>

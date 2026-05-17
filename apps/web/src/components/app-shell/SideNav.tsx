@@ -18,6 +18,7 @@ const consoleItems: Item[] = [
 const infrastructureItems: Item[] = [
   { label: "Models", href: "/models", desc: "Provider registry · Provider 和模型注册表" },
   { label: "Tasks", href: "/tasks", desc: "Commercial workflows · 对外商用 workflow" },
+  { label: "Agent OS", href: "/agent-os", desc: "Plans, handoff, context · 规划、交接和上下文" },
   { label: "Docs", href: "/docs", desc: "Quickstart and reference · 快速开始和 API 参考" },
 ];
 

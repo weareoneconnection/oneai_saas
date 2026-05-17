@@ -15,6 +15,7 @@ import adminRoute from "./routes/admin.js";
 import adminDashboardRouter from "./routes/admin_dashboard.js";
 import tasksRoute from "./routes/tasks.js";
 import usageRoute from "./routes/usage.js";
+import agentOsRoute from "./routes/agent_os.js";
 // ✅ billing
 import billingRoute, { handleStripeWebhook } from "./routes/billing.js";
 
@@ -58,6 +59,7 @@ app.post(
 );
 app.use("/v1/tasks", tasksRoute);
 app.use("/v1/usage", usageRoute);
+app.use("/v1", agentOsRoute);
 
 // ===== Admin =====
 app.use("/v1/admin", adminRoute);

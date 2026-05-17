@@ -99,6 +99,7 @@ const plans = [
       "Shared organization billing",
       "API key governance",
       "Provider/model policy",
+      "Agent OS preview and handoff contracts",
       "Priority commercial support",
     ],
   },
@@ -112,6 +113,7 @@ const plans = [
       "Custom request and cost limits",
       "Custom provider/model policy",
       "Private model configuration",
+      "Private Agent OS handoff protocol",
       "Launch support and operational review",
     ],
   },
@@ -126,6 +128,10 @@ const planMatrix = [
   ["Debug trace", "locked", "locked", "enabled", "enabled"],
   ["Explicit model selection", "locked", "locked", "enabled", "enabled"],
   ["Model registry", "locked", "locked", "enabled", "enabled"],
+  ["Agent OS preview", "locked", "locked", "enabled", "enabled"],
+  ["Handoff contracts", "locked", "locked", "preview", "custom"],
+  ["Context preview", "locked", "locked", "enabled", "custom"],
+  ["Private executor policy", "locked", "locked", "locked", "enabled"],
 ];
 
 function statusClass(status: string) {
@@ -508,8 +514,8 @@ export default function BillingPage() {
             {[
               ["Free", "Validate", "Test business_strategy and content_engine with strict cost controls."],
               ["Pro", "Ship", "Unlock customer support, market research, campaign, and decision intelligence."],
-              ["Team", "Control", "Enable debug traces, model registry, explicit model selection, and custom tasks."],
-              ["Enterprise", "Customize", "Add dedicated provider policy, higher limits, private models, and launch support."],
+              ["Team", "Control", "Enable debug traces, model registry, custom tasks, and Agent OS preview."],
+              ["Enterprise", "Customize", "Add private provider policy, executor policy, handoff protocol, and launch support."],
             ].map(([tier, verb, desc]) => (
               <div key={tier} className="rounded-2xl border border-black/10 bg-white/70 p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -526,12 +532,40 @@ export default function BillingPage() {
             <Link href="/playground" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
               Test free tasks
             </Link>
+            <Link href="/agent-os" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
+              Preview Agent OS
+            </Link>
             <Link href={CONTACT_SALES_HREF} className="inline-flex h-9 items-center rounded-lg bg-black px-3 text-sm font-semibold text-white hover:bg-neutral-900">
               Contact sales
             </Link>
             <a href={CONTACT_TELEGRAM_HREF} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
               Telegram
             </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Agent OS Commercial Rights</CardTitle>
+          <CardDescription>
+            Agent OS is a higher-tier infrastructure layer: OneAI creates plans and handoff contracts; execution stays with OneClaw, bots, external agents, or humans.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-4">
+            {[
+              ["Free", "Task testing", "Validate business_strategy and content_engine before paid traffic."],
+              ["Pro", "Production tasks", "Run paid Task Intelligence workflows with higher limits."],
+              ["Team", "Agent OS preview", "Preview agent plans, context packets, and handoff contracts."],
+              ["Enterprise", "Private protocol", "Define custom executor policies, private handoff rules, and launch controls."],
+            ].map(([tier, title, desc]) => (
+              <div key={tier} className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                <div className="text-sm font-black text-black">{tier}</div>
+                <div className="mt-2 text-sm font-semibold text-black/75">{title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-black/55">{desc}</p>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
