@@ -196,6 +196,48 @@ export default function KeysPage() {
         <Stat label="Total keys" value={`${rows.length}`} sub="Across environments" />
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Safe free testing path</CardTitle>
+          <CardDescription>
+            Start with low-risk keys, free task intelligence, and usage checks before customer traffic.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+              <div className="text-sm font-bold text-black">Keep keys server-side</div>
+              <p className="mt-2 text-sm leading-relaxed text-black/55">
+                Do not place OneAI keys in browser code, mobile apps, screenshots, or public repos.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+              <div className="text-sm font-bold text-black">Test free tasks first</div>
+              <p className="mt-2 text-sm leading-relaxed text-black/55">
+                Validate business_strategy and content_engine before moving to paid Pro or Team tasks.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+              <div className="text-sm font-bold text-black">Watch spend from day one</div>
+              <p className="mt-2 text-sm leading-relaxed text-black/55">
+                Set a monthly budget, then confirm requests, tokens, and model cost in Usage.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/playground" className="inline-flex h-9 items-center rounded-lg bg-black px-3 text-sm font-semibold text-white hover:bg-neutral-900">
+              Run free test
+            </Link>
+            <Link href="/usage" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
+              Check usage
+            </Link>
+            <Link href="/docs/guides/production-checklist" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
+              Security checklist
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Create */}
       <Card>
         <CardHeader>
@@ -272,10 +314,18 @@ export default function KeysPage() {
               </div>
               <div className="mt-3 rounded-xl border border-black/10 bg-[#0f1115] p-3">
                 <pre className="overflow-auto text-xs leading-relaxed text-white/75">
-                  <code>{`curl -s https://oneai-saas-api-production.up.railway.app/v1/chat/completions \\
+                  <code>{`curl -s https://oneai-saas-api-production.up.railway.app/v1/generate \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer ${newKeyPlain}" \\
-  -d '{"model":"openai:gpt-5.2","messages":[{"role":"user","content":"Say hello from OneAI."}],"max_completion_tokens":80}' | jq`}</code>
+  -H "x-api-key: ${newKeyPlain}" \\
+  -d '{
+    "type": "business_strategy",
+    "input": {
+      "goal": "Validate OneAI API for my product",
+      "audience": "SaaS builders",
+      "constraints": ["Keep it practical", "Keep it short"]
+    },
+    "options": { "llm": { "mode": "cheap", "maxCostUsd": 0.03 } }
+  }' | jq`}</code>
                 </pre>
               </div>
             </div>

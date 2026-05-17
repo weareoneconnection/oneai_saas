@@ -523,6 +523,98 @@ export default function DashboardPage() {
     },
   ];
 
+  const operatorSignals = useMemo(() => {
+    const requests = data.kpis.requests24h || 0;
+    const cost = data.kpis.cost24hUSD || 0;
+    const errors = data.kpis.errorRatePct || 0;
+    const activeKeys = data.kpis.activeKeys || 0;
+    const topModel = data.modelBreakdown.length
+      ? [...data.modelBreakdown].sort((a, b) => b.costUSD - a.costUSD)[0]
+      : null;
+
+    const signals = [
+      {
+        title: requests ? "Traffic active" : "No 24h traffic",
+        desc: requests
+          ? `${fmtNum(requests)} request(s) recorded in the last 24 hours.`
+          : "Run Playground or send a customer API request to validate production traffic.",
+        tone: requests ? "green" : "amber",
+        href: "/playground",
+      },
+      {
+        title: cost > 0 ? "Cost is tracked" : "No cost recorded",
+        desc: cost > 0
+          ? `${fmtUSD(cost)} estimated model cost in the last 24 hours.`
+          : "Cost will appear after model calls with pricing coverage.",
+        tone: cost > 10 ? "amber" : cost > 0 ? "green" : "amber",
+        href: "/usage",
+      },
+      {
+        title: errors >= 2 ? "Error rate needs review" : "Error rate healthy",
+        desc: `Current error rate is ${pct(errors)}.`,
+        tone: errors >= 5 ? "red" : errors >= 2 ? "amber" : "green",
+        href: "/usage",
+      },
+      {
+        title: activeKeys ? "Keys available" : "Create first API key",
+        desc: activeKeys
+          ? `${fmtNum(activeKeys)} active key(s) available for customer traffic.`
+          : "Create a key before sending external customer traffic.",
+        tone: activeKeys ? "green" : "amber",
+        href: "/keys",
+      },
+    ];
+
+    const nextActions = [
+      requests ? ["Inspect Usage", "Review top tasks, expensive calls, and recent failures.", "/usage"] : ["Run a request", "Open Playground and test business_strategy or content_engine.", "/playground"],
+      topModel ? ["Review top model", `${topModel.provider || "provider"}:${topModel.model} is leading cost.`, "/models"] : ["Check models", "Confirm configured providers, pricing coverage, and health checks.", "/models"],
+      taskStats.total ? ["Test public tasks", `${taskStats.total} task(s) are visible in the public registry.`, "/tasks"] : ["Seed tasks", "Publish the commercial task registry before selling access.", "/tasks"],
+    ];
+
+    return { signals, nextActions };
+  }, [data, taskStats.total]);
+
+  const gettingStarted = useMemo(() => {
+    const hasKey = data.kpis.activeKeys > 0;
+    const hasTraffic = data.kpis.requests24h > 0;
+    const hasUsage = hasTraffic || data.kpis.cost24hUSD > 0 || data.kpis.tokens24h > 0;
+
+    return [
+      {
+        step: "1",
+        title: "Create an API key",
+        desc: "Start with a server-side key and a small monthly budget.",
+        href: "/keys",
+        status: hasKey ? "Done" : "Start",
+        done: hasKey,
+      },
+      {
+        step: "2",
+        title: "Run a free test",
+        desc: "Use business_strategy or content_engine before paid traffic.",
+        href: "/playground",
+        status: hasTraffic ? "Done" : "Test",
+        done: hasTraffic,
+      },
+      {
+        step: "3",
+        title: "Check usage",
+        desc: "Confirm requests, tokens, cost, latency, and failures.",
+        href: "/usage",
+        status: hasUsage ? "Live" : "Review",
+        done: hasUsage,
+      },
+      {
+        step: "4",
+        title: "Choose upgrade path",
+        desc: "Move to Pro or Team when customers need higher limits and paid tasks.",
+        href: "/billing",
+        status: "Plan",
+        done: false,
+      },
+    ];
+  }, [data.kpis.activeKeys, data.kpis.cost24hUSD, data.kpis.requests24h, data.kpis.tokens24h]);
+
   const sourceBadge =
     source === "live" ? "LIVE" : source === "demo" ? "DEMO" : "EMPTY";
 
@@ -583,6 +675,52 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle>Getting Started</CardTitle>
+              <CardDescription>
+                The fastest path from empty account to a billable OneAI API integration.
+              </CardDescription>
+            </div>
+            <Link
+              href="/docs/product-guide"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black transition hover:bg-black/[0.03]"
+            >
+              Product guide
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-4">
+            {gettingStarted.map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                className="rounded-2xl border border-black/10 bg-white/70 p-4 transition hover:border-black/25 hover:bg-black/[0.02]"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black text-xs font-bold text-white">
+                    {item.step}
+                  </span>
+                  <span
+                    className={[
+                      "rounded-full px-2 py-0.5 text-xs font-semibold",
+                      item.done ? "bg-green-100 text-green-700" : "bg-black/5 text-black/60",
+                    ].join(" ")}
+                  >
+                    {item.status}
+                  </span>
+                </div>
+                <div className="mt-3 text-sm font-bold text-black">{item.title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-black/55">{item.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
         {readinessItems.map((item) => (
           <Link
@@ -604,6 +742,57 @@ export default function DashboardPage() {
             <div className="mt-2 text-lg font-semibold text-black">{item.value}</div>
           </Link>
         ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_0.74fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Operator Summary</CardTitle>
+            <CardDescription>One-screen commercial health check for traffic, cost, errors, and keys.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2">
+              {operatorSignals.signals.map((signal) => (
+                <Link
+                  key={signal.title}
+                  href={signal.href}
+                  className={[
+                    "rounded-2xl border p-4 transition hover:-translate-y-0.5",
+                    signal.tone === "red"
+                      ? "border-red-200 bg-red-50 text-red-800"
+                      : signal.tone === "amber"
+                        ? "border-amber-200 bg-amber-50 text-amber-800"
+                        : "border-green-200 bg-green-50 text-green-800",
+                  ].join(" ")}
+                >
+                  <div className="text-sm font-bold">{signal.title}</div>
+                  <p className="mt-2 text-sm leading-relaxed opacity-80">{signal.desc}</p>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recommended Next Actions</CardTitle>
+            <CardDescription>What to check before heavier customer traffic.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {operatorSignals.nextActions.map(([title, desc, href]) => (
+                <Link
+                  key={title}
+                  href={href}
+                  className="rounded-2xl border border-black/10 bg-white/60 p-4 transition hover:border-black/25 hover:bg-black/[0.02]"
+                >
+                  <div className="text-sm font-semibold text-black">{title}</div>
+                  <p className="mt-2 text-sm leading-relaxed text-black/55">{desc}</p>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* KPI row */}

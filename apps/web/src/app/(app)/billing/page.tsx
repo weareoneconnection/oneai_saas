@@ -488,6 +488,56 @@ export default function BillingPage() {
 
       <Card>
         <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle>Upgrade Path</CardTitle>
+              <CardDescription>
+                A simple commercial path from free validation to paid production usage.
+              </CardDescription>
+            </div>
+            <Link
+              href="/pricing"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black transition hover:bg-black/[0.03]"
+            >
+              Compare plans
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 lg:grid-cols-4">
+            {[
+              ["Free", "Validate", "Test business_strategy and content_engine with strict cost controls."],
+              ["Pro", "Ship", "Unlock customer support, market research, campaign, and decision intelligence."],
+              ["Team", "Control", "Enable debug traces, model registry, explicit model selection, and custom tasks."],
+              ["Enterprise", "Customize", "Add dedicated provider policy, higher limits, private models, and launch support."],
+            ].map(([tier, verb, desc]) => (
+              <div key={tier} className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-black text-black">{tier}</div>
+                  <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs font-semibold text-black/55">
+                    {verb}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-black/60">{desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/playground" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
+              Test free tasks
+            </Link>
+            <Link href={CONTACT_SALES_HREF} className="inline-flex h-9 items-center rounded-lg bg-black px-3 text-sm font-semibold text-white hover:bg-neutral-900">
+              Contact sales
+            </Link>
+            <a href={CONTACT_TELEGRAM_HREF} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
+              Telegram
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Monthly API Allowance</CardTitle>
           <CardDescription>
             Current month usage against the effective plan policy.

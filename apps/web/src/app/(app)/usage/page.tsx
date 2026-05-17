@@ -95,6 +95,64 @@ export default function UsagePage() {
     return [...data.byModel].sort((a, b) => b.costUSD - a.costUSD).slice(0, 6);
   }, [data?.byModel]);
 
+  const operations = useMemo(() => {
+    if (!data) {
+      return {
+        alerts: [] as { title: string; desc: string; tone: "red" | "amber" | "green" }[],
+        topTasks: [] as NonNullable<UsageResp["byTask"]>,
+        failedRecent: [] as UsageResp["recent"],
+        expensiveRecent: [] as UsageResp["recent"],
+      };
+    }
+
+    const alerts: { title: string; desc: string; tone: "red" | "amber" | "green" }[] = [];
+    const errorRate = Number(data.errorRatePct || 0);
+    const cost = Number(data.totalCostUSD || 0);
+    const requests = Number(data.totalRequests || 0);
+
+    alerts.push(
+      requests
+        ? {
+            title: "Traffic is recording",
+            desc: `${fmtNum(requests)} request(s) logged in ${rangeLabel}.`,
+            tone: "green",
+          }
+        : {
+            title: "No traffic yet",
+            desc: "Run a Playground request or call the API to validate logging, cost, and usage visibility.",
+            tone: "amber",
+          }
+    );
+
+    if (errorRate >= 5) {
+      alerts.push({
+        title: "High error rate",
+        desc: `${errorRate.toFixed(2)}% of requests failed. Check recent failed requests and provider configuration.`,
+        tone: "red",
+      });
+    }
+
+    if (cost >= 5) {
+      alerts.push({
+        title: "Cost review recommended",
+        desc: `${fmtUSD(cost)} estimated model cost in this range. Review top models and expensive requests.`,
+        tone: "amber",
+      });
+    }
+
+    const expensiveRecent = [...(data.recent || [])]
+      .filter((row) => Number(row.costUSD || 0) > 0)
+      .sort((a, b) => Number(b.costUSD || 0) - Number(a.costUSD || 0))
+      .slice(0, 5);
+
+    const failedRecent = (data.recent || []).filter((row) => row.success === false).slice(0, 5);
+    const topTasks = [...(data.byTask || [])]
+      .sort((a, b) => b.requests - a.requests || b.costUSD - a.costUSD)
+      .slice(0, 5);
+
+    return { alerts, topTasks, failedRecent, expensiveRecent };
+  }, [data, rangeLabel]);
+
   const unitCost = data?.totalTokens ? data.totalCostUSD / data.totalTokens : 0;
   const sortedRows = useMemo(() => {
     if (!data) return [];
@@ -192,6 +250,86 @@ export default function UsagePage() {
             <Stat label="Error rate" value={`${Number(data.errorRatePct || 0).toFixed(2)}%`} sub={`${fmtNum(data.errorCount || 0)} failed`} />
             <Stat label="Avg latency" value={data.avgLatencyMs ? `${fmtNum(data.avgLatencyMs)}ms` : "—"} sub={unitCost ? `${fmtUSD(unitCost * 1000)} / 1K tokens` : "No token cost yet"} />
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Operational Signals</CardTitle>
+              <CardDescription>Quick checks for traffic, cost, failures, and task adoption.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-3">
+                {operations.alerts.map((alert) => (
+                  <div
+                    key={alert.title}
+                    className={[
+                      "rounded-2xl border p-4",
+                      alert.tone === "red"
+                        ? "border-red-200 bg-red-50 text-red-800"
+                        : alert.tone === "amber"
+                          ? "border-amber-200 bg-amber-50 text-amber-800"
+                          : "border-green-200 bg-green-50 text-green-800",
+                    ].join(" ")}
+                  >
+                    <div className="text-sm font-bold">{alert.title}</div>
+                    <p className="mt-2 text-sm leading-relaxed opacity-80">{alert.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
+                  <div className="text-sm font-bold text-black">Top tasks</div>
+                  <div className="mt-3 space-y-2">
+                    {operations.topTasks.length ? (
+                      operations.topTasks.map((row) => (
+                        <div key={row.task} className="flex items-center justify-between gap-3 text-sm">
+                          <code className="truncate text-xs text-black/70">{row.task}</code>
+                          <span className="shrink-0 font-semibold text-black">{fmtNum(row.requests)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-black/50">No task usage yet.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
+                  <div className="text-sm font-bold text-black">Expensive recent calls</div>
+                  <div className="mt-3 space-y-2">
+                    {operations.expensiveRecent.length ? (
+                      operations.expensiveRecent.map((row) => (
+                        <div key={row.id} className="flex items-center justify-between gap-3 text-sm">
+                          <code className="truncate text-xs text-black/70">{row.model || row.type}</code>
+                          <span className="shrink-0 font-semibold text-black">{fmtUSD(row.costUSD)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-black/50">No cost-bearing calls yet.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
+                  <div className="text-sm font-bold text-black">Recent failures</div>
+                  <div className="mt-3 space-y-2">
+                    {operations.failedRecent.length ? (
+                      operations.failedRecent.map((row) => (
+                        <div key={row.id} className="text-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <code className="truncate text-xs text-black/70">{row.type}</code>
+                            <span className="shrink-0 text-xs font-semibold text-red-700">{fmtTime(row.createdAt)}</span>
+                          </div>
+                          {row.error ? <div className="mt-1 line-clamp-2 text-xs text-black/45">{row.error}</div> : null}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-black/50">No recent failures.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Breakdowns */}
           <Card>

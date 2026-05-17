@@ -7,7 +7,7 @@ export default function Page() {
       description="POST /v1/chat/completions — OpenAI-compatible model gateway access through OneAI."
       pills={["OpenAI-compatible", "streaming", "Bearer auth", "model routing"]}
       prev={{ href: "/docs/reference/generate", label: "Generate" }}
-      next={{ href: "/docs/reference/models", label: "Models" }}
+      next={{ href: "/docs/reference/messages", label: "Messages" }}
     >
       <DocSectionTitle title="Request" desc="Use provider:model ids from /v1/models. GPT-5 class models use max_completion_tokens." />
       <div className="mt-6 rounded-lg border border-black/10 bg-white p-6">

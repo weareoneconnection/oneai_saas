@@ -3,10 +3,14 @@ import Link from "next/link";
 
 const quick = [
   { title: "产品使用说明", desc: "中文版产品定位、API 能力、任务列表、成本控制和商业使用方式。", href: "/docs/product-guide" },
+  { title: "Use Cases", desc: "Customer-facing scenarios for strategy, content, support, market intelligence, and custom tasks.", href: "/use-cases" },
+  { title: "Production Checklist", desc: "Security, cost controls, idempotency, usage, and launch verification.", href: "/docs/guides/production-checklist" },
+  { title: "Task Examples", desc: "Copyable request and output examples for commercial tasks.", href: "/docs/examples" },
   { title: "Quickstart", desc: "Make the first /v1/generate call.", href: "/docs/quickstart" },
   { title: "API Basics", desc: "Auth, request shape, response metadata.", href: "/docs/api" },
   { title: "Generate Reference", desc: "Task input, options, usage, trace.", href: "/docs/reference/generate" },
   { title: "Chat Completions", desc: "OpenAI-compatible model gateway calls.", href: "/docs/reference/chat" },
+  { title: "Messages", desc: "Anthropic-style Messages API through OneAI model routing.", href: "/docs/reference/messages" },
   { title: "Models", desc: "Catalog, health checks, pricing coverage.", href: "/docs/reference/models" },
   { title: "Errors", desc: "Retryable failures and customer-safe errors.", href: "/docs/reference/errors" },
   { title: "Rate Limits", desc: "API key policy and production limits.", href: "/docs/reference/rate-limits" },
@@ -46,8 +50,8 @@ export default function DocsHomePage() {
           <p className="mt-5 text-base leading-relaxed text-black/65">
             OneAI is the model-routing and structured-intelligence layer.
             Use /v1/generate for task intelligence, /v1/chat/completions
-            for standard model gateway calls, and /v1/models for catalog
-            discovery.
+            for OpenAI-compatible gateway calls, /v1/messages for
+            Anthropic-style gateway calls, and /v1/models for catalog discovery.
           </p>
           <p className="mt-3 text-base leading-relaxed text-black/65">
             中文用户可以先阅读产品使用说明，了解 OneAI 如何作为统一全模型调用、
@@ -76,11 +80,15 @@ export default function DocsHomePage() {
             <code>{`curl https://oneai-saas-api-production.up.railway.app/v1/generate \\
   -H "content-type: application/json" \\
   -H "x-api-key: $ONEAI_API_KEY" \\
-  -H "Idempotency-Key: launch-plan-001" \\
+  -H "Idempotency-Key: business-strategy-001" \\
   -d '{
-    "type": "agent_plan",
-    "input": { "goal": "Create a launch plan for OneAI API" },
-    "options": { "llm": { "mode": "cheap", "maxCostUsd": 0.02 } }
+    "type": "business_strategy",
+    "input": {
+      "goal": "Create a launch plan for OneAI API",
+      "audience": "SaaS builders",
+      "constraints": ["Keep it practical"]
+    },
+    "options": { "llm": { "mode": "cheap", "maxCostUsd": 0.03 } }
   }'`}</code>
           </pre>
         </div>

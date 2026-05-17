@@ -41,6 +41,8 @@ const chatCode = `curl https://oneai-saas-api-production.up.railway.app/v1/chat/
 const navItems = [
   ["Platform", "#platform"],
   ["Tasks", "#tasks"],
+  ["Task Intelligence", "/task-intelligence"],
+  ["Use Cases", "/use-cases"],
   ["Commercial", "#commercial"],
   ["Docs", "/docs"],
   ["Pricing", "/pricing"],
@@ -110,6 +112,33 @@ const comparisonRows = [
   ["Commercialization", "Build billing logic yourself", "Plan-aware and billing-ready infrastructure"],
 ];
 
+const trustRows = [
+  {
+    title: "No black-box routing",
+    desc: "Responses expose provider, model, tokens, requestId, latency, fallback state, and estimated cost so teams know exactly what happened.",
+  },
+  {
+    title: "Task contracts over loose prompts",
+    desc: "Structured workflows package repeatable business logic behind typed inputs, stable outputs, tiers, and validation.",
+  },
+  {
+    title: "Cost-first operations",
+    desc: "Routing modes, maxCostUsd, plan limits, usage dashboards, and model pricing help teams prevent AI spend drift.",
+  },
+  {
+    title: "Execution stays separate",
+    desc: "OneAI coordinates intelligence. OneClaw, bots, or your own systems execute actions, keeping the API boundary clear.",
+  },
+];
+
+const gatewayContrastRows = [
+  ["Generic model gateway", "OneAI intelligence layer"],
+  ["Primarily forwards requests to models", "Turns business intent into reusable Task Intelligence"],
+  ["Competes on number of models", "Competes on workflow quality, cost control, and commercial readiness"],
+  ["Often optimized for raw chat/completion calls", "Supports model gateway calls plus structured business tasks"],
+  ["Trust depends on provider access", "Trust comes from transparent routing, usage, cost, task contracts, and execution boundaries"],
+];
+
 const launchPaths = [
   {
     title: "For SaaS founders",
@@ -137,6 +166,10 @@ const faqRows = [
   {
     q: "What is Task Intelligence?",
     a: "Task Intelligence turns repeatable business workflows into stable API contracts with defined inputs, structured outputs, access tiers, and cost visibility.",
+  },
+  {
+    q: "How is OneAI different from B.AI or a generic model gateway?",
+    a: "Those platforms are strongest at model access and payment rails. OneAI includes a gateway, but its higher layer is Task Intelligence: business-ready outputs, cost controls, request visibility, and commercial SaaS operations.",
   },
   {
     q: "Are the console numbers on this homepage real?",
@@ -542,6 +575,20 @@ export default function HomePage() {
                 Read Quickstart
               </Link>
 
+              <Link
+                href="/task-intelligence"
+                className="inline-flex items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-6 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/15"
+              >
+                Task Intelligence
+              </Link>
+
+              <Link
+                href="/use-cases"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/12 bg-white/[0.06] px-6 py-3 text-sm font-black text-white transition hover:bg-white/[0.1]"
+              >
+                Use Cases
+              </Link>
+
               <a
                 href={`mailto:${CONTACT_EMAIL}?subject=OneAI%20Commercial%20Access`}
                 className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-6 py-3 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/15"
@@ -602,6 +649,16 @@ export default function HomePage() {
                 <div className="text-lg font-black text-white">Read Docs</div>
                 <p className="mt-2 text-sm leading-relaxed text-white/45">
                   Explore auth, routes, task types, examples, response formats, and model usage.
+                </p>
+              </Link>
+
+              <Link
+                href="/task-intelligence"
+                className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 transition hover:bg-white/[0.1]"
+              >
+                <div className="text-lg font-black text-white">Task Intelligence</div>
+                <p className="mt-2 text-sm leading-relaxed text-white/45">
+                  See how OneAI packages business workflows into structured, billable API contracts.
                 </p>
               </Link>
 
@@ -705,6 +762,56 @@ export default function HomePage() {
             ))}
           </div>
         </Surface>
+      </section>
+
+      <section className="border-y border-white/10 bg-white/[0.03]">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20">
+          <div className="grid gap-10 lg:grid-cols-[0.86fr_1.14fr] lg:items-start">
+            <div>
+              <SectionTitle
+                eyebrow="Trust layer"
+                title="Built to be more than a pass-through model relay."
+                desc="Customers do not only worry about model access. They worry about hidden routing, runaway cost, unclear data boundaries, and whether AI outputs are usable inside a real product."
+              />
+
+              <div className="mt-8 rounded-[1.5rem] border border-emerald-300/20 bg-emerald-300/10 p-5">
+                <div className="text-sm font-black text-emerald-100">
+                  Positioning
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-emerald-50/70">
+                  Generic gateways sell access to models. OneAI sells the operating layer that turns models into governed, measurable, task-specific business intelligence.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {trustRows.map((item) => (
+                <Surface key={item.title} className="p-5 transition hover:border-emerald-300/25 hover:bg-white/[0.075]">
+                  <h3 className="text-lg font-black text-white">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-white/52">{item.desc}</p>
+                </Surface>
+              ))}
+            </div>
+          </div>
+
+          <Surface className="mt-10 overflow-x-auto">
+            <div className="min-w-[760px]">
+              {gatewayContrastRows.map((row, index) => (
+                <div
+                  key={row.join(":")}
+                  className={`grid grid-cols-2 gap-4 px-4 py-4 text-sm ${
+                    index === 0
+                      ? "bg-white/[0.06] text-xs font-black uppercase tracking-wide text-white/35"
+                      : "border-t border-white/10"
+                  }`}
+                >
+                  <div className={index === 0 ? "" : "text-white/42"}>{row[0]}</div>
+                  <div className={index === 0 ? "" : "font-bold text-emerald-100/75"}>{row[1]}</div>
+                </div>
+              ))}
+            </div>
+          </Surface>
+        </div>
       </section>
 
       <section className="border-y border-white/10 bg-white/[0.03]">

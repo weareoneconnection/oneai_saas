@@ -69,6 +69,18 @@ function fmtTime(v?: string | null) {
   return new Date(v).toLocaleString();
 }
 
+function daysAgo(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date;
+}
+
+function toTime(v?: string | null) {
+  if (!v) return 0;
+  const time = new Date(v).getTime();
+  return Number.isFinite(time) ? time : 0;
+}
+
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-black/10 bg-white/60 p-4">
@@ -114,18 +126,59 @@ export default function CustomersPage() {
   }, [query, rows]);
 
   const totals = useMemo(() => {
+    const weekAgo = daysAgo(7).getTime();
+    const monthAgo = daysAgo(30).getTime();
     return rows.reduce(
       (acc, row) => {
+        const latestActivity = Math.max(
+          toTime(row.lastRequestAt),
+          toTime(row.latestKeyUsedAt),
+          toTime(row.latestKeyCreatedAt),
+          toTime(row.latestLoginAt)
+        );
+
         acc.customers += 1;
         acc.keys += row.keyCount || 0;
         acc.activeKeys += row.activeKeyCount || 0;
         acc.requests += row.requestCount || 0;
         acc.cost += row.costUsd || 0;
+        if (latestActivity >= monthAgo) acc.activeCustomers += 1;
+        if (toTime(row.latestLoginAt) >= weekAgo || toTime(row.latestKeyCreatedAt) >= weekAgo) {
+          acc.newThisWeek += 1;
+        }
+        if ((row.requestCount || 0) > 0 && !(row.activeKeyCount || 0)) acc.usageWithoutActiveKey += 1;
         return acc;
       },
-      { customers: 0, keys: 0, activeKeys: 0, requests: 0, cost: 0 }
+      {
+        customers: 0,
+        keys: 0,
+        activeKeys: 0,
+        requests: 0,
+        cost: 0,
+        activeCustomers: 0,
+        newThisWeek: 0,
+        usageWithoutActiveKey: 0,
+      }
     );
   }, [rows]);
+
+  const topCustomers = useMemo(() => {
+    return [...rows]
+      .sort((a, b) => (b.costUsd || 0) - (a.costUsd || 0) || (b.requestCount || 0) - (a.requestCount || 0))
+      .slice(0, 5);
+  }, [rows]);
+
+  const keyHealth = useMemo(() => {
+    const unusedKeys = rows.reduce((sum, row) => {
+      return sum + row.keys.filter((key) => !key.lastUsedAt && !key.revokedAt).length;
+    }, 0);
+
+    const recentEvents = events.slice(0, 20);
+    const signIns = recentEvents.filter((event) => event.action === "console.sign_in").length;
+    const keysCreated = recentEvents.filter((event) => event.action === "api_key.created").length;
+
+    return { unusedKeys, signIns, keysCreated };
+  }, [events, rows]);
 
   return (
     <div className="space-y-6">
@@ -153,11 +206,49 @@ export default function CustomersPage() {
 
       <div className="grid gap-3 md:grid-cols-5">
         <Stat label="Customers" value={fmtNum(totals.customers)} />
+        <Stat label="Active 30d" value={fmtNum(totals.activeCustomers)} />
+        <Stat label="New 7d" value={fmtNum(totals.newThisWeek)} />
         <Stat label="Total keys" value={fmtNum(totals.keys)} />
         <Stat label="Active keys" value={fmtNum(totals.activeKeys)} />
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-5">
         <Stat label="Requests" value={fmtNum(totals.requests)} />
         <Stat label="Model cost" value={fmtUsd(totals.cost)} />
+        <Stat label="Unused keys" value={fmtNum(keyHealth.unusedKeys)} />
+        <Stat label="Recent sign-ins" value={fmtNum(keyHealth.signIns)} />
+        <Stat label="Recent key creates" value={fmtNum(keyHealth.keysCreated)} />
       </div>
+
+      {totals.usageWithoutActiveKey ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          {fmtNum(totals.usageWithoutActiveKey)} customer account(s) have historical usage but no active key. Review revoked keys or migration state.
+        </div>
+      ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Top Customers</CardTitle>
+          <CardDescription>Highest cost and request volume across visible customer accounts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-5">
+            {topCustomers.length ? (
+              topCustomers.map((row) => (
+                <div key={row.email} className="rounded-lg border border-black/10 bg-white/60 p-4">
+                  <div className="truncate text-sm font-semibold text-black">{row.email}</div>
+                  <div className="mt-3 text-xl font-bold text-black">{fmtUsd(row.costUsd)}</div>
+                  <div className="mt-1 text-xs text-black/45">
+                    {fmtNum(row.requestCount)} requests · {fmtNum(row.activeKeyCount)} active keys
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-sm text-black/55">No customer usage yet.</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

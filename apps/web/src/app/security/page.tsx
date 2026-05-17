@@ -10,6 +10,13 @@ function Item({ title, desc }: { title: string; desc: string }) {
   );
 }
 
+const riskRows = [
+  ["Hidden model routing", "OneAI returns provider, model, requestId, usage, latency, fallback state, and estimated cost."],
+  ["Cost drift", "Plans, maxCostUsd, rate limits, monthly request limits, and usage dashboards keep spend visible."],
+  ["Leaked keys", "Customer API keys are created once, stored hashed, and can be revoked without exposing upstream provider secrets."],
+  ["Unsafe execution", "OneAI generates intelligence and plans. Execution belongs to OneClaw, bots, customer tools, or human operators."],
+];
+
 export default function SecurityPage() {
   return (
     <main className="bg-white text-black">
@@ -35,16 +42,25 @@ export default function SecurityPage() {
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-20">
         <div className="max-w-2xl">
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-            Security
+            Trust Center
           </div>
           <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
-            Security posture for OneAI API customers.
+            Trust controls for commercial AI infrastructure.
           </h1>
           <p className="mt-5 text-base leading-relaxed text-black/65">
-            OneAI is designed as API infrastructure: hashed API keys, scoped
-            access, usage logs, billing controls, request IDs, and model routing
-            policies. It coordinates intelligence; OneClaw and bots handle
+            OneAI is designed for teams that need to sell, monitor, and govern
+            AI features. The system keeps provider access server-side, exposes
+            request-level usage and cost, and separates intelligence from
             execution.
+          </p>
+        </div>
+
+        <div className="mt-10 rounded-xl border border-black bg-black p-6 text-white">
+          <div className="text-sm font-extrabold">Core principle</div>
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-white/70">
+            OneAI should not behave like a blind relay. Every production call
+            should be explainable by requestId, provider, model, token usage,
+            estimated cost, route policy, and customer/API key ownership.
           </p>
         </div>
 
@@ -73,6 +89,36 @@ export default function SecurityPage() {
             title="Execution boundary"
             desc="OneAI returns plans, structured decisions, and coordination outputs. Direct execution stays outside the OneAI API boundary."
           />
+        </div>
+
+        <div className="mt-10">
+          <div className="max-w-2xl">
+            <h2 className="text-2xl font-extrabold tracking-tight">AI relay risks OneAI is built to reduce</h2>
+            <p className="mt-2 text-sm leading-relaxed text-black/60">
+              The main customer concern is not only whether a model responds.
+              It is whether routing, spend, data boundaries, and operational
+              ownership are visible enough to trust in production.
+            </p>
+          </div>
+
+          <div className="mt-6 overflow-x-auto rounded-lg border border-black/10">
+            <table className="min-w-[760px] w-full text-left text-sm">
+              <thead className="bg-black/[0.04] text-xs uppercase tracking-wide text-black/45">
+                <tr>
+                  <th className="px-4 py-3">Risk</th>
+                  <th className="px-4 py-3">OneAI control</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/10">
+                {riskRows.map(([risk, control]) => (
+                  <tr key={risk}>
+                    <td className="px-4 py-4 font-bold text-black">{risk}</td>
+                    <td className="px-4 py-4 leading-relaxed text-black/65">{control}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="mt-10 grid gap-4 md:grid-cols-[1fr_1fr]">

@@ -209,6 +209,39 @@ export default function ProductGuidePage() {
 
       <section className="mt-12">
         <DocSectionTitle
+          title="OneAI 与普通模型中转站的区别"
+          desc="OneAI 包含模型网关能力，但核心目标不是只做请求转发，而是把模型能力产品化为可销售、可计量、可治理的业务智能。"
+        />
+        <div className="mt-6 overflow-x-auto rounded-lg border border-black/10">
+          <table className="min-w-[760px] w-full text-left text-sm">
+            <thead className="bg-black/[0.04] text-xs uppercase tracking-wide text-black/50">
+              <tr>
+                <th className="px-4 py-3">维度</th>
+                <th className="px-4 py-3">普通模型中转站</th>
+                <th className="px-4 py-3">OneAI</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/10">
+              {[
+                ["核心价值", "统一调用多个模型", "统一模型调用 + Task Intelligence + 商业控制层"],
+                ["输出形式", "主要返回聊天文本", "返回业务场景可用的结构化结果"],
+                ["成本控制", "通常需要用户自己监控", "返回 token、模型、provider 和 estimatedCostUSD"],
+                ["商业化", "偏开发者工具", "包含 API key、usage、plan policy、客户和运营视图"],
+                ["安全边界", "容易被理解为黑盒转发", "OneAI 只做智能协调，执行交给 OneClaw/Bot/客户系统"],
+              ].map(([dim, gateway, oneai]) => (
+                <tr key={dim}>
+                  <td className="px-4 py-4 font-bold text-black">{dim}</td>
+                  <td className="px-4 py-4 leading-relaxed text-black/60">{gateway}</td>
+                  <td className="px-4 py-4 leading-relaxed font-semibold text-black">{oneai}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="mt-12">
+        <DocSectionTitle
           title="商业使用方式"
           desc="当前建议采用 API 调用 + 定制 Task Intelligence + 人工开通套餐的方式进入商业运营。"
         />

@@ -19,6 +19,19 @@ type Mode = "cheap" | "balanced" | "fast" | "premium" | "auto";
 type PlaygroundMode = "task" | "chat";
 type Result = Record<string, any> | null;
 
+type PlaygroundPreset = {
+  id: string;
+  title: string;
+  task: string;
+  tier: "Free" | "Pro" | "Team";
+  mode: Mode;
+  provider: string;
+  model: string;
+  maxCostUsd: string;
+  desc: string;
+  input: unknown;
+};
+
 type TaskOption = {
   task: string;
   type?: string;
@@ -32,76 +45,165 @@ type TaskOption = {
   exampleInput?: unknown;
 };
 
-const fallbackTaskExamples: Record<string, { label: string; description: string; input: unknown }> = {
-  agent_plan: {
-    label: "Agent Plan",
-    description: "Turn a goal into strategy, missions, actions, and reasoning.",
+const fallbackTaskExamples: Record<string, { label: string; description: string; input: unknown; tier?: string }> = {
+  business_strategy: {
+    label: "Business Strategy",
+    description: "Turn a business goal into practical strategy, milestones, risks, next actions, and success metrics.",
     input: {
-      goal: "Create a simple launch plan for OneAI SaaS",
-      brand: "OneAI SaaS",
-      audience: "developers and AI builders",
-      tone: "clear, practical, commercial",
+      goal: "Launch a B2B AI API product in 30 days",
+      audience: "SaaS builders and small teams",
+      constraints: ["Keep it practical", "Prioritize fast validation", "Include risks"],
     },
+    tier: "free",
   },
-  mission_os: {
-    label: "Mission OS",
-    description: "Generate a structured campaign mission with proof, review, rewards, and risk checks.",
+  content_engine: {
+    label: "Content Engine",
+    description: "Generate hooks, social posts, CTAs, hashtags, and content variants for product launches.",
     input: {
-      goal: "Launch a WAOC builder campaign for OneAI SaaS",
-      targetAudience: "builders, creators, founders",
-      brand: "WAOC OneAI",
-      lang: "en",
-      missionType: "growth",
-      difficulty: "easy",
+      topic: "Announce OneAI Task Intelligence API",
+      audience: "developers and SaaS builders",
+      tone: "clear and practical",
+      brand: "OneAI",
     },
+    tier: "free",
   },
-  waoc_chat: {
-    label: "WAOC Chat",
-    description: "Community-aware chat reply for WAOC and related ecosystems.",
+  market_research: {
+    label: "Market Research",
+    description: "Create a structured market brief from a product, audience, competitors, context, and constraints.",
     input: {
-      message: "What is OneAI and how can it help WAOC builders?",
-      context: "community",
-      lang: "en",
-      recentMessages: "We are preparing builder missions. Need a simple explanation of OneAI.",
-      threadMemory: {
-        topic: "OneAI builder coordination",
-        status: "explaining",
-      },
-      communityName: "WAOC",
+      product: "Unified model gateway plus Task Intelligence API",
+      audience: "SaaS builders",
+      competitors: ["generic model gateways", "AI workflow tools"],
+      objective: "Find a practical launch wedge",
     },
+    tier: "pro",
   },
-  oneclaw_execute: {
-    label: "OneClaw Execute",
-    description: "Produce execution-ready action planning for OneClaw without executing inside OneAI.",
+  support_brain: {
+    label: "Support Brain",
+    description: "Generate customer support or community replies with intent, confidence, suggested action, and memory update.",
     input: {
-      goal: "Create a safe execution checklist for publishing a OneAI launch update",
-      target: "OneClaw",
-      constraints: ["Do not execute directly", "Return structured actions", "Make every action verifiable"],
+      message: "What is OneAI and how can my product use it?",
+      context: "customer support",
+      customer: "new SaaS builder",
+      recentMessages: "The user is asking for a simple explanation and next step.",
     },
+    tier: "pro",
   },
-  market_decision: {
-    label: "Market Decision",
-    description: "Generate a structured market decision from context and constraints.",
+  decision_intelligence: {
+    label: "Decision Intelligence",
+    description: "Turn context and options into a recommendation with rationale, confidence, tradeoffs, risks, and next steps.",
     input: {
-      asset: "BTC",
-      timeframe: "24h",
-      objective: "Decide whether to watch, enter, or avoid",
+      question: "Should we launch publicly or run a private beta first?",
+      options: ["public launch", "private beta"],
+      context: "Small team, limited support capacity, strong early interest.",
       riskTolerance: "medium",
-      context: "Need a concise decision for a builder dashboard demo.",
     },
+    tier: "pro",
+  },
+  custom_task_designer: {
+    label: "Custom Task Designer",
+    description: "Design a custom Task Intelligence specification for a customer's workflow.",
+    input: {
+      business: "AI customer support SaaS",
+      workflow: "Classify tickets and draft replies with escalation rules",
+      users: "support agents and customer success managers",
+    },
+    tier: "team",
   },
 };
 
 const modes: Mode[] = ["cheap", "balanced", "fast", "premium", "auto"];
 
-const DEFAULT_TASK = "agent_plan";
+const playgroundPresets: PlaygroundPreset[] = [
+  {
+    id: "free-strategy",
+    title: "Launch Strategy",
+    task: "business_strategy",
+    tier: "Free",
+    mode: "cheap",
+    provider: "openai",
+    model: "gpt-4o-mini",
+    maxCostUsd: "0.03",
+    desc: "Free task for validating OneAI structured strategy output.",
+    input: fallbackTaskExamples.business_strategy.input,
+  },
+  {
+    id: "free-content",
+    title: "Content Engine",
+    task: "content_engine",
+    tier: "Free",
+    mode: "cheap",
+    provider: "openai",
+    model: "gpt-4o-mini",
+    maxCostUsd: "0.03",
+    desc: "Free task for launch copy, hooks, CTAs, and post variants.",
+    input: fallbackTaskExamples.content_engine.input,
+  },
+  {
+    id: "pro-market",
+    title: "Market Brief",
+    task: "market_research",
+    tier: "Pro",
+    mode: "balanced",
+    provider: "openai",
+    model: "gpt-4o-mini",
+    maxCostUsd: "0.05",
+    desc: "Pro task for market positioning and competitor synthesis.",
+    input: fallbackTaskExamples.market_research.input,
+  },
+  {
+    id: "pro-support",
+    title: "Support Brain",
+    task: "support_brain",
+    tier: "Pro",
+    mode: "balanced",
+    provider: "openai",
+    model: "gpt-4o-mini",
+    maxCostUsd: "0.05",
+    desc: "Pro task for customer replies and support memory updates.",
+    input: fallbackTaskExamples.support_brain.input,
+  },
+  {
+    id: "pro-decision",
+    title: "Decision Intelligence",
+    task: "decision_intelligence",
+    tier: "Pro",
+    mode: "balanced",
+    provider: "openai",
+    model: "gpt-4o-mini",
+    maxCostUsd: "0.05",
+    desc: "Pro task for recommendations, tradeoffs, risk, and next steps.",
+    input: fallbackTaskExamples.decision_intelligence.input,
+  },
+  {
+    id: "team-custom",
+    title: "Custom Task",
+    task: "custom_task_designer",
+    tier: "Team",
+    mode: "balanced",
+    provider: "openai",
+    model: "gpt-4o-mini",
+    maxCostUsd: "0.08",
+    desc: "Team task for designing customer-specific intelligence workflows.",
+    input: fallbackTaskExamples.custom_task_designer.input,
+  },
+];
+
+const DEFAULT_TASK = "business_strategy";
 const DEFAULT_MODE: Mode = "balanced";
 const DEFAULT_PROVIDER = "openai";
-const DEFAULT_MODEL = "gpt-4.1-mini";
+const DEFAULT_MODEL = "gpt-4o-mini";
 const DEFAULT_MAX_COST_USD = "0.03";
 
 function asJson(value: unknown) {
   return JSON.stringify(value, null, 2);
+}
+
+function asPythonLiteral(value: unknown) {
+  return JSON.stringify(value, null, 4)
+    .replace(/\btrue\b/g, "True")
+    .replace(/\bfalse\b/g, "False")
+    .replace(/\bnull\b/g, "None");
 }
 
 function extractTaskRows(json: any): TaskOption[] {
@@ -125,10 +227,9 @@ function fallbackTaskMeta(type: string) {
       label: type,
       description: `${type} workflow.`,
       input: {
-        goal: "Create a simple launch plan for OneAI SaaS",
-        brand: "OneAI SaaS",
-        audience: "developers and AI builders",
-        tone: "clear, practical, commercial",
+        goal: "Launch a B2B AI API product in 30 days",
+        audience: "SaaS builders and small teams",
+        constraints: ["Keep it practical", "Prioritize fast validation"],
       },
     }
   );
@@ -182,7 +283,7 @@ export default function PlaygroundPage() {
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [maxCostUsd, setMaxCostUsd] = useState(DEFAULT_MAX_COST_USD);
 
-  const [input, setInput] = useState(asJson(fallbackTaskExamples.agent_plan.input));
+  const [input, setInput] = useState(asJson(fallbackTaskExamples.business_strategy.input));
   const [chatInput, setChatInput] = useState(
     asJson({
       model: `${DEFAULT_PROVIDER}:${DEFAULT_MODEL}`,
@@ -201,6 +302,7 @@ export default function PlaygroundPage() {
   const [loading, setLoading] = useState(false);
   const [parseError, setParseError] = useState("");
   const [taskLoadWarning, setTaskLoadWarning] = useState("");
+  const [toast, setToast] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -253,7 +355,7 @@ export default function PlaygroundPage() {
       displayName: item.label,
       description: item.description,
       exampleInput: item.input,
-      tier: "free",
+      tier: item.tier || "free",
       maturity: "STABLE",
     }));
   }, [tasks]);
@@ -270,7 +372,14 @@ export default function PlaygroundPage() {
       };
     }
 
-    return fallbackTaskMeta(type);
+    const fallback = fallbackTaskMeta(type);
+    return {
+      label: fallback.label,
+      description: fallback.description,
+      input: fallback.input,
+      tier: fallback.tier || "free",
+      maturity: "local",
+    };
   }, [taskOptions, type]);
 
   const tone = statusTone(result);
@@ -288,10 +397,12 @@ export default function PlaygroundPage() {
       input: parsed,
       options: {
         debug: true,
-        mode,
-        ...(provider.trim() ? { provider: provider.trim() } : {}),
-        ...(model.trim() ? { model: model.trim() } : {}),
-        maxCostUsd: Number(maxCostUsd || DEFAULT_MAX_COST_USD),
+        llm: {
+          mode,
+          ...(provider.trim() ? { provider: provider.trim() } : {}),
+          ...(model.trim() ? { model: model.trim() } : {}),
+          maxCostUsd: Number(maxCostUsd || DEFAULT_MAX_COST_USD),
+        },
       },
     };
   }, [input, maxCostUsd, mode, model, provider, type]);
@@ -310,6 +421,64 @@ export default function PlaygroundPage() {
     }
 
     return `curl -s https://oneai-saas-api-production.up.railway.app/v1/generate \\\n  -H "Content-Type: application/json" \\\n  -H "x-api-key: YOUR_API_KEY" \\\n  -d '${JSON.stringify(taskPayload)}' | jq`;
+  }, [chatPayload, playgroundMode, taskPayload]);
+
+  const nodePreview = useMemo(() => {
+    const endpoint =
+      playgroundMode === "chat"
+        ? "https://oneai-saas-api-production.up.railway.app/v1/chat/completions"
+        : "https://oneai-saas-api-production.up.railway.app/v1/generate";
+    const payload = playgroundMode === "chat" ? chatPayload : taskPayload;
+    const authHeader =
+      playgroundMode === "chat"
+        ? `"Authorization": \`Bearer \${process.env.ONEAI_API_KEY}\`,`
+        : `"x-api-key": process.env.ONEAI_API_KEY,`;
+
+    return `const res = await fetch("${endpoint}", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    ${authHeader}
+  },
+  body: JSON.stringify(${JSON.stringify(payload, null, 2)}),
+});
+
+const data = await res.json();
+if (!res.ok || data.success === false) {
+  throw new Error(data.error || "OneAI request failed");
+}
+
+console.log(data);`;
+  }, [chatPayload, playgroundMode, taskPayload]);
+
+  const pythonPreview = useMemo(() => {
+    const endpoint =
+      playgroundMode === "chat"
+        ? "https://oneai-saas-api-production.up.railway.app/v1/chat/completions"
+        : "https://oneai-saas-api-production.up.railway.app/v1/generate";
+    const payload = playgroundMode === "chat" ? chatPayload : taskPayload;
+    const authHeader =
+      playgroundMode === "chat"
+        ? `"Authorization": f"Bearer {os.environ['ONEAI_API_KEY']}",`
+        : `"x-api-key": os.environ["ONEAI_API_KEY"],`;
+
+    return `import os
+import requests
+
+res = requests.post(
+    "${endpoint}",
+    headers={
+        "Content-Type": "application/json",
+        ${authHeader}
+    },
+    json=${asPythonLiteral(payload)}
+)
+
+data = res.json()
+if not res.ok or data.get("success") is False:
+    raise RuntimeError(data.get("error", "OneAI request failed"))
+
+print(data)`;
   }, [chatPayload, playgroundMode, taskPayload]);
 
   const routingWarning =
@@ -331,6 +500,29 @@ export default function PlaygroundPage() {
     setResult(null);
     setRaw("");
     setParseError("");
+  }
+
+  function applyPreset(preset: PlaygroundPreset) {
+    setPlaygroundMode("task");
+    setType(preset.task);
+    setMode(preset.mode);
+    setProvider(preset.provider);
+    setModel(preset.model);
+    setMaxCostUsd(preset.maxCostUsd);
+    setInput(asJson(preset.input));
+    setResult(null);
+    setRaw("");
+    setParseError("");
+    setToast(`${preset.title} preset loaded.`);
+  }
+
+  async function copyText(label: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setToast(`${label} copied.`);
+    } catch {
+      setToast(`Could not copy ${label.toLowerCase()}.`);
+    }
   }
 
   async function run() {
@@ -370,12 +562,14 @@ export default function PlaygroundPage() {
 
       const options: Record<string, any> = {
         debug: true,
-        mode,
-        maxCostUsd: Number(maxCostUsd || DEFAULT_MAX_COST_USD),
+        llm: {
+          mode,
+          maxCostUsd: Number(maxCostUsd || DEFAULT_MAX_COST_USD),
+        },
       };
 
-      if (provider.trim()) options.provider = provider.trim();
-      if (model.trim()) options.model = model.trim();
+      if (provider.trim()) options.llm.provider = provider.trim();
+      if (model.trim()) options.llm.model = model.trim();
 
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -439,6 +633,12 @@ export default function PlaygroundPage() {
         </Button>
       </div>
 
+      {toast ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+          {toast}
+        </div>
+      ) : null}
+
       <div className="inline-flex rounded-lg border border-black/10 bg-black/[0.03] p-1">
         <button
           type="button"
@@ -473,6 +673,64 @@ export default function PlaygroundPage() {
         </div>
       ) : null}
 
+      {playgroundMode === "task" ? (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <CardTitle>Commercial presets</CardTitle>
+                <CardDescription>
+                  Load a real OneAI business task with recommended mode, model, input JSON, and cost guard.
+                </CardDescription>
+              </div>
+              <div className="text-xs font-semibold text-black/45">
+                Free tasks can run immediately. Pro/Team presets show paid-plan behavior.
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {playgroundPresets.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                  className={[
+                    "rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-black/25 hover:bg-black/[0.02]",
+                    type === preset.task ? "border-black bg-black/[0.03]" : "border-black/10 bg-white",
+                  ].join(" ")}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-extrabold text-black">{preset.title}</div>
+                      <code className="mt-2 block text-xs font-semibold text-black/55">{preset.task}</code>
+                    </div>
+                    <span
+                      className={[
+                        "rounded-full px-2.5 py-1 text-[11px] font-bold",
+                        preset.tier === "Free"
+                          ? "bg-green-100 text-green-800"
+                          : preset.tier === "Pro"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-purple-100 text-purple-800",
+                      ].join(" ")}
+                    >
+                      {preset.tier}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-black/60">{preset.desc}</p>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-black/50">
+                    <span className="rounded-lg bg-black/[0.05] px-2 py-1">{preset.mode}</span>
+                    <span className="rounded-lg bg-black/[0.05] px-2 py-1">{preset.provider}</span>
+                    <span className="rounded-lg bg-black/[0.05] px-2 py-1">{preset.model}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div className="space-y-4">
           <Card>
@@ -486,6 +744,12 @@ export default function PlaygroundPage() {
             <CardContent className="space-y-4">
               {playgroundMode === "task" ? (
                 <>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <Stat label="Selected task" value={<code>{type}</code>} />
+                    <Stat label="Tier" value={selectedTask.tier || "-"} />
+                    <Stat label="Maturity" value={selectedTask.maturity || "-"} />
+                  </div>
+
                   <div className="grid gap-3 md:grid-cols-2">
                     <label className="block">
                       <div className="mb-1 text-xs text-black/50">Task</div>
@@ -548,7 +812,16 @@ export default function PlaygroundPage() {
                   <label className="block">
                     <div className="mb-1 flex items-center justify-between gap-2 text-xs text-black/50">
                       <span>Input JSON</span>
-                      {parseError ? <span className="text-red-600">Invalid JSON: {parseError}</span> : null}
+                      <span className="flex items-center gap-3">
+                        {parseError ? <span className="text-red-600">Invalid JSON: {parseError}</span> : null}
+                        <button
+                          type="button"
+                          onClick={() => copyText("Input JSON", input)}
+                          className="font-semibold text-black hover:underline"
+                        >
+                          Copy JSON
+                        </button>
+                      </span>
                     </div>
                     <Textarea value={input} onChange={(e) => setInput(e.target.value)} className="min-h-[300px] font-mono text-xs" />
                   </label>
@@ -557,7 +830,16 @@ export default function PlaygroundPage() {
                 <label className="block">
                   <div className="mb-1 flex items-center justify-between gap-2 text-xs text-black/50">
                     <span>Chat completion JSON</span>
-                    {parseError ? <span className="text-red-600">Invalid JSON: {parseError}</span> : null}
+                    <span className="flex items-center gap-3">
+                      {parseError ? <span className="text-red-600">Invalid JSON: {parseError}</span> : null}
+                      <button
+                        type="button"
+                        onClick={() => copyText("Chat JSON", chatInput)}
+                        className="font-semibold text-black hover:underline"
+                      >
+                        Copy JSON
+                      </button>
+                    </span>
                   </div>
                   <Textarea value={chatInput} onChange={(e) => setChatInput(e.target.value)} className="min-h-[410px] font-mono text-xs" />
                 </label>
@@ -567,11 +849,56 @@ export default function PlaygroundPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>cURL Preview</CardTitle>
-              <CardDescription>Same payload for external API callers.</CardDescription>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <CardTitle>cURL Preview</CardTitle>
+                  <CardDescription>Same payload for external API callers.</CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => copyText("cURL", curlPreview)}
+                >
+                  Copy cURL
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <PrettyJson value={curlPreview} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <CardTitle>Production Code</CardTitle>
+                  <CardDescription>Copy server-side examples after your Playground request works.</CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="secondary" onClick={() => copyText("Node.js", nodePreview)}>
+                    Copy Node.js
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={() => copyText("Python", pythonPreview)}>
+                    Copy Python
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 xl:grid-cols-2">
+                <div>
+                  <div className="mb-2 text-xs font-semibold text-black/50">Node.js</div>
+                  <PrettyJson value={nodePreview} />
+                </div>
+                <div>
+                  <div className="mb-2 text-xs font-semibold text-black/50">Python</div>
+                  <PrettyJson value={pythonPreview} />
+                </div>
+              </div>
+              <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-900">
+                Keep <code>ONEAI_API_KEY</code> on the server. Do not expose it in browser or mobile client code.
+              </div>
             </CardContent>
           </Card>
         </div>

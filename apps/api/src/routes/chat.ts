@@ -95,6 +95,11 @@ function requestId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "")}`;
 }
 
+function writeSse(res: any, event: string, data: unknown) {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
 function getOrgId(req: AuthedRequest) {
   return req.auth?.orgId || null;
 }
@@ -318,15 +323,6 @@ export const messagesHandler = async (req: any, res: any) => {
 
   try {
     const parsed = messagesSchema.parse(req.body);
-    if (parsed.stream) {
-      return res.status(400).json({
-        type: "error",
-        error: {
-          type: "invalid_request_error",
-          message: "Streaming is not enabled on this endpoint yet. Use stream=false.",
-        },
-      });
-    }
 
     const { provider, model } = splitModelId(parsed.model);
     const config = resolveConfig({
@@ -343,6 +339,103 @@ export const messagesHandler = async (req: any, res: any) => {
     const messages = normalizeMessages(parsed.messages);
     if (parsed.system) {
       messages.unshift({ role: "system", content: contentToText(parsed.system) });
+    }
+
+    if (parsed.stream) {
+      res.status(200);
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders?.();
+
+      const client = getLLMClient(config);
+      const stream = await client.chat.completions.create({
+        ...buildChatCompletionParams({
+          ...config,
+          messages,
+        }),
+        stream: true,
+      } as any);
+
+      let modelName = model;
+      let fullText = "";
+      let contentStarted = false;
+
+      writeSse(res, "message_start", {
+        type: "message_start",
+        message: {
+          id,
+          type: "message",
+          role: "assistant",
+          model: modelName,
+          content: [],
+          stop_reason: null,
+          usage: {
+            input_tokens: 0,
+            output_tokens: 0,
+          },
+        },
+      });
+
+      for await (const chunk of stream as any) {
+        modelName = chunk?.model || modelName;
+        const delta = chunk?.choices?.[0]?.delta || {};
+        const finishReason = chunk?.choices?.[0]?.finish_reason || null;
+        const content = delta?.content || "";
+
+        if (content && !contentStarted) {
+          contentStarted = true;
+          writeSse(res, "content_block_start", {
+            type: "content_block_start",
+            index: 0,
+            content_block: { type: "text", text: "" },
+          });
+        }
+
+        if (content) {
+          fullText += content;
+          writeSse(res, "content_block_delta", {
+            type: "content_block_delta",
+            index: 0,
+            delta: { type: "text_delta", text: content },
+          });
+        }
+
+        if (finishReason) {
+          if (contentStarted) {
+            writeSse(res, "content_block_stop", {
+              type: "content_block_stop",
+              index: 0,
+            });
+          }
+
+          writeSse(res, "message_delta", {
+            type: "message_delta",
+            delta: {
+              stop_reason: finishReason === "stop" ? "end_turn" : finishReason,
+              stop_sequence: null,
+            },
+            usage: {
+              output_tokens: 0,
+            },
+          });
+        }
+      }
+
+      writeSse(res, "message_stop", { type: "message_stop" });
+      res.end();
+
+      await persistChatRequest({
+        req,
+        requestId: id,
+        provider,
+        model: modelName,
+        inputJson: req.body,
+        outputJson: { id, type: "message", stream: true, text: fullText },
+        success: true,
+        latencyMs: Date.now() - start,
+      });
+      return;
     }
 
     const result = await generateLLMText({
@@ -384,12 +477,28 @@ export const messagesHandler = async (req: any, res: any) => {
     return res.json(body);
   } catch (err: any) {
     const message = String(err?.message || err);
-    return res.status(400).json({
+    const body = {
       type: "error",
       error: {
         type: "invalid_request_error",
         message,
       },
+    };
+
+    await persistChatRequest({
+      req,
+      requestId: id,
+      provider: "unknown",
+      model: "unknown",
+      inputJson: req.body,
+      outputJson: body,
+      success: false,
+      error: message,
+      latencyMs: Date.now() - start,
+    });
+
+    return res.status(400).json({
+      ...body,
     });
   }
 };

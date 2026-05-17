@@ -76,6 +76,9 @@ function Header() {
           </div>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-black/65 md:flex">
+          <Link href="/use-cases" className="hover:text-black">
+            Use Cases
+          </Link>
           <Link href="/docs" className="hover:text-black">
             Docs 文档
           </Link>
@@ -174,6 +177,49 @@ export default function PricingPage() {
           </div>
         </div>
 
+        <div className="mt-10 rounded-lg border border-black/10 bg-white p-6 shadow-sm">
+          <div className="text-xs font-bold uppercase tracking-wide text-black/45">
+            Upgrade path · 升级路径
+          </div>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight">
+            Start free, ship with Pro, customize with Team.
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-black/60">
+            OneAI is designed to let customers test real Task Intelligence before
+            paying, then upgrade only when production traffic, paid workflows, or
+            custom controls are needed. 先免费验证真实任务智能，再按生产用量和定制需求升级。
+          </p>
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            {[
+              ["Free", "Test", "business_strategy and content_engine for API validation."],
+              ["Pro", "Launch", "support_brain, market_research, campaign_mission, decision_intelligence."],
+              ["Team", "Operate", "custom tasks, debug traces, model controls, higher limits."],
+              ["Enterprise", "Scale", "dedicated policy, private provider setup, launch support."],
+            ].map(([tier, label, desc]) => (
+              <div key={tier} className="rounded-lg border border-black/10 bg-black/[0.02] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-black text-black">{tier}</div>
+                  <span className="rounded-full bg-black px-2 py-0.5 text-xs font-bold text-white">
+                    {label}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-black/60">{desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link href="/playground" className="inline-flex h-10 items-center rounded-lg bg-black px-4 text-sm font-bold text-white hover:bg-neutral-900">
+              Test free tasks 免费测试
+            </Link>
+            <Link href="/use-cases" className="inline-flex h-10 items-center rounded-lg border border-black/10 px-4 text-sm font-bold text-black hover:bg-black/[0.03]">
+              View use cases 使用场景
+            </Link>
+            <a href={CONTACT_SALES_HREF} className="inline-flex h-10 items-center rounded-lg border border-black/10 px-4 text-sm font-bold text-black hover:bg-black/[0.03]">
+              Contact sales 联系开通
+            </a>
+          </div>
+        </div>
+
         <div className="mt-12">
           <div className="max-w-2xl">
             <div className="text-xs font-bold uppercase tracking-wide text-black/45">
@@ -231,6 +277,25 @@ export default function PricingPage() {
               workflow intelligence. 支持结构化业务输出和客户 workflow 定制。
             </p>
           </div>
+        </div>
+
+        <div className="mt-10 rounded-lg border border-black/10 bg-black p-6 text-white">
+          <div className="text-sm font-bold text-white">Which plan fits which use case?</div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {[
+              ["Free", "Validate business_strategy and content_engine before paid traffic."],
+              ["Pro", "Ship customer-facing support, market, decision, and campaign intelligence."],
+              ["Team", "Build custom task contracts and controlled internal workflows."],
+            ].map(([name, desc]) => (
+              <div key={name} className="rounded-lg border border-white/10 bg-white/[0.06] p-4">
+                <div className="text-sm font-black text-white">{name}</div>
+                <p className="mt-2 text-sm leading-relaxed text-white/60">{desc}</p>
+              </div>
+            ))}
+          </div>
+          <Link href="/use-cases" className="mt-5 inline-flex rounded-lg bg-white px-5 py-2 text-sm font-bold text-black hover:bg-white/90">
+            View use cases
+          </Link>
         </div>
       </section>
     </main>
