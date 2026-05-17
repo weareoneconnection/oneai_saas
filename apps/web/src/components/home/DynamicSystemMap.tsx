@@ -13,11 +13,12 @@ type SystemNode = {
 
 const lifecycle = [
   ["01", "Authenticate key", "Validate API key, customer plan, and access scope."],
-  ["02", "Shape task", "Convert product intent into a stable task contract."],
-  ["03", "Apply routing", "Select cheap, balanced, premium, or explicit model behavior."],
-  ["04", "Enforce policy", "Apply cost guard, tier access, and request rules."],
-  ["05", "Execute model", "Route to provider, model catalog, or selected provider:model."],
-  ["06", "Track usage", "Record request, customer, usage, cost, and billing context."],
+  ["02", "Choose surface", "Use Generate, Chat, Messages, or Agent OS preview based on the product need."],
+  ["03", "Shape intelligence", "Convert product intent into a stable task, message, or handoff contract."],
+  ["04", "Apply routing", "Select cheap, balanced, premium, or explicit model behavior."],
+  ["05", "Enforce policy", "Apply cost guard, tier access, and request rules."],
+  ["06", "Call model or handoff", "Route to a model provider or prepare a non-executing Agent OS handoff object."],
+  ["07", "Track usage", "Record request, customer, usage, cost, and billing context."],
 ];
 
 const systemNodes: SystemNode[] = [
@@ -31,7 +32,7 @@ const systemNodes: SystemNode[] = [
   },
   {
     id: "providers",
-    eyebrow: "Execution",
+    eyebrow: "Models",
     title: "Model Providers",
     desc: "OpenAI · Anthropic · Google · xAI · DeepSeek · OpenRouter",
     position: "left-[32%] top-[5%]",
@@ -44,6 +45,14 @@ const systemNodes: SystemNode[] = [
     desc: "business_strategy · content_engine · support_brain",
     position: "right-[3%] top-[33%]",
     tone: "emerald",
+  },
+  {
+    id: "agentos",
+    eyebrow: "Handoff",
+    title: "Agent OS Preview",
+    desc: "agent plans · context packets · external execution boundary",
+    position: "right-[3%] top-[8%]",
+    tone: "cyan",
   },
   {
     id: "policy",
@@ -177,6 +186,7 @@ function DesktopSystemMap() {
 
               <path id="flowProductCore" d="M 58 280 C 165 270, 255 270, 365 270" />
               <path id="flowCoreProviders" d="M 365 270 C 395 175, 435 105, 505 75" />
+              <path id="flowCoreAgentOS" d="M 365 270 C 470 145, 575 90, 680 75" />
               <path id="flowCoreTasks" d="M 365 270 C 475 250, 565 230, 680 215" />
               <path id="flowCorePolicy" d="M 365 270 C 295 355, 225 420, 165 465" />
               <path id="flowCoreConsole" d="M 365 270 C 450 365, 520 425, 610 465" />
@@ -184,6 +194,7 @@ function DesktopSystemMap() {
 
             <use href="#flowProductCore" stroke="url(#oneaiMapLine)" strokeWidth="2" fill="none" strokeDasharray="7 9" />
             <use href="#flowCoreProviders" stroke="url(#oneaiMapLine)" strokeWidth="2" fill="none" strokeDasharray="7 9" />
+            <use href="#flowCoreAgentOS" stroke="url(#oneaiMapLine)" strokeWidth="2" fill="none" strokeDasharray="7 9" />
             <use href="#flowCoreTasks" stroke="url(#oneaiMapLine)" strokeWidth="2" fill="none" strokeDasharray="7 9" />
             <use href="#flowCorePolicy" stroke="url(#oneaiMapLine)" strokeWidth="2" fill="none" strokeDasharray="7 9" />
             <use href="#flowCoreConsole" stroke="url(#oneaiMapLine)" strokeWidth="2" fill="none" strokeDasharray="7 9" />
@@ -197,6 +208,12 @@ function DesktopSystemMap() {
             <circle r="5" fill="rgb(96,165,250)" filter="url(#oneaiMapGlow)">
               <animateMotion dur="5.2s" begin="0.6s" repeatCount="indefinite">
                 <mpath href="#flowCoreProviders" />
+              </animateMotion>
+            </circle>
+
+            <circle r="5" fill="rgb(34,211,238)" filter="url(#oneaiMapGlow)">
+              <animateMotion dur="5.4s" begin="0.9s" repeatCount="indefinite">
+                <mpath href="#flowCoreAgentOS" />
               </animateMotion>
             </circle>
 
@@ -264,7 +281,7 @@ function DesktopSystemMap() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {["auth", "task", "route", "guard", "execute", "track"].map((item) => (
+                {["auth", "surface", "shape", "route", "guard", "handoff", "track"].map((item) => (
                   <span
                     key={item}
                     className="rounded-full border border-white/10 bg-white/[0.055] px-3 py-1 text-xs font-black text-white/45"

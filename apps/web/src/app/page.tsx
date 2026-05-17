@@ -49,7 +49,7 @@ const navItems = [
 ];
 
 const heroStats = [
-  ["3", "API surfaces", "Generate + Chat + Messages"],
+  ["4", "API surfaces", "Generate + Chat + Messages + Agent OS"],
   ["480+", "model catalog target", "Provider choice without product rewrites"],
   ["4", "routing modes", "Cheap, balanced, premium, explicit"],
   ["1", "control plane", "Keys, usage, customers, costs, billing"],
@@ -59,14 +59,14 @@ const systemLayers = [
   {
     number: "01",
     label: "Access",
-    title: "Model Gateway",
-    desc: "OpenAI-compatible model access with provider:model routing and product-level observability.",
-    items: ["/v1/chat/completions", "provider:model routing", "streaming-ready", "model catalog"],
+    title: "Model Gateway APIs",
+    desc: "OpenAI-compatible Chat and Messages access with provider:model routing and product-level observability.",
+    items: ["/v1/chat/completions", "/v1/messages", "streaming", "model catalog"],
   },
   {
     number: "02",
     label: "Intelligence",
-    title: "Task API",
+    title: "Generate Task API",
     desc: "Structured business workflows packaged as stable API contracts instead of loose prompts.",
     items: ["/v1/generate", "typed task contracts", "structured JSON", "workflow outputs"],
   },
@@ -80,8 +80,8 @@ const systemLayers = [
   {
     number: "04",
     label: "Agent OS",
-    title: "Planning & Handoff",
-    desc: "Preview agent plans, context packets, and handoff contracts while keeping execution outside OneAI.",
+    title: "Preview & Handoff",
+    desc: "Generate agent plans, context packets, and handoff contracts while keeping execution outside OneAI.",
     items: ["/v1/capabilities", "/v1/agent-plans", "/v1/handoff/preview", "/v1/context/preview"],
   },
   {
@@ -168,7 +168,7 @@ const faqRows = [
   },
   {
     q: "Can I keep using OpenAI-compatible requests?",
-    a: "Yes. The gateway supports familiar /v1/chat/completions behavior while adding provider routing, cost visibility, and operational controls.",
+    a: "Yes. The gateway supports familiar /v1/chat/completions behavior, plus /v1/messages for Messages-style integrations, while adding provider routing, cost visibility, and operational controls.",
   },
   {
     q: "What is Task Intelligence?",
@@ -304,22 +304,24 @@ function StatCard({
 
 function PreviewConsole() {
   const statusCards = [
-    ["Gateway", "OpenAI-compatible", "ready"],
-    ["Tasks", "Structured outputs", "preview"],
-    ["Policy", "Cost guard", "active"],
+    ["Gateway", "Chat completions", "ready"],
+    ["Messages", "Anthropic-style API", "ready"],
+    ["Tasks", "Structured outputs", "ready"],
+    ["Agent OS", "Handoff preview", "preview"],
   ];
 
   const routingPolicies = [
     ["cheap", "Low-cost model", "Simple generation"],
     ["balanced", "Balanced model", "Product workflows"],
+    ["premium", "Frontier model", "Complex reasoning"],
     ["explicit", "provider:model", "Customer policy"],
   ];
 
   const sampleRequests = [
     ["sample_01", "business_strategy", "task"],
-    ["sample_02", "content_engine", "task"],
-    ["sample_03", "support_brain", "task"],
-    ["sample_04", "chat.completions", "gateway"],
+    ["sample_02", "chat.completions", "gateway"],
+    ["sample_03", "messages", "gateway"],
+    ["sample_04", "agent-plans", "handoff"],
   ];
 
   return (
@@ -357,7 +359,7 @@ function PreviewConsole() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {statusCards.map(([title, desc, state]) => (
               <div
                 key={title}
@@ -377,7 +379,7 @@ function PreviewConsole() {
           </div>
 
           <div className="mt-4 grid gap-2 lg:hidden">
-            {["Gateway ready", "Task preview", "Cost guard active"].map((item) => (
+            {["Chat gateway ready", "Messages ready", "Task API ready", "Agent OS preview"].map((item) => (
               <div
                 key={item}
                 className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-bold text-white/65"
@@ -639,7 +641,7 @@ export default function HomePage() {
           desc="OneAI combines model access, structured workflow intelligence, operational visibility, and commercial controls into one product layer."
         />
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {systemLayers.map((layer) => (
             <LayerCard key={layer.title} {...layer} />
           ))}
@@ -651,8 +653,8 @@ export default function HomePage() {
           <div>
             <SectionTitle
               eyebrow="Developer experience"
-              title="Two APIs. One product-grade AI system."
-              desc="Use the gateway for familiar model access. Use Task Intelligence when your product needs stable business outputs instead of loose prompt responses."
+              title="Four API surfaces. One product-grade AI system."
+              desc="Use Chat or Messages for familiar model access, Generate for structured Task Intelligence, and Agent OS endpoints for planning, context, and handoff previews."
             />
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
