@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { oneAIAdminKey, oneAIBaseURL, requireConsoleOperator } from "@/lib/consoleIdentity";
+import { oneAIAdminKey, oneAIBaseURLs, requireConsoleOperator } from "@/lib/consoleIdentity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,16 +26,36 @@ export async function GET() {
     );
   }
 
-  const upstream = await fetch(`${oneAIBaseURL()}/v1/admin/customers`, {
-    headers: {
-      accept: "application/json",
-      "x-admin-key": key,
-    },
-    cache: "no-store",
-  });
+  let lastStatus = 502;
+  let lastJson: any = { success: false, error: "customers_route_failed" };
 
-  const json = await readJsonSafe(upstream);
-  return NextResponse.json(json || { success: false, error: "empty_response" }, {
-    status: upstream.status,
-  });
+  for (const baseURL of oneAIBaseURLs()) {
+    const upstream = await fetch(`${baseURL}/v1/admin/customers`, {
+      headers: {
+        accept: "application/json",
+        "x-admin-key": key,
+      },
+      cache: "no-store",
+    });
+
+    const json = await readJsonSafe(upstream);
+    lastStatus = upstream.status;
+    lastJson = json || { success: false, error: "empty_response" };
+
+    if (upstream.status === 401 || upstream.status === 403) {
+      lastJson = {
+        success: false,
+        error: lastJson?.error || "admin_upstream_forbidden",
+        hint:
+          "Web is logged in as an operator, but the API admin request was rejected. Check ONEAI_ADMIN_API_KEY on the Web service and ADMIN_API_KEY / ONEAI_ADMIN_API_KEY on the API service.",
+        upstreamStatus: upstream.status,
+      };
+    }
+
+    if (upstream.ok) {
+      return NextResponse.json(lastJson, { status: upstream.status });
+    }
+  }
+
+  return NextResponse.json(lastJson, { status: lastStatus });
 }

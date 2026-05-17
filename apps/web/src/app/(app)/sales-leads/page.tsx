@@ -129,7 +129,7 @@ export default function SalesLeadsPage() {
     try {
       const res = await fetch("/api/customers", { cache: "no-store" });
       const json = (await res.json()) as Payload;
-      if (!res.ok || json.success === false) throw new Error(json.error || json.hint || "Failed to load sales leads");
+      if (!res.ok || json.success === false) throw new Error(json.hint || json.error || "Failed to load sales leads");
       setRows(json.data?.customers || []);
     } catch (error: any) {
       setErr(error?.message || "Failed to load sales leads");

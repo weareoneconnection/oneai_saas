@@ -186,7 +186,7 @@ export default function CustomersPage() {
       const res = await fetch("/api/customers", { cache: "no-store" });
       const json = (await res.json()) as Payload;
       if (!res.ok || json.success === false) {
-        throw new Error(json.error || json.hint || "Failed to load customers");
+        throw new Error(json.hint || json.error || "Failed to load customers");
       }
       setRows(json.data?.customers || []);
       setEvents(json.data?.recentEvents || []);
