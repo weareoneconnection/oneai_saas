@@ -256,6 +256,21 @@ export default function CustomersPage() {
     );
   }, [rows]);
 
+  const commercialFunnel = useMemo(() => {
+    const signedIn = rows.filter((row) => row.latestLoginAt).length;
+    const keyCreated = rows.filter((row) => (row.keyCount || 0) > 0).length;
+    const activated = rows.filter((row) => (row.requestCount || 0) > 0 || (row.executions?.total || 0) > 0).length;
+    const costActive = rows.filter((row) => (row.costUsd || 0) > 0).length;
+    const paidOrTrial = rows.filter((row) => row.billing?.status === "active" || row.billing?.status === "trialing").length;
+    const activationRate = keyCreated ? (activated / keyCreated) * 100 : 0;
+    const paidLeadCount = rows.filter((row) => {
+      const plan = String(row.billing?.plan || "free").toLowerCase();
+      const unpaid = !["active", "trialing"].includes(String(row.billing?.status || ""));
+      return unpaid && plan === "free" && ((row.requestCount || 0) >= 3 || (row.costUsd || 0) > 0);
+    }).length;
+    return { signedIn, keyCreated, activated, costActive, paidOrTrial, activationRate, paidLeadCount };
+  }, [rows]);
+
   const topCustomers = useMemo(() => {
     return [...rows]
       .sort((a, b) => (b.costUsd || 0) - (a.costUsd || 0) || (b.requestCount || 0) - (a.requestCount || 0))
@@ -344,6 +359,44 @@ export default function CustomersPage() {
         <Stat label="Execution failures" value={fmtNum(totals.executionFailed)} />
         <Stat label="Recent ledger rows" value={fmtNum(recentExecutions.length)} />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Revenue Funnel</CardTitle>
+          <CardDescription>Operator view from login to key creation, activation, cost-bearing usage, and paid conversion.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-6">
+            <Stat label="Signed in" value={fmtNum(commercialFunnel.signedIn)} />
+            <Stat label="Created key" value={fmtNum(commercialFunnel.keyCreated)} />
+            <Stat label="Activated" value={fmtNum(commercialFunnel.activated)} />
+            <Stat label="Cost active" value={fmtNum(commercialFunnel.costActive)} />
+            <Stat label="Paid / trial" value={fmtNum(commercialFunnel.paidOrTrial)} />
+            <Stat label="Activation rate" value={`${commercialFunnel.activationRate.toFixed(1)}%`} />
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+              <div className="font-bold">Sales-ready leads</div>
+              <p className="mt-2 leading-relaxed">
+                {fmtNum(commercialFunnel.paidLeadCount)} free account(s) have usage signals worth follow-up.
+              </p>
+            </div>
+            <div className="rounded-lg border border-black/10 bg-white/60 p-4 text-sm text-black/65">
+              <div className="font-bold text-black">Recommended action</div>
+              <p className="mt-2 leading-relaxed">
+                Follow up with users who created keys, generated traffic, or triggered model cost but remain on free.
+              </p>
+            </div>
+            <div className="rounded-lg border border-black/10 bg-white/60 p-4 text-sm text-black/65">
+              <div className="font-bold text-black">Upgrade signal</div>
+              <p className="mt-2 leading-relaxed">
+                Users with repeated API calls, failed paid-task attempts, or provider overrides are likely Pro/Team candidates.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -83,6 +83,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           <NavLink href="/team">Team</NavLink>
           <NavLink href="/usage">Usage</NavLink>
           <NavLink href="/billing">Billing</NavLink>
+          <NavLink href="/sales-leads">Leads</NavLink>
         </div>
 
         <div className="mx-2 hidden h-6 w-px bg-black/10 md:block" />

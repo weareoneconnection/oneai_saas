@@ -52,6 +52,8 @@ type UsageResp = {
 type RangeKey = "7d" | "30d" | "all";
 type ViewKey = "models" | "tasks" | "keys" | "providers";
 
+const DEFAULT_RESELL_MARKUP = 2.5;
+
 function fmtNum(n: number) {
   return new Intl.NumberFormat("en-US").format(Math.round(n));
 }
@@ -181,6 +183,14 @@ export default function UsagePage() {
   }, [data, rangeLabel]);
 
   const unitCost = data?.totalTokens ? data.totalCostUSD / data.totalTokens : 0;
+  const commercialEstimate = useMemo(() => {
+    const providerCost = Number(data?.totalCostUSD || 0);
+    const suggestedRevenue = providerCost * DEFAULT_RESELL_MARKUP;
+    const grossProfit = Math.max(0, suggestedRevenue - providerCost);
+    const grossMarginPct = suggestedRevenue > 0 ? (grossProfit / suggestedRevenue) * 100 : 0;
+    return { providerCost, suggestedRevenue, grossProfit, grossMarginPct };
+  }, [data?.totalCostUSD]);
+
   const sortedRows = useMemo(() => {
     if (!data) return [];
     if (view === "tasks") {
@@ -277,6 +287,28 @@ export default function UsagePage() {
             <Stat label="Error rate" value={`${Number(data.errorRatePct || 0).toFixed(2)}%`} sub={`${fmtNum(data.errorCount || 0)} failed`} />
             <Stat label="Avg latency" value={data.avgLatencyMs ? `${fmtNum(data.avgLatencyMs)}ms` : "—"} sub={unitCost ? `${fmtUSD(unitCost * 1000)} / 1K tokens` : "No token cost yet"} />
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Cost and Margin Control</CardTitle>
+              <CardDescription>
+                Operator estimate for API resale pricing. Adjust the actual customer price in your commercial plan.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-4">
+                <Stat label="Provider cost" value={fmtUSD(commercialEstimate.providerCost)} sub="Your estimated upstream model spend" />
+                <Stat label="Suggested resale" value={fmtUSD(commercialEstimate.suggestedRevenue)} sub={`${DEFAULT_RESELL_MARKUP}x markup reference`} />
+                <Stat label="Gross profit" value={fmtUSD(commercialEstimate.grossProfit)} sub="Before infra, support, and payment fees" />
+                <Stat label="Gross margin" value={`${commercialEstimate.grossMarginPct.toFixed(1)}%`} sub="Reference only" />
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
+                Pricing note: OneAI logs estimated provider cost. Customer billing should add your product margin,
+                support cost, payment fees, and risk buffer before you expose a public paid plan.
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

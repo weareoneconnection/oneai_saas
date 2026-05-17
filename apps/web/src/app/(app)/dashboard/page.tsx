@@ -660,11 +660,38 @@ export default function DashboardPage() {
     ];
   }, [data.kpis.activeKeys, data.kpis.cost24hUSD, data.kpis.requests24h, data.kpis.tokens24h]);
 
+  const commercialLaunch = useMemo(() => {
+    const hasKey = data.kpis.activeKeys > 0;
+    const hasTraffic = data.kpis.requests24h > 0;
+    const hasCost = data.kpis.cost24hUSD > 0;
+    const lowError = Number(data.kpis.errorRatePct || 0) < 2;
+    const readyCount = [hasKey, hasTraffic, hasCost, lowError].filter(Boolean).length;
+
+    return {
+      readyCount,
+      status: readyCount >= 3 ? "Commercial-ready" : readyCount >= 2 ? "Almost ready" : "Setup needed",
+      actions: [
+        hasKey
+          ? ["Keys ready", "At least one active API key exists.", "/keys"]
+          : ["Create key", "Create a customer-safe server-side API key.", "/keys"],
+        hasTraffic
+          ? ["Traffic live", "Usage is recording in the dashboard.", "/usage"]
+          : ["Run test", "Run business_strategy or content_engine in Playground.", "/playground"],
+        hasCost
+          ? ["Cost visible", "Model cost is available for margin planning.", "/usage"]
+          : ["Check pricing", "Confirm model pricing and cost estimates before selling.", "/models"],
+        lowError
+          ? ["Quality healthy", "Current error rate is within launch tolerance.", "/usage"]
+          : ["Review failures", "Fix failed requests before inviting customers.", "/usage"],
+      ],
+    };
+  }, [data.kpis.activeKeys, data.kpis.cost24hUSD, data.kpis.errorRatePct, data.kpis.requests24h]);
+
   const sourceBadge =
     source === "live" ? "LIVE" : source === "demo" ? "DEMO" : "EMPTY";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
@@ -738,7 +765,7 @@ export default function DashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {gettingStarted.map((item) => (
               <Link
                 key={item.title}
@@ -766,7 +793,42 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle>Commercial Launch Path</CardTitle>
+              <CardDescription>
+                What a new customer should complete before OneAI API becomes a paid production dependency.
+              </CardDescription>
+            </div>
+            <span className="inline-flex rounded-full bg-black px-3 py-1 text-xs font-semibold text-white">
+              {commercialLaunch.status} · {commercialLaunch.readyCount}/4
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {commercialLaunch.actions.map(([title, desc, href], index) => (
+              <Link
+                key={title}
+                href={href}
+                className="rounded-2xl border border-black/10 bg-white/70 p-4 transition hover:border-black/25 hover:bg-black/[0.02]"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-bold text-black">{title}</div>
+                  <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs font-semibold text-black/55">
+                    {index + 1}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-black/55">{desc}</p>
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
         {readinessItems.map((item) => (
           <Link
             key={item.label}
@@ -807,7 +869,7 @@ export default function DashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
             {agentOsReadiness.map((item) => (
               <Link
                 key={item.label}
@@ -828,7 +890,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_0.74fr]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.55fr)]">
         <Card>
           <CardHeader>
             <CardTitle>Operator Summary</CardTitle>
@@ -880,7 +942,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI row */}
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <KpiCard label="Requests (24h)" value={fmtNum(data.kpis.requests24h)} />
         <KpiCard label="Tokens (24h)" value={fmtNum(data.kpis.tokens24h)} />
         <KpiCard label="Cost (24h)" value={fmtUSD(data.kpis.cost24hUSD)} />
@@ -893,8 +955,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts row */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+      <div className="grid gap-6 xl:grid-cols-4">
+        <Card className="xl:col-span-3">
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <div>

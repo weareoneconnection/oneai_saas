@@ -8,6 +8,14 @@ const items = [
   ["Customer requests", "Customers may request support for account review, billing records, data export, or deletion according to plan and legal requirements."],
 ];
 
+const customerControls = [
+  ["Minimize payloads", "Send only the content needed for the selected task or model call."],
+  ["Choose providers", "Use explicit provider/model selection or allowlists when your data policy requires a specific routing path."],
+  ["Separate environments", "Use different API keys for production, staging, and testing."],
+  ["Review usage", "Monitor request history, cost, failed requests, Agent OS proof, and audit events from the console."],
+  ["Request support", "Ask for export, deletion, contract, DPA, invoice, or enterprise data handling review when needed."],
+];
+
 export default function PrivacyPage() {
   return (
     <main className="bg-white text-black">
@@ -25,6 +33,19 @@ export default function PrivacyPage() {
               <p className="mt-2 text-sm leading-relaxed text-black/65">{desc}</p>
             </section>
           ))}
+        </div>
+
+        <div className="mt-10 rounded-lg border border-black/10 bg-black p-6 text-white">
+          <div className="text-xs font-bold uppercase tracking-wide text-white/45">Customer controls</div>
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight">How customers reduce data risk</h2>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {customerControls.map(([title, desc]) => (
+              <div key={title} className="rounded-lg border border-white/15 bg-white/10 p-4">
+                <div className="text-sm font-bold">{title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-white/65">{desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </main>

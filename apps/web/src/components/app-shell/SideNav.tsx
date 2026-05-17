@@ -26,6 +26,7 @@ const infrastructureItems: Item[] = [
 
 const operatorItems: Item[] = [
   { label: "Customers", href: "/customers", desc: "Logins, keys, usage · 登录、密钥和用量" },
+  { label: "Sales Leads", href: "/sales-leads", desc: "Upgrade signals · 付费转化线索" },
 ];
 
 function isActive(pathname: string | null, href: string) {

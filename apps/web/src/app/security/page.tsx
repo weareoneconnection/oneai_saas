@@ -17,6 +17,13 @@ const riskRows = [
   ["Unsafe execution", "OneAI generates intelligence and plans. Execution belongs to OneClaw, bots, customer tools, or human operators."],
 ];
 
+const trustPillars = [
+  ["Security", "Provider secrets stay server-side, customer keys are hashed, and production access should happen through customer backends."],
+  ["Transparency", "Every commercial call is designed to expose requestId, provider, model, tokens, latency, cost, fallback, and ownership context."],
+  ["Data boundary", "OneAI coordinates intelligence and records operational metadata. External executors perform actions outside the OneAI boundary."],
+  ["Enterprise readiness", "SLA, DPA, Privacy, invoices, terms, audit logs, and team permissions are documented for procurement review."],
+];
+
 const commitments = [
   ["Provider keys stay server-side", "Customer-facing API keys never expose OpenAI, DeepSeek, OpenRouter, or other upstream provider secrets."],
   ["No blind relay positioning", "Every production response is designed to include ownership metadata: requestId, provider, model, usage, latency, cost, and fallback state where available."],
@@ -33,6 +40,13 @@ const dataControls = [
   ["Retention", "Operational logs are retained for billing, abuse prevention, debugging, and customer support until a formal retention window is configured."],
 ];
 
+const executionBoundaryRows = [
+  ["OneAI may do", "Plan, route, generate structured intelligence, create handoff contracts, record approvals, store proof/result metadata, and expose audit trails."],
+  ["OneAI will not do", "Click buttons, log into customer tools, spend funds, post to social accounts, deploy code, move assets, or call external execution systems as the actor."],
+  ["Executors do", "OneClaw, OpenClaw, bots, customer agents, or humans perform external actions and call back with proof and results."],
+  ["Operators verify", "Admins review proof, failures, customer usage, cost, and audit events before trusting an execution as complete."],
+];
+
 export default function SecurityPage() {
   return (
     <main className="bg-white text-black">
@@ -44,6 +58,9 @@ export default function SecurityPage() {
           <div className="flex items-center gap-4 text-sm font-medium">
             <Link href="/docs" className="text-black/60 hover:text-black">
               Docs
+            </Link>
+            <Link href="/trust-center" className="text-black/60 hover:text-black">
+              Trust Center
             </Link>
             <Link href="/pricing" className="text-black/60 hover:text-black">
               Pricing
@@ -78,6 +95,15 @@ export default function SecurityPage() {
             should be explainable by requestId, provider, model, token usage,
             estimated cost, route policy, and customer/API key ownership.
           </p>
+        </div>
+
+        <div className="mt-10 grid gap-4 md:grid-cols-4">
+          {trustPillars.map(([title, desc]) => (
+            <div key={title} className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
+              <div className="text-sm font-extrabold text-black">{title}</div>
+              <p className="mt-2 text-sm leading-relaxed text-black/60">{desc}</p>
+            </div>
+          ))}
         </div>
 
         <div className="mt-10 grid gap-4 md:grid-cols-3">
@@ -167,6 +193,36 @@ export default function SecurityPage() {
                 <p className="mt-2 text-sm leading-relaxed text-black/60">{desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="mt-10">
+          <div className="max-w-2xl">
+            <h2 className="text-2xl font-extrabold tracking-tight">Execution Boundary</h2>
+            <p className="mt-2 text-sm leading-relaxed text-black/60">
+              OneAI is the intelligent coordination brain. Execution remains
+              intentionally outside OneAI so customers can preserve approval,
+              accountability, and operational control.
+            </p>
+          </div>
+
+          <div className="mt-6 overflow-x-auto rounded-lg border border-black/10">
+            <table className="min-w-[780px] w-full text-left text-sm">
+              <thead className="bg-black/[0.04] text-xs uppercase tracking-wide text-black/45">
+                <tr>
+                  <th className="px-4 py-3">Boundary</th>
+                  <th className="px-4 py-3">Meaning</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/10">
+                {executionBoundaryRows.map(([title, desc]) => (
+                  <tr key={title}>
+                    <td className="px-4 py-4 font-bold text-black">{title}</td>
+                    <td className="px-4 py-4 leading-relaxed text-black/65">{desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 

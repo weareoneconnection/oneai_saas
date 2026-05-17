@@ -14,7 +14,7 @@ export type NavItem = { label: string; href: string };
 export const marketingNav: NavItem[] = [
   { label: "Docs", href: "/docs" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Security", href: "/security" },
+  { label: "Trust", href: "/trust-center" },
 ];
 
 export const appNav: NavItem[] = [

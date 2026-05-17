@@ -44,6 +44,7 @@ const navItems = [
   ["Task Intelligence", "/task-intelligence"],
   ["Use Cases", "/use-cases"],
   ["Commercial", "#commercial"],
+  ["Trust", "/trust-center"],
   ["Docs", "/docs"],
   ["Pricing", "/pricing"],
 ];
@@ -159,6 +160,18 @@ const launchPaths = [
     title: "For agencies and builders",
     desc: "Turn strategy, content, research, support, and campaign workflows into reusable client-facing AI products.",
   },
+];
+
+const conversionSteps = [
+  ["1", "Create a free key", "Sign in, create a server-side API key, and test without touching production code.", "/login"],
+  ["2", "Run a billable workflow", "Start with business_strategy or content_engine, then move to Pro/Team task contracts.", "/playground"],
+  ["3", "Measure cost and margin", "Track provider, model, tokens, estimated cost, failures, and customer usage from the console.", "/usage"],
+];
+
+const buyerProofRows = [
+  ["Data boundary", "OneAI returns intelligence and handoff contracts. Execution stays with OneClaw, bots, your system, or humans."],
+  ["Cost control", "Every request can carry model, token, latency, requestId, cost estimate, and routing trace metadata."],
+  ["Commercial control", "API keys, usage, customers, billing readiness, team roles, audit events, and Agent OS ledger live in one console."],
 ];
 
 const faqRows = [
@@ -691,6 +704,68 @@ export default function HomePage() {
           </div>
 
           <CodePanel />
+        </div>
+      </section>
+
+      <section className="border-b border-white/10">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20">
+          <div className="grid gap-10 lg:grid-cols-[0.86fr_1.14fr] lg:items-start">
+            <div>
+              <SectionTitle
+                eyebrow="Conversion path"
+                title="From first login to paid AI usage in one controlled flow."
+                desc="The homepage should not only explain OneAI. It should move a new user toward key creation, a first successful request, and a cost-visible production integration."
+              />
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-black text-black shadow-2xl shadow-white/10 transition hover:bg-emerald-100"
+                >
+                  Start Free
+                </Link>
+                <Link
+                  href="/docs/quickstart"
+                  className="inline-flex items-center justify-center rounded-2xl border border-white/12 bg-white/[0.06] px-6 py-3 text-sm font-black text-white transition hover:bg-white/[0.1]"
+                >
+                  Quickstart
+                </Link>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}?subject=OneAI%20Pilot%20Access`}
+                  className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-6 py-3 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/15"
+                >
+                  Contact Sales
+                </a>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              {conversionSteps.map(([step, title, desc, href]) => (
+                <Link
+                  key={title}
+                  href={href}
+                  className="grid gap-4 rounded-[1.45rem] border border-white/10 bg-white/[0.055] p-5 transition hover:border-emerald-300/25 hover:bg-white/[0.075] sm:grid-cols-[48px_1fr]"
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-lg font-black text-black">
+                    {step}
+                  </div>
+                  <div>
+                    <div className="text-lg font-black text-white">{title}</div>
+                    <p className="mt-2 text-sm leading-relaxed text-white/50">{desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-4 lg:grid-cols-3">
+            {buyerProofRows.map(([title, desc]) => (
+              <Surface key={title} className="p-5">
+                <div className="text-lg font-black text-white">{title}</div>
+                <p className="mt-3 text-sm leading-relaxed text-white/52">{desc}</p>
+              </Surface>
+            ))}
+          </div>
         </div>
       </section>
 

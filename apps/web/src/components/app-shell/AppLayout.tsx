@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh overflow-x-hidden bg-[#f7f7f6] text-[#111]">
       <header className="sticky top-0 z-40 border-b border-black/10 bg-white/90 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-3 sm:px-4">
+        <div className="mx-auto max-w-[1800px] px-3 sm:px-4 lg:px-6">
           <div className="flex h-14 items-center">
             <TopNav onMenuClick={() => setMobileNavOpen(true)} />
           </div>
@@ -63,9 +63,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div className="mx-auto max-w-7xl px-3 sm:px-4">
-        <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-12 md:gap-6 md:py-6">
-          <aside className="hidden md:col-span-3 md:block lg:col-span-2">
+      <div className="mx-auto max-w-[1800px] px-3 sm:px-4 lg:px-6">
+        <div className="grid grid-cols-1 gap-4 py-4 md:grid-cols-[240px_minmax(0,1fr)] md:gap-5 md:py-5 xl:grid-cols-[260px_minmax(0,1fr)] xl:gap-6">
+          <aside className="hidden md:block">
             <div className="sticky top-[80px] rounded-lg border border-black/10 bg-white">
               <div className="max-h-[calc(100dvh-120px)] overflow-auto p-2">
                 <SideNav />
@@ -73,7 +73,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
           </aside>
 
-          <main className="min-w-0 md:col-span-9 lg:col-span-10">
+          <main className="min-w-0">
             <div className="rounded-lg border border-black/10 bg-white">
               <div className="border-b border-black/5 px-4 py-3 sm:px-5 sm:py-4 md:px-6">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
@@ -86,7 +86,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <div className="p-4 sm:p-5 md:p-6">{children}</div>
+              <div className="p-4 sm:p-5 md:p-6 xl:p-7">{children}</div>
             </div>
 
             <div className="h-6 md:h-8" />
