@@ -54,14 +54,19 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           <span className="text-base leading-none">☰</span>
         </button>
 
-        <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
+        <Link
+          href="/"
+          aria-label="Back to OneAI home"
+          title="Back to home / 返回首页"
+          className="flex min-w-0 items-center gap-3 rounded-xl transition hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+        >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-black/10 bg-white">
             <span className="text-sm font-semibold">OA</span>
           </div>
           <div className="min-w-0 leading-tight">
             <div className="truncate text-sm font-semibold">OneAI API</div>
             <div className="truncate text-xs text-black/50">
-              {email || "Commercial intelligence console · 商用智能控制台"}
+              {email ? `Home / 首页 · ${email}` : "Home / 首页 · Commercial intelligence console"}
             </div>
           </div>
         </Link>
