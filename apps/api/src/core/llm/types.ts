@@ -22,11 +22,13 @@ export type LLMProvider =
   | "custom";
 
 export type LLMRoutingMode = "cheap" | "balanced" | "premium" | "fast" | "auto";
+export type LLMRoutingStrategy = "balanced" | "cost" | "quality" | "fast";
 
 export type LLMOverrides = {
   provider?: LLMProvider | string;
   model?: string;
   mode?: LLMRoutingMode;
+  strategy?: LLMRoutingStrategy;
   maxCostUsd?: number;
   temperature?: number;
   maxTokens?: number;

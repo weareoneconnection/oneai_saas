@@ -3,9 +3,9 @@ import { DocShell, DocSectionTitle } from "../../_components/DocShell";
 export default function Page() {
   return (
     <DocShell
-      title="Reference: Agent OS Preview"
-      description="Sidecar Agent OS infrastructure for capabilities, agent plan contracts, handoff previews, and context previews. OneAI does not execute external actions."
-      pills={["preview-only", "handoff boundary", "OneAI brain", "OneClaw executes"]}
+      title="Reference: Agent OS"
+      description="Standard handoff contracts, executor protocol, approval policy, proof callbacks, and execution result ledger. OneAI does not execute external actions."
+      pills={["handoff schema", "executor protocol", "proof ledger", "OneAI brain"]}
       prev={{ href: "/docs/reference/messages", label: "Messages" }}
       next={{ href: "/docs/reference/models", label: "Models" }}
     >
@@ -56,7 +56,68 @@ export default function Page() {
 
       <div className="mt-10">
         <DocSectionTitle
-          title="4) Context Preview"
+          title="4) Standard Handoff Contract"
+          desc="Create a stored Agent OS contract for OneClaw, OpenClaw, bots, external agents, or human operators. The contract includes approval policy, proof requirements, callbacks, and a ledger record."
+        />
+        <div className="mt-6 rounded-lg border border-black/10 bg-white p-6">
+          <pre className="whitespace-pre-wrap text-sm text-black/80">{`curl -s https://oneai-saas-api-production.up.railway.app/v1/handoff/contracts \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: YOUR_KEY" \\
+  -d '{
+    "objective": "Hand off a launch checklist to OpenClaw",
+    "targetExecutor": "openclaw",
+    "executorProtocol": "openclaw.v1",
+    "riskLevel": "medium",
+    "approvalMode": "manual",
+    "proofRequired": ["execution log", "result summary"]
+  }' | jq`}</pre>
+        </div>
+      </div>
+
+      <div className="mt-10">
+        <DocSectionTitle
+          title="5) Executor Protocol"
+          desc="Executor teams can inspect the OneAI Agent OS protocol and callback routes before integrating."
+        />
+        <div className="mt-6 rounded-lg border border-black/10 bg-white p-6">
+          <pre className="whitespace-pre-wrap text-sm text-black/80">{`curl -s https://oneai-saas-api-production.up.railway.app/v1/executor-protocol \\
+  -H "x-api-key: YOUR_KEY" | jq`}</pre>
+        </div>
+      </div>
+
+      <div className="mt-10">
+        <DocSectionTitle
+          title="6) Approval, Proof, Result"
+          desc="Executors never need direct database access. They report proof and final results through standard callbacks."
+        />
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="rounded-lg border border-black/10 bg-white p-6">
+            <div className="text-sm font-bold">Approve</div>
+            <pre className="mt-4 whitespace-pre-wrap text-xs text-black/80">{`curl -s -X POST https://oneai-saas-api-production.up.railway.app/v1/executions/HANDOFF_ID/approval \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: YOUR_KEY" \\
+  -d '{"status":"APPROVED","approvedBy":"operator"}'`}</pre>
+          </div>
+          <div className="rounded-lg border border-black/10 bg-white p-6">
+            <div className="text-sm font-bold">Proof</div>
+            <pre className="mt-4 whitespace-pre-wrap text-xs text-black/80">{`curl -s -X POST https://oneai-saas-api-production.up.railway.app/v1/executions/HANDOFF_ID/proof \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: YOUR_KEY" \\
+  -d '{"executorRunId":"run_001","status":"RUNNING","proof":{"artifacts":[],"summary":"Started execution."}}'`}</pre>
+          </div>
+          <div className="rounded-lg border border-black/10 bg-white p-6">
+            <div className="text-sm font-bold">Result</div>
+            <pre className="mt-4 whitespace-pre-wrap text-xs text-black/80">{`curl -s -X POST https://oneai-saas-api-production.up.railway.app/v1/executions/HANDOFF_ID/result \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: YOUR_KEY" \\
+  -d '{"executorRunId":"run_001","status":"SUCCEEDED","result":{"summary":"Completed."}}'`}</pre>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-10">
+        <DocSectionTitle
+          title="7) Context Preview"
           desc="Normalize business, thread, customer, memory, retrieval, and policy context before attaching it to Task Intelligence or Agent Plan requests."
         />
         <div className="mt-6 rounded-lg border border-black/10 bg-white p-6">

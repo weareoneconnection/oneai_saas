@@ -14,9 +14,22 @@ type Customer = {
   latestKeyUsedAt?: string | null;
   latestLoginAt?: string | null;
   requestCount: number;
+  failedRequestCount?: number;
   totalTokens: number;
   costUsd: number;
   lastRequestAt?: string | null;
+  lastFailedRequestAt?: string | null;
+  billing?: {
+    plan?: string;
+    status?: string;
+    currentPeriodEnd?: string | null;
+    cancelAtPeriodEnd?: boolean;
+  } | null;
+  members?: Array<{
+    email?: string | null;
+    role: string;
+    createdAt: string;
+  }>;
   keys: Array<{
     id: string;
     name: string;
@@ -42,6 +55,24 @@ type EventRow = {
   createdAt: string;
 };
 
+type FailedRequestRow = {
+  id: string;
+  orgId?: string | null;
+  endpoint?: string | null;
+  task: string;
+  provider: string;
+  model: string;
+  errorCode?: string | null;
+  statusCode?: number | null;
+  error?: string | null;
+  createdAt: string;
+  apiKey?: {
+    prefix?: string | null;
+    name?: string | null;
+    userEmail?: string | null;
+  } | null;
+};
+
 type Payload = {
   success?: boolean;
   error?: string;
@@ -49,6 +80,7 @@ type Payload = {
   data?: {
     customers: Customer[];
     recentEvents: EventRow[];
+    recentFailedRequests?: FailedRequestRow[];
   };
 };
 
@@ -93,6 +125,7 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 export default function CustomersPage() {
   const [rows, setRows] = useState<Customer[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
+  const [failedRequests, setFailedRequests] = useState<FailedRequestRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [query, setQuery] = useState("");
@@ -108,6 +141,7 @@ export default function CustomersPage() {
       }
       setRows(json.data?.customers || []);
       setEvents(json.data?.recentEvents || []);
+      setFailedRequests(json.data?.recentFailedRequests || []);
     } catch (error: any) {
       setErr(error?.message || "Failed to load customers");
     } finally {
@@ -141,6 +175,7 @@ export default function CustomersPage() {
         acc.keys += row.keyCount || 0;
         acc.activeKeys += row.activeKeyCount || 0;
         acc.requests += row.requestCount || 0;
+        acc.failedRequests += row.failedRequestCount || 0;
         acc.cost += row.costUsd || 0;
         if (latestActivity >= monthAgo) acc.activeCustomers += 1;
         if (toTime(row.latestLoginAt) >= weekAgo || toTime(row.latestKeyCreatedAt) >= weekAgo) {
@@ -158,6 +193,7 @@ export default function CustomersPage() {
         activeCustomers: 0,
         newThisWeek: 0,
         usageWithoutActiveKey: 0,
+        failedRequests: 0,
       }
     );
   }, [rows]);
@@ -176,8 +212,9 @@ export default function CustomersPage() {
     const recentEvents = events.slice(0, 20);
     const signIns = recentEvents.filter((event) => event.action === "console.sign_in").length;
     const keysCreated = recentEvents.filter((event) => event.action === "api_key.created").length;
+    const billingEvents = recentEvents.filter((event) => event.action.startsWith("billing.")).length;
 
-    return { unusedKeys, signIns, keysCreated };
+    return { unusedKeys, signIns, keysCreated, billingEvents };
   }, [events, rows]);
 
   return (
@@ -214,10 +251,18 @@ export default function CustomersPage() {
 
       <div className="grid gap-3 md:grid-cols-5">
         <Stat label="Requests" value={fmtNum(totals.requests)} />
+        <Stat label="Failed requests" value={fmtNum(totals.failedRequests)} />
         <Stat label="Model cost" value={fmtUsd(totals.cost)} />
         <Stat label="Unused keys" value={fmtNum(keyHealth.unusedKeys)} />
         <Stat label="Recent sign-ins" value={fmtNum(keyHealth.signIns)} />
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-5">
         <Stat label="Recent key creates" value={fmtNum(keyHealth.keysCreated)} />
+        <Stat label="Billing events" value={fmtNum(keyHealth.billingEvents)} />
+        <Stat label="Tracked failures" value={fmtNum(failedRequests.length)} />
+        <Stat label="Operator events" value={fmtNum(events.length)} />
+        <Stat label="Org roles" value="Owner / Admin / Member / Viewer" />
       </div>
 
       {totals.usageWithoutActiveKey ? (
@@ -267,12 +312,14 @@ export default function CustomersPage() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto rounded-lg border border-black/10">
-            <div className="min-w-[940px]">
+            <div className="min-w-[1120px]">
               <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/55">
-                <div className="col-span-3">Email</div>
+                <div className="col-span-3">Email / Org</div>
                 <div className="col-span-1 text-right">Keys</div>
-                <div className="col-span-2 text-right">Requests</div>
-                <div className="col-span-2 text-right">Cost</div>
+                <div className="col-span-1 text-right">Errors</div>
+                <div className="col-span-1 text-right">Requests</div>
+                <div className="col-span-1 text-right">Cost</div>
+                <div className="col-span-1">Plan</div>
                 <div className="col-span-2">Latest login</div>
                 <div className="col-span-2">Latest activity</div>
               </div>
@@ -286,11 +333,19 @@ export default function CustomersPage() {
                     <div className="col-span-1 text-right text-black/70">
                       {fmtNum(row.activeKeyCount)} / {fmtNum(row.keyCount)}
                     </div>
-                    <div className="col-span-2 text-right text-black/70">{fmtNum(row.requestCount)}</div>
-                    <div className="col-span-2 text-right font-semibold text-black">{fmtUsd(row.costUsd)}</div>
+                    <div className="col-span-1 text-right text-red-700">{fmtNum(row.failedRequestCount || 0)}</div>
+                    <div className="col-span-1 text-right text-black/70">{fmtNum(row.requestCount)}</div>
+                    <div className="col-span-1 text-right font-semibold text-black">{fmtUsd(row.costUsd)}</div>
+                    <div className="col-span-1">
+                      <div className="text-xs font-semibold capitalize text-black">{row.billing?.plan || "free"}</div>
+                      <div className="text-xs text-black/40">{row.billing?.status || "inactive"}</div>
+                    </div>
                     <div className="col-span-2 text-black/60">{fmtTime(row.latestLoginAt)}</div>
                     <div className="col-span-2 text-black/60">
                       {fmtTime(row.lastRequestAt || row.latestKeyUsedAt || row.latestKeyCreatedAt)}
+                      {row.lastFailedRequestAt ? (
+                        <div className="mt-1 text-xs text-red-700">Last failure {fmtTime(row.lastFailedRequestAt)}</div>
+                      ) : null}
                     </div>
                   </div>
                 ))
@@ -304,8 +359,84 @@ export default function CustomersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Events</CardTitle>
-          <CardDescription>Latest sign-in and API key lifecycle events</CardDescription>
+          <CardTitle>Organization Roles</CardTitle>
+          <CardDescription>Membership and plan state for visible customer organizations</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {filtered.slice(0, 9).map((row) => (
+              <div key={row.email} className="rounded-lg border border-black/10 bg-white/60 p-4">
+                <div className="truncate text-sm font-semibold text-black">{row.email}</div>
+                <div className="mt-2 text-xs text-black/45">Plan {row.billing?.plan || "free"} · {row.billing?.status || "inactive"}</div>
+                <div className="mt-3 space-y-2">
+                  {(row.members || []).length ? (
+                    (row.members || []).slice(0, 4).map((member) => (
+                      <div key={`${row.orgId}-${member.email}-${member.role}`} className="flex items-center justify-between gap-3 rounded-md bg-black/[0.03] px-3 py-2 text-xs">
+                        <span className="truncate text-black/65">{member.email || "-"}</span>
+                        <span className="font-semibold text-black">{member.role}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-black/45">No members loaded.</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Failed Requests</CardTitle>
+          <CardDescription>Authenticated API failures with request ID, key prefix, endpoint, and error context</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-lg border border-black/10">
+            <div className="min-w-[980px]">
+              <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/55">
+                <div className="col-span-2">Request</div>
+                <div className="col-span-2">Customer / Key</div>
+                <div className="col-span-2">Endpoint</div>
+                <div className="col-span-2">Model</div>
+                <div className="col-span-2">Error</div>
+                <div className="col-span-2">Time</div>
+              </div>
+              {failedRequests.length ? (
+                failedRequests.slice(0, 30).map((row) => (
+                  <div key={row.id} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-xs">
+                    <div className="col-span-2 font-mono text-black">{row.id}</div>
+                    <div className="col-span-2 min-w-0">
+                      <div className="truncate text-black/70">{row.apiKey?.userEmail || "-"}</div>
+                      <div className="font-mono text-black/40">{row.apiKey?.prefix || "-"}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="font-mono text-black/60">{row.endpoint || "-"}</div>
+                      <div className="text-black/40">{row.task}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="text-black/60">{row.provider}</div>
+                      <div className="truncate font-mono text-black/40">{row.model}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="font-semibold text-red-700">{row.errorCode || row.statusCode || "failed"}</div>
+                      <div className="truncate text-black/40">{row.error || "-"}</div>
+                    </div>
+                    <div className="col-span-2 text-black/45">{fmtTime(row.createdAt)}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-sm text-black/55">No failed requests recorded.</div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Audit Events</CardTitle>
+          <CardDescription>Latest login, API key, billing, and security-sensitive events</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">

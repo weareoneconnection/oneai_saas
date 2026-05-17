@@ -198,7 +198,7 @@ router.post("/audit/event", requireAdminKey, async (req, res) => {
 });
 
 router.get("/customers", requireAdminKey, async (_req, res) => {
-  const [keys, requestByKey, requestByOrg, audits] = await Promise.all([
+  const [keys, requestByKey, requestByOrg, failedByOrg, billingRows, membershipRows, audits, recentFailures] = await Promise.all([
     prisma.apiKey.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -225,6 +225,34 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       _sum: { totalTokens: true, estimatedCostUsd: true },
       _max: { createdAt: true },
     } as any),
+    prisma.request.groupBy({
+      by: ["orgId"],
+      where: { success: false },
+      _count: { _all: true },
+      _max: { createdAt: true },
+    } as any),
+    prisma.orgBilling.findMany({
+      select: {
+        orgId: true,
+        plan: true,
+        status: true,
+        currentPeriodEnd: true,
+        cancelAtPeriodEnd: true,
+      } as any,
+    }),
+    prisma.membership.findMany({
+      select: {
+        orgId: true,
+        role: true,
+        createdAt: true,
+        user: {
+          select: {
+            email: true,
+          },
+        },
+      } as any,
+      orderBy: { createdAt: "asc" },
+    }),
     prisma.auditLog.findMany({
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -235,6 +263,32 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
         target: true,
         metadata: true,
         createdAt: true,
+      } as any,
+    }),
+    prisma.request.findMany({
+      where: { success: false },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        requestId: true,
+        orgId: true,
+        apiKeyId: true,
+        endpoint: true,
+        task: true,
+        provider: true,
+        model: true,
+        errorCode: true,
+        statusCode: true,
+        error: true,
+        createdAt: true,
+        apiKey: {
+          select: {
+            prefix: true,
+            name: true,
+            userEmail: true,
+          },
+        },
       } as any,
     }),
   ]);
@@ -261,6 +315,36 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       },
     ])
   );
+  const failedByOrgMap = new Map(
+    failedByOrg.map((row: any) => [
+      row.orgId,
+      {
+        failedRequests: row._count?._all || 0,
+        lastFailedAt: row._max?.createdAt || null,
+      },
+    ])
+  );
+  const billingByOrg = new Map(
+    billingRows.map((row: any) => [
+      row.orgId,
+      {
+        plan: row.plan || "free",
+        status: row.status || "inactive",
+        currentPeriodEnd: row.currentPeriodEnd || null,
+        cancelAtPeriodEnd: Boolean(row.cancelAtPeriodEnd),
+      },
+    ])
+  );
+  const membersByOrg = new Map<string, any[]>();
+  for (const membership of membershipRows as any[]) {
+    const list = membersByOrg.get(membership.orgId) || [];
+    list.push({
+      email: membership.user?.email || null,
+      role: membership.role,
+      createdAt: membership.createdAt,
+    });
+    membersByOrg.set(membership.orgId, list);
+  }
 
   const customers = new Map<string, any>();
 
@@ -277,9 +361,13 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       latestKeyUsedAt: null,
       latestLoginAt: null,
       requestCount: 0,
+      failedRequestCount: 0,
       totalTokens: 0,
       costUsd: 0,
       lastRequestAt: null,
+      lastFailedRequestAt: null,
+      billing: null,
+      members: [],
       keys: [],
     };
     const usage = usageByKey.get(key.id) || { requests: 0, tokens: 0, costUsd: 0, lastRequestAt: null };
@@ -291,6 +379,12 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
     current.latestKeyUsedAt =
       key.lastUsedAt && (!current.latestKeyUsedAt || key.lastUsedAt > current.latestKeyUsedAt) ? key.lastUsedAt : current.latestKeyUsedAt;
     current.requestCount += usage.requests;
+    const failedUsage = failedByOrgMap.get(key.orgId) || { failedRequests: 0, lastFailedAt: null };
+    current.failedRequestCount = failedUsage.failedRequests || current.failedRequestCount || 0;
+    current.lastFailedRequestAt =
+      failedUsage.lastFailedAt && (!current.lastFailedRequestAt || failedUsage.lastFailedAt > current.lastFailedRequestAt)
+        ? failedUsage.lastFailedAt
+        : current.lastFailedRequestAt;
     current.totalTokens += usage.tokens;
     current.costUsd += usage.costUsd;
     current.lastRequestAt =
@@ -307,6 +401,8 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       revokedAt: key.revokedAt,
       usage,
     });
+    current.billing = billingByOrg.get(key.orgId) || current.billing || { plan: "free", status: "inactive" };
+    current.members = membersByOrg.get(key.orgId) || current.members || [];
     customers.set(email, current);
   }
 
@@ -323,9 +419,13 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       latestKeyUsedAt: null,
       latestLoginAt: null,
       requestCount: 0,
+      failedRequestCount: 0,
       totalTokens: 0,
       costUsd: 0,
       lastRequestAt: null,
+      lastFailedRequestAt: null,
+      billing: audit.orgId ? billingByOrg.get(audit.orgId) || { plan: "free", status: "inactive" } : null,
+      members: audit.orgId ? membersByOrg.get(audit.orgId) || [] : [],
       keys: [],
     };
     if (audit.action === "console.sign_in") {
@@ -341,6 +441,11 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
         current.lastRequestAt = orgUsage.lastRequestAt;
       }
     }
+    if (audit.orgId && failedByOrgMap.has(audit.orgId)) {
+      const failedUsage = failedByOrgMap.get(audit.orgId);
+      current.failedRequestCount = failedUsage?.failedRequests || 0;
+      current.lastFailedRequestAt = failedUsage?.lastFailedAt || null;
+    }
     customers.set(email, current);
   }
 
@@ -352,6 +457,26 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
     createdAt: audit.createdAt,
     metadata: audit.metadata,
   }));
+  const recentFailedRequests = (recentFailures as any[]).map((request) => ({
+    id: request.requestId || request.id,
+    orgId: request.orgId,
+    apiKeyId: request.apiKeyId,
+    endpoint: request.endpoint,
+    task: request.task,
+    provider: request.provider,
+    model: request.model,
+    errorCode: request.errorCode,
+    statusCode: request.statusCode,
+    error: request.error,
+    createdAt: request.createdAt,
+    apiKey: request.apiKey
+      ? {
+          prefix: request.apiKey.prefix,
+          name: request.apiKey.name,
+          userEmail: request.apiKey.userEmail,
+        }
+      : null,
+  }));
 
   return res.json({
     success: true,
@@ -362,6 +487,7 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
         return bt - at;
       }),
       recentEvents,
+      recentFailedRequests,
     },
   });
 });

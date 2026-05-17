@@ -60,6 +60,41 @@ function monthStartUtc() {
   return d;
 }
 
+function clientMeta(req: any) {
+  return {
+    ip: String(req?.ip || req?.headers?.["x-forwarded-for"] || "").slice(0, 120) || null,
+    userAgent: String(req?.headers?.["user-agent"] || "").slice(0, 500) || null,
+  };
+}
+
+async function writeBillingAudit(params: {
+  orgId?: string | null;
+  userEmail?: string | null;
+  action: string;
+  target?: string | null;
+  metadata?: Record<string, unknown>;
+  req?: any;
+}) {
+  try {
+    const meta = params.req ? clientMeta(params.req) : { ip: null, userAgent: null };
+    await prisma.auditLog.create({
+      data: {
+        ...(params.orgId ? { org: { connect: { id: params.orgId } } } : {}),
+        action: params.action,
+        target: params.target || params.userEmail || null,
+        metadata: {
+          ...(params.metadata || {}),
+          ...(params.userEmail ? { userEmail: String(params.userEmail).toLowerCase() } : {}),
+        },
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+      } as any,
+    });
+  } catch (err) {
+    console.error("[billing] failed to write audit log", err);
+  }
+}
+
 async function getOrCreateBilling(orgId: string) {
   const existing = await prisma.orgBilling.findUnique({
     where: { orgId },
@@ -93,7 +128,7 @@ async function syncSubscriptionToBilling(
     ? new Date(Number(subscription.current_period_end) * 1000)
     : null;
 
-  return prisma.orgBilling.upsert({
+  const billing = await prisma.orgBilling.upsert({
     where: { orgId },
     update: {
       stripeCustomerId: String(subscription.customer || ""),
@@ -115,6 +150,23 @@ async function syncSubscriptionToBilling(
       cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
     } as any,
   });
+
+  await writeBillingAudit({
+    orgId,
+    userEmail: String(subscription?.metadata?.userEmail || fallback?.userEmail || ""),
+    action: "billing.subscription.synced",
+    target: String(subscription.id || ""),
+    metadata: {
+      plan,
+      status: String(subscription.status || "inactive"),
+      stripeCustomerId: String(subscription.customer || ""),
+      stripeSubId: String(subscription.id || ""),
+      currentPeriodEnd: currentPeriodEnd?.toISOString() || null,
+      cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+    },
+  });
+
+  return billing;
 }
 
 /**
@@ -132,7 +184,7 @@ router.get("/status", requireAdminKey, async (req, res) => {
   const policy = applyPlanPolicyOverrides(getPlanPolicy(plan), billingIsActive ? billing : null);
   const from = monthStartUtc();
 
-  const [usage, activeKeys] = await Promise.all([
+  const [usage, activeKeys, auditLogs] = await Promise.all([
     prisma.request.aggregate({
       where: {
         orgId: org.id,
@@ -152,6 +204,31 @@ router.get("/status", requireAdminKey, async (req, res) => {
         status: "ACTIVE",
         revokedAt: null,
       },
+    }),
+    prisma.auditLog.findMany({
+      where: {
+        orgId: org.id,
+        action: {
+          in: [
+            "billing.checkout.requested",
+            "billing.checkout.session_created",
+            "billing.checkout.completed",
+            "billing.portal.opened",
+            "billing.subscription.synced",
+            "billing.subscription.deleted",
+            "billing.stripe.customer_created",
+          ],
+        },
+      } as any,
+      orderBy: { createdAt: "desc" },
+      take: 12,
+      select: {
+        id: true,
+        action: true,
+        target: true,
+        metadata: true,
+        createdAt: true,
+      } as any,
     }),
   ]);
 
@@ -178,6 +255,11 @@ router.get("/status", requireAdminKey, async (req, res) => {
         costUsd: Math.max(0, policy.monthlyCostLimitUsd - costUsd),
       },
       stripeConfig: stripeConfigStatus(),
+      checkout: {
+        enabled: stripeConfigStatus().secretKey && stripeConfigStatus().pricePro && stripeConfigStatus().priceTeam,
+        portalAvailable: Boolean(billing.stripeCustomerId),
+      },
+      auditLogs,
     },
     org,
   });
@@ -226,6 +308,15 @@ router.post("/checkout", requireAdminKey, async (req, res) => {
   const org = await getOrCreateOrgForUserEmail(userEmail);
   const billing = await getOrCreateBilling(org.id);
 
+  await writeBillingAudit({
+    orgId: org.id,
+    userEmail,
+    action: "billing.checkout.requested",
+    target: pricePlan,
+    metadata: { priceId, plan: pricePlan },
+    req,
+  });
+
   // ✅ customer
   let customerId = billing.stripeCustomerId || null;
   if (!customerId) {
@@ -238,6 +329,15 @@ router.post("/checkout", requireAdminKey, async (req, res) => {
     await prisma.orgBilling.update({
       where: { orgId: org.id },
       data: { stripeCustomerId: customerId },
+    });
+
+    await writeBillingAudit({
+      orgId: org.id,
+      userEmail,
+      action: "billing.stripe.customer_created",
+      target: customerId,
+      metadata: { plan: pricePlan },
+      req,
     });
   }
 
@@ -256,7 +356,28 @@ router.post("/checkout", requireAdminKey, async (req, res) => {
     },
   } as any);
 
-  return res.json({ success: true, data: { url: (session as any).url } });
+  await writeBillingAudit({
+    orgId: org.id,
+    userEmail,
+    action: "billing.checkout.session_created",
+    target: String((session as any).id || ""),
+    metadata: {
+      priceId,
+      plan: pricePlan,
+      stripeCustomerId: customerId,
+      urlCreated: Boolean((session as any).url),
+    },
+    req,
+  });
+
+  return res.json({
+    success: true,
+    data: {
+      url: (session as any).url,
+      plan: pricePlan,
+      sessionId: (session as any).id,
+    },
+  });
 });
 
 /**
@@ -275,10 +396,31 @@ router.post("/portal", requireAdminKey, async (req, res) => {
     return res.status(400).json({ success: false, error: "no stripe customer yet" });
   }
 
+  if (!stripeConfigStatus().secretKey) {
+    return res.status(500).json({
+      success: false,
+      error: "Stripe portal is not configured: secretKey",
+      code: "STRIPE_CONFIG_MISSING",
+      retryable: false,
+    });
+  }
+
   const portal = await stripe.billingPortal.sessions.create({
     customer: billing.stripeCustomerId,
     return_url: `${appUrl()}/billing`,
   } as any);
+
+  await writeBillingAudit({
+    orgId: org.id,
+    userEmail,
+    action: "billing.portal.opened",
+    target: billing.stripeCustomerId,
+    metadata: {
+      plan: billing.plan,
+      status: billing.status,
+    },
+    req,
+  });
 
   return res.json({ success: true, data: { url: (portal as any).url } });
 });
@@ -307,12 +449,27 @@ export async function handleStripeWebhook(req: any, res: any) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as any;
     const subscriptionId = String(session.subscription || "");
+    const orgId = String(session.metadata?.orgId || session.client_reference_id || "");
+    const userEmail = String(session.metadata?.userEmail || "");
+
+    await writeBillingAudit({
+      orgId,
+      userEmail,
+      action: "billing.checkout.completed",
+      target: String(session.id || ""),
+      metadata: {
+        plan: String(session.metadata?.plan || ""),
+        subscriptionId,
+        stripeCustomerId: String(session.customer || ""),
+        paymentStatus: String(session.payment_status || ""),
+      },
+    });
 
     if (subscriptionId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       await syncSubscriptionToBilling(subscription as any, {
-        orgId: String(session.metadata?.orgId || session.client_reference_id || ""),
-        userEmail: String(session.metadata?.userEmail || ""),
+        orgId,
+        userEmail,
         plan: String(session.metadata?.plan || ""),
       });
     }
@@ -336,6 +493,16 @@ export async function handleStripeWebhook(req: any, res: any) {
           cancelAtPeriodEnd: Boolean((sub as any).cancel_at_period_end),
         } as any,
       });
+      await writeBillingAudit({
+        orgId,
+        userEmail: String((sub as any).metadata?.userEmail || ""),
+        action: "billing.subscription.deleted",
+        target: String((sub as any).id || ""),
+        metadata: {
+          status: "canceled",
+          cancelAtPeriodEnd: Boolean((sub as any).cancel_at_period_end),
+        },
+      });
     } else if ((sub as any).id) {
       await prisma.orgBilling.updateMany({
         where: { stripeSubId: String((sub as any).id) },
@@ -343,6 +510,15 @@ export async function handleStripeWebhook(req: any, res: any) {
           status: "canceled",
           cancelAtPeriodEnd: Boolean((sub as any).cancel_at_period_end),
         } as any,
+      });
+      await writeBillingAudit({
+        action: "billing.subscription.deleted",
+        target: String((sub as any).id || ""),
+        metadata: {
+          status: "canceled",
+          cancelAtPeriodEnd: Boolean((sub as any).cancel_at_period_end),
+          matchedBy: "stripeSubId",
+        },
       });
     }
   }

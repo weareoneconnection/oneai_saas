@@ -5,7 +5,7 @@ export default function Page() {
     <DocShell
       title="Reference: Models"
       description="GET /v1/models — discover model ids, capabilities, readiness, pricing coverage, and catalog sync status."
-      pills={["GET /v1/models", "POST /v1/models/sync", "POST /v1/models/health"]}
+      pills={["GET /v1/models", "GET /v1/models/infrastructure", "POST /v1/models/route/preview"]}
       prev={{ href: "/docs/reference/chat", label: "Chat Completions" }}
       next={{ href: "/docs/reference/schemas", label: "Schemas" }}
     >
@@ -40,7 +40,7 @@ export default function Page() {
       </div>
 
       <div className="mt-10">
-        <DocSectionTitle title="Catalog sync and health checks" desc="Admin keys can sync provider catalogs and run lightweight health checks one model at a time." />
+        <DocSectionTitle title="Catalog sync and health checks" desc="Admin keys can sync provider catalogs and run lightweight health checks across configured models." />
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-lg border border-black/10 bg-white p-6">
             <div className="text-sm font-bold">Sync catalog</div>
@@ -54,6 +54,28 @@ export default function Page() {
   -H "Authorization: Bearer ADMIN_KEY" \\
   -d '{"provider":"openai","model":"gpt-5.2"}'`}</pre>
           </div>
+          <div className="rounded-lg border border-black/10 bg-white p-6">
+            <div className="text-sm font-bold">Batch health</div>
+            <pre className="mt-4 whitespace-pre-wrap text-xs text-black/80">{`curl -s -X POST https://oneai-saas-api-production.up.railway.app/v1/models/health/batch \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ADMIN_KEY" \\
+  -d '{"configuredOnly":true,"limit":8}'`}</pre>
+          </div>
+          <div className="rounded-lg border border-black/10 bg-white p-6">
+            <div className="text-sm font-bold">Route preview</div>
+            <pre className="mt-4 whitespace-pre-wrap text-xs text-black/80">{`curl -s -X POST https://oneai-saas-api-production.up.railway.app/v1/models/route/preview \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ADMIN_KEY" \\
+  -d '{"mode":"cheap","strategy":"cost","limit":5}'`}</pre>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-10">
+        <DocSectionTitle title="Infrastructure summary" desc="Use this for operations dashboards: provider keys, pricing coverage, health coverage, and recommended routes." />
+        <div className="mt-6 rounded-lg border border-black/10 bg-white p-6">
+          <pre className="whitespace-pre-wrap text-sm text-black/80">{`curl -s https://oneai-saas-api-production.up.railway.app/v1/models/infrastructure \\
+  -H "Authorization: Bearer ADMIN_KEY"`}</pre>
         </div>
       </div>
     </DocShell>

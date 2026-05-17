@@ -2,11 +2,22 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireApiKey } from "../core/security/auth.js";
 import { rateLimitRedisTcp } from "../core/security/rateLimitRedis.js";
-import { findModelProfile, getModelCatalogSyncState, listModelProfiles } from "../core/llm/modelRegistry.js";
+import {
+  findModelProfile,
+  getLLMRoutingStrategy,
+  getModelCatalogSyncState,
+  listModelProfiles,
+  rankModelProfiles,
+} from "../core/llm/modelRegistry.js";
 import { syncModelCatalog } from "../core/llm/modelCatalogSync.js";
-import { isProviderConfigured } from "../core/llm/providerConfig.js";
+import { configuredProviders, isProviderConfigured } from "../core/llm/providerConfig.js";
 import { estimateLLMCostUSD, hasLLMPricing, resolveLLMPricing } from "../core/llm/pricing.js";
-import { getModelHealth, testModelHealth } from "../core/llm/modelHealth.js";
+import {
+  getModelHealth,
+  listModelHealth,
+  summarizeModelHealth,
+  testModelHealth,
+} from "../core/llm/modelHealth.js";
 import { prisma } from "../lib/prisma.js";
 
 const router = Router();
@@ -21,6 +32,19 @@ const estimateSchema = z.object({
   model: z.string().min(1),
   promptTokens: z.number().int().min(0).max(10_000_000).default(0),
   completionTokens: z.number().int().min(0).max(10_000_000).default(0),
+});
+
+const healthBatchSchema = z.object({
+  providers: z.array(z.string().min(1)).max(24).optional(),
+  configuredOnly: z.boolean().default(true),
+  limit: z.number().int().min(1).max(50).default(12),
+});
+
+const routePreviewSchema = z.object({
+  provider: z.string().min(1).optional(),
+  mode: z.enum(["cheap", "balanced", "premium", "fast", "auto"]).default("balanced"),
+  strategy: z.enum(["balanced", "cost", "quality", "fast"]).optional(),
+  limit: z.number().int().min(1).max(30).default(8),
 });
 
 router.use(requireApiKey);
@@ -143,6 +167,46 @@ router.post("/sync", async (req, res) => {
   return res.json({ success: true, data: result });
 });
 
+router.get("/infrastructure", (_req, res) => {
+  const profiles = listModelProfiles();
+  const keys = configuredProviders();
+  const configured = profiles.filter((profile) => isProviderConfigured(String(profile.provider)));
+  const priced = profiles.filter((profile) => hasLLMPricing(String(profile.provider), profile.model));
+  const providerNames = Array.from(new Set(profiles.map((profile) => String(profile.provider)))).sort();
+
+  return res.json({
+    success: true,
+    data: {
+      routing: {
+        strategy: getLLMRoutingStrategy(),
+        autoFallbacks: process.env.ONEAI_LLM_AUTO_FALLBACKS === "1",
+        autoFallbackLimit: Number(process.env.ONEAI_LLM_AUTO_FALLBACK_LIMIT || 2),
+      },
+      providers: {
+        total: providerNames.length,
+        configured: Object.values(keys).filter(Boolean).length,
+        keys,
+      },
+      catalog: {
+        totalModels: profiles.length,
+        pricedModels: priced.length,
+        pricingCoveragePct: profiles.length ? Math.round((priced.length / profiles.length) * 100) : 0,
+        synced: getModelCatalogSyncState(),
+      },
+      health: {
+        summary: summarizeModelHealth(configured),
+        runtime: listModelHealth(),
+      },
+      recommendedRoutes: {
+        cheap: rankModelProfiles({ mode: "cheap", strategy: "cost" }).slice(0, 5),
+        balanced: rankModelProfiles({ mode: "balanced", strategy: "balanced" }).slice(0, 5),
+        premium: rankModelProfiles({ mode: "premium", strategy: "quality" }).slice(0, 5),
+        fast: rankModelProfiles({ mode: "fast", strategy: "fast" }).slice(0, 5),
+      },
+    },
+  });
+});
+
 router.post("/health", async (req, res) => {
   const r = req as any;
   if (!r.auth?.isAdmin) {
@@ -183,6 +247,106 @@ router.post("/health", async (req, res) => {
 
   const status = await testModelHealth(profile);
   return res.json({ success: true, data: status });
+});
+
+router.post("/health/batch", async (req, res) => {
+  const r = req as any;
+  if (!r.auth?.isAdmin) {
+    return res.status(403).json({
+      success: false,
+      error: "Batch model health checks require admin API key",
+      code: "MODEL_HEALTH_FORBIDDEN",
+    });
+  }
+
+  const parsed = healthBatchSchema.safeParse(req.body || {});
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: "invalid health batch request",
+      code: "MODEL_HEALTH_BAD_REQUEST",
+      details: parsed.error.flatten(),
+    });
+  }
+
+  const providers = new Set(parsed.data.providers || []);
+  const profiles = listModelProfiles()
+    .filter((profile) => !providers.size || providers.has(String(profile.provider)))
+    .filter((profile) => !parsed.data.configuredOnly || isProviderConfigured(String(profile.provider)))
+    .slice(0, parsed.data.limit);
+
+  const results = [];
+  for (const profile of profiles) {
+    const provider = String(profile.provider);
+    if (!isProviderConfigured(provider)) {
+      results.push({
+        provider,
+        model: profile.model,
+        ok: false,
+        testedAt: new Date().toISOString(),
+        error: `${provider} API key is not configured`,
+      });
+      continue;
+    }
+
+    const status = await testModelHealth(profile);
+    results.push({
+      provider,
+      model: profile.model,
+      ...status,
+    });
+  }
+
+  return res.json({
+    success: true,
+    data: {
+      count: results.length,
+      summary: summarizeModelHealth(profiles),
+      results,
+    },
+  });
+});
+
+router.post("/route/preview", (req, res) => {
+  const parsed = routePreviewSchema.safeParse(req.body || {});
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      error: "invalid route preview request",
+      code: "MODEL_ROUTE_PREVIEW_BAD_REQUEST",
+      details: parsed.error.flatten(),
+    });
+  }
+
+  const candidates = rankModelProfiles({
+    provider: parsed.data.provider,
+    mode: parsed.data.mode,
+    strategy: parsed.data.strategy || getLLMRoutingStrategy(),
+  })
+    .slice(0, parsed.data.limit)
+    .map((profile) => {
+      const provider = String(profile.provider);
+      return {
+        provider,
+        model: profile.model,
+        modes: profile.modes,
+        configured: isProviderConfigured(provider),
+        available: isProviderConfigured(provider),
+        hasPricing: hasLLMPricing(provider, profile.model),
+        pricing: resolveLLMPricing(provider, profile.model),
+        health: getModelHealth(provider, profile.model),
+      };
+    });
+
+  return res.json({
+    success: true,
+    data: {
+      mode: parsed.data.mode,
+      strategy: parsed.data.strategy || getLLMRoutingStrategy(),
+      selected: candidates[0] || null,
+      candidates,
+    },
+  });
 });
 
 router.post("/estimate", (req, res) => {

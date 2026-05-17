@@ -54,6 +54,17 @@ type BillingData = {
     pricePro: boolean;
     priceTeam: boolean;
   };
+  checkout?: {
+    enabled: boolean;
+    portalAvailable: boolean;
+  };
+  auditLogs?: Array<{
+    id: string;
+    action: string;
+    target?: string | null;
+    metadata?: Record<string, unknown> | null;
+    createdAt: string;
+  }>;
 };
 
 type Notice = { type: "success" | "warn" | "error"; text: string };
@@ -159,6 +170,13 @@ function fmtUsd(n: number) {
     currency: "USD",
     maximumFractionDigits: 4,
   }).format(Number(n || 0));
+}
+
+function fmtTime(d?: string | null) {
+  if (!d) return "-";
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return d;
+  return date.toLocaleString();
 }
 
 function pct(used: number, limit?: number) {
@@ -313,6 +331,12 @@ export default function BillingPage() {
       : riskLevel >= 70
         ? "border-amber-500/20 bg-amber-500/10 text-amber-900"
         : "border-emerald-500/20 bg-emerald-500/10 text-emerald-800";
+  const stripeReady =
+    !!data?.stripeConfig?.secretKey &&
+    !!data?.stripeConfig?.pricePro &&
+    !!data?.stripeConfig?.priceTeam;
+  const webhookReady = !!data?.stripeConfig?.webhookSecret;
+  const selfServeReady = ENABLE_STRIPE_CHECKOUT && stripeReady && webhookReady;
 
   async function load() {
     setLoading(true);
@@ -542,6 +566,51 @@ export default function BillingPage() {
               Telegram
             </a>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Commercial Billing Loop</CardTitle>
+          <CardDescription>
+            Self-serve upgrade, Stripe checkout, webhook sync, plan policy, and audit trail in one loop.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 lg:grid-cols-5">
+            {[
+              ["Self-serve UI", ENABLE_STRIPE_CHECKOUT, ENABLE_STRIPE_CHECKOUT ? "Checkout buttons visible" : "Manual sales mode"],
+              ["Stripe checkout", stripeReady, stripeReady ? "Secret + price IDs ready" : "Missing Stripe checkout config"],
+              ["Webhook sync", webhookReady, webhookReady ? "Subscription events can sync plans" : "Webhook secret missing"],
+              ["Customer portal", data?.checkout?.portalAvailable, data?.checkout?.portalAvailable ? "Portal can open after subscription" : "Requires Stripe customer"],
+              ["Audit trail", true, "Billing and key events are recorded"],
+            ].map(([label, ok, desc]) => (
+              <div key={String(label)} className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-black text-black">{label}</div>
+                  <span
+                    className={[
+                      "rounded-full px-2 py-0.5 text-xs font-semibold",
+                      ok ? "bg-emerald-500/10 text-emerald-800" : "bg-amber-500/10 text-amber-900",
+                    ].join(" ")}
+                  >
+                    {ok ? "Ready" : "Pending"}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-black/55">{desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {!selfServeReady ? (
+            <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm leading-relaxed text-amber-900">
+              Self-serve checkout is not fully public yet. Customers can still contact sales, and plan activation can be managed manually while Stripe setup is completed.
+            </div>
+          ) : (
+            <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm font-semibold text-emerald-800">
+              Self-serve payment loop is ready for paid upgrades.
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -781,6 +850,48 @@ export default function BillingPage() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Billing Audit Trail</CardTitle>
+          <CardDescription>
+            Recent billing-sensitive events for this organization.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-lg border border-black/10">
+            <div className="min-w-[760px]">
+              <div className="grid grid-cols-[1.2fr_1fr_1.3fr_1fr] bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
+                <div>Action</div>
+                <div>Target</div>
+                <div>Metadata</div>
+                <div>Time</div>
+              </div>
+              {data?.auditLogs?.length ? (
+                data.auditLogs.map((event) => (
+                  <div key={event.id} className="grid grid-cols-[1.2fr_1fr_1.3fr_1fr] border-t border-black/10 px-4 py-3 text-sm text-black/65">
+                    <div className="font-mono text-xs font-semibold text-black">{event.action}</div>
+                    <div className="truncate font-mono text-xs">{event.target || "-"}</div>
+                    <div className="truncate text-xs">
+                      {event.metadata
+                        ? Object.entries(event.metadata)
+                            .slice(0, 3)
+                            .map(([key, value]) => `${key}: ${String(value)}`)
+                            .join(" · ")
+                        : "-"}
+                    </div>
+                    <div className="text-xs">{fmtTime(event.createdAt)}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="border-t border-black/10 px-4 py-8 text-center text-sm text-black/45">
+                  No billing events yet. Start checkout, open portal, or receive a Stripe webhook to populate this trail.
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

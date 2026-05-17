@@ -76,6 +76,7 @@ function resolveModelName(params: {
   provider: string;
   policyModel: string;
   mode?: LLMOverrides["mode"];
+  strategy?: LLMOverrides["strategy"];
   overrideModel?: string;
 }) {
   if (params.overrideModel) return params.overrideModel;
@@ -84,6 +85,7 @@ function resolveModelName(params: {
     const chosen = chooseModelForMode({
       provider: params.provider,
       mode: params.mode,
+      strategy: params.strategy,
     });
     if (chosen) return chosen.model;
   }
@@ -119,6 +121,7 @@ function autoFallbacksFor(params: {
   provider: string;
   model: string;
   mode?: LLMOverrides["mode"];
+  strategy?: LLMOverrides["strategy"];
 }): LLMProviderConfig[] {
   if (process.env.ONEAI_LLM_AUTO_FALLBACKS !== "1") return [];
 
@@ -144,12 +147,18 @@ export function resolveModel(
     provider,
     policyModel: policy.model,
     mode: overrides?.mode,
+    strategy: overrides?.strategy,
     overrideModel: overrides?.model,
   });
   const configuredFallbacks = parseFallbacks();
   const fallbacks = configuredFallbacks.length
     ? configuredFallbacks
-    : autoFallbacksFor({ provider, model, mode: overrides?.mode });
+    : autoFallbacksFor({
+        provider,
+        model,
+        mode: overrides?.mode,
+        strategy: overrides?.strategy,
+      });
 
   return {
     provider,

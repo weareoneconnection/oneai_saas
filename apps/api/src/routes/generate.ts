@@ -11,6 +11,7 @@ import type { LLMResolvedConfig } from "../core/llm/types.js";
 import { assertLLMConfigured } from "../core/llm/providerClient.js";
 import { assertLLMAllowed, assertLLMCostAllowed } from "../core/llm/policy.js";
 import { listModelProfiles } from "../core/llm/modelRegistry.js";
+import { hasLLMPricing, resolveLLMPricing } from "../core/llm/pricing.js";
 import { applyTaskDifficultyRouting } from "../core/llm/taskDifficulty.js";
 import { getLLMConfigSummary } from "../core/llm/configSummary.js";
 import { getTaskCatalogItem } from "../core/tasks/catalog.js";
@@ -405,9 +406,8 @@ router.get("/models", async (req, res) => {
         contextTokens: profile.contextTokens ?? null,
         supportsJson: profile.supportsJson ?? false,
         supportsTools: profile.supportsTools ?? false,
-        hasPricing:
-          typeof profile.inputCostPerToken === "number" ||
-          typeof profile.outputCostPerToken === "number",
+        hasPricing: hasLLMPricing(String(profile.provider), profile.model),
+        pricing: resolveLLMPricing(String(profile.provider), profile.model),
       })),
     },
   });
@@ -426,6 +426,7 @@ const requestSchema = z.object({
           provider: z.string().min(1).max(80).optional(),
           model: z.string().min(1).max(160).optional(),
           mode: z.enum(["cheap", "balanced", "premium", "fast", "auto"]).optional(),
+          strategy: z.enum(["balanced", "cost", "quality", "fast"]).optional(),
           maxCostUsd: z.number().positive().max(100).optional(),
           temperature: z.number().min(0).max(2).optional(),
           maxTokens: z.number().int().positive().max(32000).optional(),

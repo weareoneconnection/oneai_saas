@@ -14,6 +14,7 @@ export type ResolvedModelPricing = {
 };
 
 const DEFAULT_PRICING: Record<string, ModelPricing> = {
+  // Built-in estimates are operational guardrails. Keep provider dashboards as the billing source of truth.
   "gpt-5.2": {
     prompt: 0.00000125,
     completion: 0.00001,
@@ -62,6 +63,102 @@ const DEFAULT_PRICING: Record<string, ModelPricing> = {
     prompt: 0.0000025,
     completion: 0.00001,
   },
+  "gpt-4.1-mini": {
+    prompt: 0.0000004,
+    completion: 0.0000016,
+  },
+  "gpt-4.1": {
+    prompt: 0.000002,
+    completion: 0.000008,
+  },
+  "openai/gpt-4.1-mini": {
+    prompt: 0.0000004,
+    completion: 0.0000016,
+  },
+  "openai/gpt-4.1": {
+    prompt: 0.000002,
+    completion: 0.000008,
+  },
+  "claude-opus-4-1": {
+    prompt: 0.000015,
+    completion: 0.000075,
+  },
+  "claude-opus-4": {
+    prompt: 0.000015,
+    completion: 0.000075,
+  },
+  "claude-sonnet-4": {
+    prompt: 0.000003,
+    completion: 0.000015,
+  },
+  "claude-3-5-haiku": {
+    prompt: 0.0000008,
+    completion: 0.000004,
+  },
+  "anthropic/claude-opus-4-1": {
+    prompt: 0.000015,
+    completion: 0.000075,
+  },
+  "anthropic/claude-opus-4": {
+    prompt: 0.000015,
+    completion: 0.000075,
+  },
+  "anthropic/claude-sonnet-4": {
+    prompt: 0.000003,
+    completion: 0.000015,
+  },
+  "anthropic/claude-3-5-haiku": {
+    prompt: 0.0000008,
+    completion: 0.000004,
+  },
+  "gemini-3-pro": {
+    prompt: 0.000002,
+    completion: 0.000012,
+  },
+  "gemini-2.5-pro": {
+    prompt: 0.00000125,
+    completion: 0.00001,
+  },
+  "gemini-2.5-flash": {
+    prompt: 0.0000003,
+    completion: 0.0000025,
+  },
+  "google/gemini-3-pro": {
+    prompt: 0.000002,
+    completion: 0.000012,
+  },
+  "google/gemini-2.5-pro": {
+    prompt: 0.00000125,
+    completion: 0.00001,
+  },
+  "google/gemini-2.5-flash": {
+    prompt: 0.0000003,
+    completion: 0.0000025,
+  },
+  "grok-4.20": {
+    prompt: 0.000003,
+    completion: 0.000015,
+  },
+  "grok-4-fast": {
+    prompt: 0.0000002,
+    completion: 0.0000005,
+  },
+  "grok-4": {
+    prompt: 0.000003,
+    completion: 0.000015,
+  },
+  "x-ai/grok-4.20": {
+    prompt: 0.000003,
+    completion: 0.000015,
+  },
+  "x-ai/grok-4-fast": {
+    prompt: 0.0000002,
+    completion: 0.0000005,
+  },
+  "x-ai/grok-4": {
+    prompt: 0.000003,
+    completion: 0.000015,
+  },
   "deepseek-chat": {
     prompt: 0.00000028,
     completion: 0.00000042,
@@ -84,6 +181,114 @@ const DEFAULT_PRICING: Record<string, ModelPricing> = {
   },
   "deepseek/deepseek-v4-flash": {
     prompt: 0.00000014,
+    completion: 0.00000028,
+  },
+  "mistral-large": {
+    prompt: 0.000002,
+    completion: 0.000006,
+  },
+  "mistral-medium": {
+    prompt: 0.0000004,
+    completion: 0.000002,
+  },
+  "mistral-small": {
+    prompt: 0.0000001,
+    completion: 0.0000003,
+  },
+  "ministral-8b": {
+    prompt: 0.0000001,
+    completion: 0.0000001,
+  },
+  "mistralai/mistral-large": {
+    prompt: 0.000002,
+    completion: 0.000006,
+  },
+  "mistralai/mistral-medium": {
+    prompt: 0.0000004,
+    completion: 0.000002,
+  },
+  "mistralai/mistral-small": {
+    prompt: 0.0000001,
+    completion: 0.0000003,
+  },
+  "sonar-pro": {
+    prompt: 0.000003,
+    completion: 0.000015,
+  },
+  "sonar": {
+    prompt: 0.000001,
+    completion: 0.000001,
+  },
+  "perplexity/sonar-pro": {
+    prompt: 0.000003,
+    completion: 0.000015,
+  },
+  "perplexity/sonar": {
+    prompt: 0.000001,
+    completion: 0.000001,
+  },
+  "command-a": {
+    prompt: 0.0000025,
+    completion: 0.00001,
+  },
+  "cohere/command-a": {
+    prompt: 0.0000025,
+    completion: 0.00001,
+  },
+  "meta-llama/Llama-3.3-70B-Instruct-Turbo": {
+    prompt: 0.00000088,
+    completion: 0.00000088,
+  },
+  "accounts/fireworks/models/llama-v3p3-70b-instruct": {
+    prompt: 0.0000009,
+    completion: 0.0000009,
+  },
+  "llama-3.3-70b": {
+    prompt: 0.00000085,
+    completion: 0.0000012,
+  },
+  "Qwen/Qwen2.5-72B-Instruct": {
+    prompt: 0.0000007,
+    completion: 0.0000007,
+  },
+  "qwen-plus": {
+    prompt: 0.0000004,
+    completion: 0.0000012,
+  },
+  "qwen/qwen-plus": {
+    prompt: 0.0000004,
+    completion: 0.0000012,
+  },
+  "glm-4.5": {
+    prompt: 0.0000006,
+    completion: 0.0000022,
+  },
+  "z-ai/glm-4.5": {
+    prompt: 0.0000006,
+    completion: 0.0000022,
+  },
+  "MiniMax-M1": {
+    prompt: 0.0000004,
+    completion: 0.0000022,
+  },
+  "minimax/MiniMax-M1": {
+    prompt: 0.0000004,
+    completion: 0.0000022,
+  },
+  "kimi-k2": {
+    prompt: 0.0000006,
+    completion: 0.0000025,
+  },
+  "moonshotai/kimi-k2": {
+    prompt: 0.0000006,
+    completion: 0.0000025,
+  },
+  "doubao-seed": {
+    prompt: 0.00000011,
+    completion: 0.00000028,
+  },
+  "bytedance/doubao-seed": {
+    prompt: 0.00000011,
     completion: 0.00000028,
   },
 };

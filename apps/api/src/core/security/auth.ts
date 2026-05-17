@@ -26,10 +26,57 @@ function sha256Hex(s: string) {
   return crypto.createHash("sha256").update(s).digest("hex");
 }
 
+function requestMeta(req: Request) {
+  return {
+    path: req.originalUrl || req.url,
+    method: req.method,
+    ip: String(req.ip || req.headers["x-forwarded-for"] || "").slice(0, 120) || null,
+    userAgent: String(req.headers["user-agent"] || "").slice(0, 500) || null,
+  };
+}
+
+async function writeAuthAudit(params: {
+  action: string;
+  req: Request;
+  keyHash?: string;
+  apiKey?: {
+    id: string;
+    orgId: string;
+    prefix?: string | null;
+    userEmail?: string | null;
+    status?: string | null;
+  } | null;
+}) {
+  try {
+    const meta = requestMeta(params.req);
+    await prisma.auditLog.create({
+      data: {
+        ...(params.apiKey?.orgId ? { org: { connect: { id: params.apiKey.orgId } } } : {}),
+        ...(params.apiKey?.id ? { apiKey: { connect: { id: params.apiKey.id } } } : {}),
+        action: params.action,
+        target: params.apiKey?.prefix || meta.path || null,
+        metadata: {
+          path: meta.path,
+          method: meta.method,
+          keyHashPrefix: params.keyHash ? params.keyHash.slice(0, 12) : null,
+          apiKeyPrefix: params.apiKey?.prefix || null,
+          status: params.apiKey?.status || null,
+          userEmail: params.apiKey?.userEmail || null,
+        },
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+      } as any,
+    });
+  } catch (err) {
+    console.error("[auth] failed to write audit log", err);
+  }
+}
+
 export async function requireApiKey(req: AuthedRequest, res: Response, next: NextFunction) {
   try {
     const rawKey = getApiKeyFromRequest(req);
     if (!rawKey) {
+      void writeAuthAudit({ action: "api_key.missing", req });
       return res.status(401).json({ success: false, error: "Missing API key" });
     }
 
@@ -67,10 +114,12 @@ export async function requireApiKey(req: AuthedRequest, res: Response, next: Nex
     });
 
     if (!apiKey) {
+      void writeAuthAudit({ action: "api_key.invalid", req, keyHash });
       return res.status(401).json({ success: false, error: "Invalid API key" });
     }
 
     if (apiKey.status !== "ACTIVE" || apiKey.revokedAt) {
+      void writeAuthAudit({ action: "api_key.rejected", req, keyHash, apiKey });
       return res.status(401).json({ success: false, error: "API key revoked/suspended" });
     }
 

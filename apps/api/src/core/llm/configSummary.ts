@@ -1,3 +1,6 @@
+import { getLLMRoutingStrategy } from "./modelRegistry.js";
+import { configuredProviders } from "./providerConfig.js";
+
 function boolFromEnv(name: string): boolean {
   return process.env[name] === "1" || process.env[name] === "true";
 }
@@ -14,9 +17,12 @@ function hasEnv(name: string): boolean {
 }
 
 export function getLLMConfigSummary() {
+  const keys = configuredProviders();
+
   return {
     defaultProvider: process.env.ONEAI_DEFAULT_PROVIDER || "openai",
     defaultModel: process.env.ONEAI_DEFAULT_MODEL || "gpt-4o-mini",
+    routingStrategy: getLLMRoutingStrategy(),
     autoMode: boolFromEnv("ONEAI_LLM_AUTO_MODE"),
     autoFallbacks: boolFromEnv("ONEAI_LLM_AUTO_FALLBACKS"),
     autoFallbackLimit: Number(process.env.ONEAI_LLM_AUTO_FALLBACK_LIMIT || 2),
@@ -31,7 +37,8 @@ export function getLLMConfigSummary() {
       providers: listFromEnv("ONEAI_ALLOWED_LLM_PROVIDERS"),
       models: listFromEnv("ONEAI_ALLOWED_LLM_MODELS"),
     },
-    configuredKeys: configuredProviders(),
+    configuredKeys: keys,
+    configuredProviderCount: Object.values(keys).filter(Boolean).length,
     configuredModels: {
       openrouter: process.env.OPENROUTER_MODEL || null,
       anthropic: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
@@ -59,4 +66,3 @@ export function getLLMConfigSummary() {
     },
   };
 }
-import { configuredProviders, isProviderConfigured } from "./providerConfig.js";

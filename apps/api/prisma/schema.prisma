@@ -90,6 +90,7 @@ model Organization {
   usageDaily  UsageDaily[]
   billing     OrgBilling?
   auditLogs   AuditLog[]
+  agentExecutions AgentExecution[]
 
   @@index([slug])
   @@index([createdAt])
@@ -150,6 +151,7 @@ model ApiKey {
   requests         Request[]
   usageDaily       UsageDaily[]
   auditLogs        AuditLog[]
+  agentExecutions  AgentExecution[]
 
   @@index([orgId, status])
   @@index([orgId, environment])
@@ -430,6 +432,54 @@ model AuditLog {
 
 /**
  * =========================
+ * Agent OS Execution Records
+ * OneAI stores contracts, approvals, proof, and executor results.
+ * Execution itself remains outside OneAI.
+ * =========================
+ */
+
+model AgentExecution {
+  id             String @id @default(cuid())
+
+  orgId          String?
+  apiKeyId       String?
+
+  handoffId      String @unique
+  agentPlanId    String?
+
+  protocolVersion String @default("oneai.agent_os.v1")
+  executorType    String @default("external")
+  executorRunId   String?
+
+  objective       String
+  status          AgentExecutionStatus @default(PENDING_APPROVAL)
+  approvalMode    String @default("manual")
+  approvalRequired Boolean @default(true)
+
+  approvedBy      String?
+  approvedAt      DateTime?
+
+  handoffJson     Json
+  proofJson       Json?
+  resultJson      Json?
+  error           String?
+
+  callbackUrl     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org             Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  apiKey          ApiKey?       @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, createdAt])
+  @@index([apiKeyId, createdAt])
+  @@index([executorType, status])
+  @@index([executorRunId])
+  @@index([status, createdAt])
+}
+
+/**
+ * =========================
  * Enums
  * =========================
  */
@@ -474,3 +524,12 @@ enum TaskMaturity {
   DEPRECATED
 }
 
+enum AgentExecutionStatus {
+  PENDING_APPROVAL
+  APPROVED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELED
+  REJECTED
+}

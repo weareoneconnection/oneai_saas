@@ -1,4 +1,5 @@
 import type { LLMProvider, LLMRoutingMode } from "./types.js";
+import { isProviderConfigured } from "./providerConfig.js";
 
 export type LLMModelProfile = {
   provider: LLMProvider | string;
@@ -10,6 +11,8 @@ export type LLMModelProfile = {
   supportsJson?: boolean;
   supportsTools?: boolean;
 };
+
+export type LLMRoutingStrategy = "balanced" | "cost" | "quality" | "fast";
 
 let syncedProfiles: LLMModelProfile[] = [];
 let syncedAt: string | null = null;
@@ -535,65 +538,118 @@ function preferStableChatModel(
   return null;
 }
 
+function routingStrategyFromEnv(): LLMRoutingStrategy {
+  const raw = String(process.env.ONEAI_LLM_ROUTING_STRATEGY || "balanced").toLowerCase();
+  if (raw === "cost" || raw === "quality" || raw === "fast") return raw;
+  return "balanced";
+}
+
+export function getLLMRoutingStrategy(): LLMRoutingStrategy {
+  return routingStrategyFromEnv();
+}
+
+function knownCost(profile: LLMModelProfile): number {
+  const input = profile.inputCostPerToken;
+  const output = profile.outputCostPerToken;
+  if (typeof input !== "number" && typeof output !== "number") return Number.POSITIVE_INFINITY;
+  return (input ?? 0) + (output ?? 0);
+}
+
+function qualityScore(profile: LLMModelProfile): number {
+  const provider = String(profile.provider);
+  const model = profile.model.toLowerCase();
+
+  if (model.includes("gpt-5.2-pro")) return 100;
+  if (model.includes("gpt-5.2")) return 98;
+  if (model.includes("gpt-5.1")) return 96;
+  if (model.includes("claude-opus")) return 96;
+  if (model.includes("gemini-3-pro")) return 94;
+  if (model.includes("claude-sonnet")) return 92;
+  if (model.includes("grok-4")) return 90;
+  if (model.includes("deepseek-reasoner")) return 88;
+  if (model.includes("mistral-large")) return 86;
+  if (model.includes("gpt-4.1")) return 84;
+  if (model.includes("gemini-2.5-pro")) return 84;
+  if (model.includes("qwen") || model.includes("kimi") || model.includes("glm")) return 78;
+  if (provider === "openrouter") return 76;
+  if (model.includes("gpt-4o-mini") || model.includes("gpt-5-mini")) return 74;
+  if (model.includes("flash") || model.includes("mini") || model.includes("small")) return 68;
+  return 60;
+}
+
+function strategySort(
+  candidates: LLMModelProfile[],
+  mode: LLMRoutingMode,
+  strategy: LLMRoutingStrategy = routingStrategyFromEnv()
+): LLMModelProfile[] {
+  return [...candidates].sort((a, b) => {
+    const configuredDelta =
+      Number(isProviderConfigured(String(b.provider))) -
+      Number(isProviderConfigured(String(a.provider)));
+    if (configuredDelta !== 0) return configuredDelta;
+
+    if (strategy === "quality" || mode === "premium") {
+      const qualityDelta = qualityScore(b) - qualityScore(a);
+      if (qualityDelta !== 0) return qualityDelta;
+    }
+
+    if (strategy === "fast" || mode === "fast") {
+      const fastDelta = Number(b.modes.includes("fast")) - Number(a.modes.includes("fast"));
+      if (fastDelta !== 0) return fastDelta;
+    }
+
+    const aCost = knownCost(a);
+    const bCost = knownCost(b);
+    if (aCost !== bCost) return aCost - bCost;
+
+    return qualityScore(b) - qualityScore(a);
+  });
+}
+
+export function rankModelProfiles(params: {
+  provider?: string;
+  mode?: LLMRoutingMode;
+  strategy?: LLMRoutingStrategy;
+  includeNonChat?: boolean;
+}): LLMModelProfile[] {
+  const mode = params.mode || "auto";
+  return strategySort(
+    listModelProfiles().filter((profile) => {
+      if (params.provider && profile.provider !== params.provider) return false;
+      if (!params.includeNonChat && !isChatCompletionsModel(profile)) return false;
+      return profile.modes.includes(mode) || profile.modes.includes("auto");
+    }),
+    mode,
+    params.strategy
+  );
+}
+
 export function chooseModelForMode(params: {
   provider?: string;
   mode?: LLMRoutingMode;
+  strategy?: LLMRoutingStrategy;
 }) {
   const mode = params.mode || "auto";
-  const candidates = listModelProfiles().filter((profile) => {
-    if (params.provider && profile.provider !== params.provider) return false;
-    if (!isChatCompletionsModel(profile)) return false;
-    return profile.modes.includes(mode) || profile.modes.includes("auto");
-  });
+  const strategy = params.strategy || routingStrategyFromEnv();
+  const candidates = rankModelProfiles({ provider: params.provider, mode, strategy });
 
   if (!candidates.length) return null;
 
-  const stable = preferStableChatModel(candidates, params.provider, mode);
+  const stable = strategy === "balanced" ? preferStableChatModel(candidates, params.provider, mode) : null;
   if (stable) return stable;
 
-  if (mode === "premium") {
-    return candidates.find((profile) => profile.modes.includes("premium")) ?? candidates[0];
-  }
-
-  if (mode === "fast") {
-    return candidates.find((profile) => profile.modes.includes("fast")) ?? candidates[0];
-  }
-
-  return [...candidates].sort((a, b) => {
-    const aCost = (a.inputCostPerToken ?? 0) + (a.outputCostPerToken ?? 0);
-    const bCost = (b.inputCostPerToken ?? 0) + (b.outputCostPerToken ?? 0);
-    return aCost - bCost;
-  })[0];
+  return candidates[0];
 }
 
 export function fallbackModelsForMode(params: {
   provider: string;
   model: string;
   mode?: LLMRoutingMode;
+  strategy?: LLMRoutingStrategy;
 }): LLMModelProfile[] {
   const mode = params.mode || "auto";
 
-  return listModelProfiles()
-    .filter((profile) => {
-      if (profile.provider === params.provider && profile.model === params.model) {
-        return false;
-      }
-
-      if (!isChatCompletionsModel(profile)) return false;
-
-      return profile.modes.includes(mode) || profile.modes.includes("auto");
-    })
-    .sort((a, b) => {
-      if (mode === "premium") {
-        return Number(b.modes.includes("premium")) - Number(a.modes.includes("premium"));
-      }
-
-      if (mode === "fast") {
-        return Number(b.modes.includes("fast")) - Number(a.modes.includes("fast"));
-      }
-
-      const aCost = (a.inputCostPerToken ?? 0) + (a.outputCostPerToken ?? 0);
-      const bCost = (b.inputCostPerToken ?? 0) + (b.outputCostPerToken ?? 0);
-      return aCost - bCost;
-    });
+  return rankModelProfiles({ mode, strategy: params.strategy || routingStrategyFromEnv() }).filter((profile) => {
+    return !(profile.provider === params.provider && profile.model === params.model);
+  });
 }
