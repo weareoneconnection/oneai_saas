@@ -11,6 +11,7 @@ const consoleItems: Item[] = [
   { label: "Dashboard", href: "/dashboard", desc: "API health and cost · API 健康和成本" },
   { label: "Playground", href: "/playground", desc: "Test generate calls · 测试生成和模型调用" },
   { label: "API Keys", href: "/keys", desc: "Create and rotate access · 创建和轮换访问密钥" },
+  { label: "Team", href: "/team", desc: "Roles and access · 团队角色和权限" },
   { label: "Usage", href: "/usage", desc: "Requests, tokens, spend · 请求、tokens、花费" },
   { label: "Billing", href: "/billing", desc: "Plan and subscription · 套餐和订阅" },
 ];
@@ -19,6 +20,7 @@ const infrastructureItems: Item[] = [
   { label: "Models", href: "/models", desc: "Provider registry · Provider 和模型注册表" },
   { label: "Tasks", href: "/tasks", desc: "Commercial workflows · 对外商用 workflow" },
   { label: "Agent OS", href: "/agent-os", desc: "Plans, handoff, context · 规划、交接和上下文" },
+  { label: "Executions", href: "/executions", desc: "Proof and results · Proof 和结果账本" },
   { label: "Docs", href: "/docs", desc: "Quickstart and reference · 快速开始和 API 参考" },
 ];
 

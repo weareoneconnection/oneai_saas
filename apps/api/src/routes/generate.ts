@@ -103,6 +103,32 @@ function getApiKeyId(r: AuthedRequest): string | null {
   return (r as any).auth?.apiKeyId || (r as any).auth?.apiKey?.id || null;
 }
 
+function assertApiKeyAllowsGenerate(params: {
+  req: AuthedRequest;
+  task: string;
+  llmConfig?: LLMResolvedConfig;
+}) {
+  const apiKey = params.req.auth?.apiKey;
+  if (!apiKey || params.req.auth?.isAdmin) return;
+
+  const allowedTasks = Array.isArray(apiKey.allowedTasks) ? apiKey.allowedTasks : [];
+  if (allowedTasks.length && !allowedTasks.includes(params.task)) {
+    throw new Error(`API key is not allowed to call task ${params.task}`);
+  }
+
+  const allowedModels = Array.isArray(apiKey.allowedModels) ? apiKey.allowedModels : [];
+  if (allowedModels.length && params.llmConfig) {
+    const modelIds = [
+      params.llmConfig.model,
+      `${params.llmConfig.provider}:${params.llmConfig.model}`,
+      `${params.llmConfig.provider}/${params.llmConfig.model}`,
+    ].filter(Boolean);
+    if (!modelIds.some((item) => allowedModels.includes(String(item)))) {
+      throw new Error(`API key is not allowed to use model ${params.llmConfig.provider}:${params.llmConfig.model}`);
+    }
+  }
+}
+
 function errorMessageFromUnknown(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (typeof err === "string") return err;
@@ -507,9 +533,10 @@ router.post("/", async (req, res) => {
       }
       assertLLMCostAllowed(llmConfig, parsed.input);
       assertLLMConfigured(llmConfig);
+      assertApiKeyAllowsGenerate({ req: r, task: parsed.type, llmConfig });
     } catch (err) {
       const message = err instanceof Error ? err.message : "LLM not configured";
-      const isPolicyError = message.includes("not allowed");
+      const isPolicyError = message.includes("not allowed") || message.includes("API key is not allowed");
       console.error("[OneAI][router] LLM config missing at request time", {
         type: parsed.type,
         message,

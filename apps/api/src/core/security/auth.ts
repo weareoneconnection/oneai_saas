@@ -93,6 +93,9 @@ export async function requireApiKey(req: AuthedRequest, res: Response, next: Nex
         rateLimitRpm: true,
         monthlyBudgetUsd: true,
         allowedIps: true,
+        allowedTasks: true,
+        allowedModels: true,
+        environment: true,
         lastUsedAt: true,
         prefix: true,
         name: true,
@@ -121,6 +124,18 @@ export async function requireApiKey(req: AuthedRequest, res: Response, next: Nex
     if (apiKey.status !== "ACTIVE" || apiKey.revokedAt) {
       void writeAuthAudit({ action: "api_key.rejected", req, keyHash, apiKey });
       return res.status(401).json({ success: false, error: "API key revoked/suspended" });
+    }
+
+    const rawIp = String(req.headers["x-forwarded-for"] || req.ip || "")
+      .split(",")[0]
+      .trim();
+    if (Array.isArray(apiKey.allowedIps) && apiKey.allowedIps.length > 0 && !apiKey.allowedIps.includes(rawIp)) {
+      void writeAuthAudit({ action: "api_key.ip_denied", req, keyHash, apiKey });
+      return res.status(403).json({
+        success: false,
+        error: "API key is not allowed from this IP",
+        code: "API_KEY_IP_FORBIDDEN",
+      });
     }
 
     // isAdmin：用 scopes 控制（推荐）

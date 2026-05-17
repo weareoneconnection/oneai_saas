@@ -559,6 +559,13 @@ export default function DashboardPage() {
       href: "/docs/reference/agent-os",
       good: true,
     },
+    {
+      label: "Execution ledger",
+      value: "/executions",
+      desc: "Proof, approval, and result callbacks are visible after handoff.",
+      href: "/executions",
+      good: true,
+    },
   ];
 
   const operatorSignals = useMemo(() => {
@@ -800,7 +807,7 @@ export default function DashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
             {agentOsReadiness.map((item) => (
               <Link
                 key={item.label}

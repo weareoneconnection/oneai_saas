@@ -855,6 +855,35 @@ export default function BillingPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Enterprise Documents</CardTitle>
+          <CardDescription>
+            Procurement links for customers that need SLA, DPA, invoices, terms, privacy, and team access controls.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            {[
+              ["Team access", "/team"],
+              ["SLA", "/legal/sla"],
+              ["DPA", "/legal/dpa"],
+              ["Invoices", "/legal/invoices"],
+              ["Terms", "/legal/terms"],
+              ["Privacy", "/legal/privacy"],
+            ].map(([label, href]) => (
+              <Link
+                key={href}
+                href={href}
+                className="rounded-lg border border-black/10 bg-black/[0.02] px-4 py-3 text-sm font-bold text-black hover:bg-black/[0.05]"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Billing Audit Trail</CardTitle>
           <CardDescription>
             Recent billing-sensitive events for this organization.

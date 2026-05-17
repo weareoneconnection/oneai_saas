@@ -17,6 +17,22 @@ const riskRows = [
   ["Unsafe execution", "OneAI generates intelligence and plans. Execution belongs to OneClaw, bots, customer tools, or human operators."],
 ];
 
+const commitments = [
+  ["Provider keys stay server-side", "Customer-facing API keys never expose OpenAI, DeepSeek, OpenRouter, or other upstream provider secrets."],
+  ["No blind relay positioning", "Every production response is designed to include ownership metadata: requestId, provider, model, usage, latency, cost, and fallback state where available."],
+  ["No execution inside OneAI", "OneAI plans, coordinates, records, and verifies. External systems such as OneClaw, OpenClaw, bots, tools, or humans execute actions."],
+  ["Customer keys are hashed", "OneAI stores customer API key hashes, not plaintext keys. Plaintext keys are shown once at creation."],
+  ["Usage is auditable", "Requests, failed requests, API key events, billing events, and Agent OS execution records are logged for operational review."],
+  ["Proof can be reviewed", "Agent OS proof can be marked verified, needs_review, or rejected by an operator before being trusted as completed evidence."],
+];
+
+const dataControls = [
+  ["Payload storage", "Request input/output can be logged for debugging and support where enabled by product policy."],
+  ["Deletion path", "Customer data deletion can be handled by operator request while self-serve deletion controls are expanded."],
+  ["Training boundary", "OneAI does not position customer API traffic as training data for OneAI-owned models. Upstream provider handling depends on the provider selected and its terms."],
+  ["Retention", "Operational logs are retained for billing, abuse prevention, debugging, and customer support until a formal retention window is configured."],
+];
+
 export default function SecurityPage() {
   return (
     <main className="bg-white text-black">
@@ -118,6 +134,71 @@ export default function SecurityPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <div className="mt-10">
+          <div className="max-w-2xl">
+            <h2 className="text-2xl font-extrabold tracking-tight">Trust commitments</h2>
+            <p className="mt-2 text-sm leading-relaxed text-black/60">
+              These are the operational controls a customer should expect before
+              running production AI traffic through a model gateway or Task
+              Intelligence API.
+            </p>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {commitments.map(([title, desc]) => (
+              <Item key={title} title={title} desc={desc} />
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-10 rounded-lg border border-black/10 bg-white p-6">
+          <div className="text-xs font-bold uppercase tracking-wide text-black/45">
+            Data handling
+          </div>
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
+            Clear boundaries for customer data and provider routing.
+          </h2>
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            {dataControls.map(([title, desc]) => (
+              <div key={title} className="rounded-lg border border-black/10 bg-black/[0.02] p-4">
+                <div className="text-sm font-bold text-black">{title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-black/60">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-10 rounded-lg border border-black/10 bg-black p-6 text-white">
+          <div className="text-xs font-bold uppercase tracking-wide text-white/45">
+            Enterprise documents
+          </div>
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
+            Procurement-ready trust package.
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/65">
+            Customers evaluating OneAI for production can review the service
+            boundary, SLA overview, DPA overview, invoice path, terms, and
+            privacy/data handling notes before moving into an enterprise
+            contract.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              ["SLA", "/legal/sla"],
+              ["DPA", "/legal/dpa"],
+              ["Invoices", "/legal/invoices"],
+              ["Terms", "/legal/terms"],
+              ["Privacy", "/legal/privacy"],
+            ].map(([label, href]) => (
+              <Link
+                key={href}
+                href={href}
+                className="rounded-lg border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-white hover:bg-white/15"
+              >
+                {label}
+              </Link>
+            ))}
           </div>
         </div>
 

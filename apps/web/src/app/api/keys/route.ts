@@ -143,9 +143,13 @@ export async function POST(req: Request) {
 
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
+    environment?: string;
     rateLimitRpm?: number | string | null;
     monthlyBudgetUsd?: number | string | null;
     scopes?: string[];
+    allowedIps?: string[];
+    allowedTasks?: string[];
+    allowedModels?: string[];
   };
   const name = (body?.name || "default").toString().trim().slice(0, 64) || "default";
   const rateLimitRpm = body.rateLimitRpm == null || body.rateLimitRpm === "" ? undefined : Number(body.rateLimitRpm);
@@ -164,9 +168,84 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         userEmail: auth.email,
         name,
+        environment: body.environment,
         ...(Number.isFinite(rateLimitRpm) ? { rateLimitRpm } : {}),
         ...(Number.isFinite(monthlyBudgetUsd) ? { monthlyBudgetUsd } : {}),
         ...(scopes.length ? { scopes } : {}),
+        ...(Array.isArray(body.allowedIps) ? { allowedIps: body.allowedIps } : {}),
+        ...(Array.isArray(body.allowedTasks) ? { allowedTasks: body.allowedTasks } : {}),
+        ...(Array.isArray(body.allowedModels) ? { allowedModels: body.allowedModels } : {}),
+      }),
+      timeoutMs: 10_000,
+    });
+
+    const parsed = await readJsonSafe(r);
+    if (!parsed.ok) {
+      return fail(
+        {
+          error: "bad_json_from_api",
+          url,
+          base: e.base,
+          status: r.status,
+          raw: safeRaw(parsed.text),
+        },
+        r.status || 502
+      );
+    }
+
+    return ok(parsed.json ?? { success: false, error: "empty_response", url }, r.status);
+  } catch (err: any) {
+    const isAbort = err?.name === "AbortError";
+    return fail(
+      {
+        error: "fetch_failed",
+        url,
+        base: e.base,
+        message: isAbort ? "timeout" : String(err?.message || err),
+      },
+      500
+    );
+  }
+}
+
+export async function PATCH(req: Request) {
+  const auth = await requireEmail();
+  if (!auth.ok) return fail({ error: auth.error }, auth.status);
+
+  const e = env();
+  if (!e.ok) return fail({ error: e.error, hint: e.hint, base: e.base }, e.status);
+
+  const body = (await req.json().catch(() => ({}))) as {
+    id?: string;
+    environment?: string;
+    rateLimitRpm?: number | string | null;
+    monthlyBudgetUsd?: number | string | null;
+    scopes?: string[];
+    allowedIps?: string[];
+    allowedTasks?: string[];
+    allowedModels?: string[];
+  };
+  const id = String(body.id || "").trim();
+  if (!id) return fail({ error: "missing_id" }, 400);
+
+  const url = `${e.base}/v1/admin/keys/${encodeURIComponent(id)}/policy`;
+
+  try {
+    const r = await fetchWithTimeout(url, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-key": e.key,
+      },
+      body: JSON.stringify({
+        userEmail: auth.email,
+        environment: body.environment,
+        rateLimitRpm: body.rateLimitRpm,
+        monthlyBudgetUsd: body.monthlyBudgetUsd,
+        scopes: Array.isArray(body.scopes) ? body.scopes : [],
+        allowedIps: Array.isArray(body.allowedIps) ? body.allowedIps : [],
+        allowedTasks: Array.isArray(body.allowedTasks) ? body.allowedTasks : [],
+        allowedModels: Array.isArray(body.allowedModels) ? body.allowedModels : [],
       }),
       timeoutMs: 10_000,
     });

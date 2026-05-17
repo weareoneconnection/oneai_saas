@@ -25,6 +25,14 @@ type Customer = {
     currentPeriodEnd?: string | null;
     cancelAtPeriodEnd?: boolean;
   } | null;
+  executions?: {
+    total: number;
+    succeeded: number;
+    failed: number;
+    running: number;
+    pending: number;
+    lastUpdatedAt?: string | null;
+  };
   members?: Array<{
     email?: string | null;
     role: string;
@@ -73,6 +81,27 @@ type FailedRequestRow = {
   } | null;
 };
 
+type ExecutionRow = {
+  id: string;
+  handoffId: string;
+  agentPlanId?: string | null;
+  orgId?: string | null;
+  executorType: string;
+  executorRunId?: string | null;
+  objective: string;
+  status: string;
+  approvalMode: string;
+  approvalRequired: boolean;
+  approvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  apiKey?: {
+    prefix?: string | null;
+    name?: string | null;
+    userEmail?: string | null;
+  } | null;
+};
+
 type Payload = {
   success?: boolean;
   error?: string;
@@ -81,6 +110,7 @@ type Payload = {
     customers: Customer[];
     recentEvents: EventRow[];
     recentFailedRequests?: FailedRequestRow[];
+    recentExecutions?: ExecutionRow[];
   };
 };
 
@@ -122,10 +152,29 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+function lifecycleOf(row: Customer) {
+  if (row.billing?.status === "active" || row.billing?.status === "trialing") return "paid_or_trial";
+  if ((row.costUsd || 0) > 0) return "cost_active";
+  if ((row.requestCount || 0) > 0 || (row.executions?.total || 0) > 0) return "activated";
+  if ((row.activeKeyCount || 0) > 0) return "key_created";
+  if (row.latestLoginAt) return "signed_in";
+  return "lead";
+}
+
+function lifecycleLabel(stage: string) {
+  if (stage === "paid_or_trial") return "Paid / Trial";
+  if (stage === "cost_active") return "Cost active";
+  if (stage === "activated") return "Activated";
+  if (stage === "key_created") return "Key created";
+  if (stage === "signed_in") return "Signed in";
+  return "Lead";
+}
+
 export default function CustomersPage() {
   const [rows, setRows] = useState<Customer[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [failedRequests, setFailedRequests] = useState<FailedRequestRow[]>([]);
+  const [recentExecutions, setRecentExecutions] = useState<ExecutionRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [query, setQuery] = useState("");
@@ -142,6 +191,7 @@ export default function CustomersPage() {
       setRows(json.data?.customers || []);
       setEvents(json.data?.recentEvents || []);
       setFailedRequests(json.data?.recentFailedRequests || []);
+      setRecentExecutions(json.data?.recentExecutions || []);
     } catch (error: any) {
       setErr(error?.message || "Failed to load customers");
     } finally {
@@ -176,6 +226,10 @@ export default function CustomersPage() {
         acc.activeKeys += row.activeKeyCount || 0;
         acc.requests += row.requestCount || 0;
         acc.failedRequests += row.failedRequestCount || 0;
+        acc.executions += row.executions?.total || 0;
+        acc.executionSucceeded += row.executions?.succeeded || 0;
+        acc.executionFailed += row.executions?.failed || 0;
+        acc.executionPending += (row.executions?.pending || 0) + (row.executions?.running || 0);
         acc.cost += row.costUsd || 0;
         if (latestActivity >= monthAgo) acc.activeCustomers += 1;
         if (toTime(row.latestLoginAt) >= weekAgo || toTime(row.latestKeyCreatedAt) >= weekAgo) {
@@ -194,6 +248,10 @@ export default function CustomersPage() {
         newThisWeek: 0,
         usageWithoutActiveKey: 0,
         failedRequests: 0,
+        executions: 0,
+        executionSucceeded: 0,
+        executionFailed: 0,
+        executionPending: 0,
       }
     );
   }, [rows]);
@@ -216,6 +274,20 @@ export default function CustomersPage() {
 
     return { unusedKeys, signIns, keysCreated, billingEvents };
   }, [events, rows]);
+
+  const lifecycle = useMemo(() => {
+    const stages = ["signed_in", "key_created", "activated", "cost_active", "paid_or_trial"];
+    const counts = new Map(stages.map((stage) => [stage, 0]));
+    for (const row of rows) {
+      const stage = lifecycleOf(row);
+      counts.set(stage, (counts.get(stage) || 0) + 1);
+    }
+    return stages.map((stage) => ({
+      stage,
+      label: lifecycleLabel(stage),
+      count: counts.get(stage) || 0,
+    }));
+  }, [rows]);
 
   return (
     <div className="space-y-6">
@@ -265,6 +337,31 @@ export default function CustomersPage() {
         <Stat label="Org roles" value="Owner / Admin / Member / Viewer" />
       </div>
 
+      <div className="grid gap-3 md:grid-cols-5">
+        <Stat label="Agent executions" value={fmtNum(totals.executions)} />
+        <Stat label="Execution success" value={fmtNum(totals.executionSucceeded)} />
+        <Stat label="Pending / running" value={fmtNum(totals.executionPending)} />
+        <Stat label="Execution failures" value={fmtNum(totals.executionFailed)} />
+        <Stat label="Recent ledger rows" value={fmtNum(recentExecutions.length)} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer Lifecycle</CardTitle>
+          <CardDescription>Operational funnel from login to key creation, activation, cost, and paid plans.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-5">
+            {lifecycle.map((item) => (
+              <div key={item.stage} className="rounded-lg border border-black/10 bg-white/60 p-4">
+                <div className="text-xs text-black/45">{item.label}</div>
+                <div className="mt-2 text-2xl font-bold text-black">{fmtNum(item.count)}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {totals.usageWithoutActiveKey ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           {fmtNum(totals.usageWithoutActiveKey)} customer account(s) have historical usage but no active key. Review revoked keys or migration state.
@@ -300,7 +397,7 @@ export default function CustomersPage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <CardTitle>Customer Accounts</CardTitle>
-              <CardDescription>Login, key, usage, and spend summary</CardDescription>
+              <CardDescription>Login, key, usage, spend, and Agent OS execution summary</CardDescription>
             </div>
             <input
               value={query}
@@ -319,9 +416,10 @@ export default function CustomersPage() {
                 <div className="col-span-1 text-right">Errors</div>
                 <div className="col-span-1 text-right">Requests</div>
                 <div className="col-span-1 text-right">Cost</div>
-                <div className="col-span-1">Plan</div>
+                <div className="col-span-1">Stage / Plan</div>
                 <div className="col-span-2">Latest login</div>
-                <div className="col-span-2">Latest activity</div>
+                <div className="col-span-1 text-right">Exec</div>
+                <div className="col-span-1">Latest activity</div>
               </div>
               {filtered.length ? (
                 filtered.map((row) => (
@@ -339,9 +437,16 @@ export default function CustomersPage() {
                     <div className="col-span-1">
                       <div className="text-xs font-semibold capitalize text-black">{row.billing?.plan || "free"}</div>
                       <div className="text-xs text-black/40">{row.billing?.status || "inactive"}</div>
+                      <div className="mt-1 text-xs text-black/55">{lifecycleLabel(lifecycleOf(row))}</div>
                     </div>
                     <div className="col-span-2 text-black/60">{fmtTime(row.latestLoginAt)}</div>
-                    <div className="col-span-2 text-black/60">
+                    <div className="col-span-1 text-right text-black/70">
+                      {fmtNum(row.executions?.total || 0)}
+                      {row.executions?.failed ? (
+                        <div className="mt-1 text-xs text-red-700">{fmtNum(row.executions.failed)} failed</div>
+                      ) : null}
+                    </div>
+                    <div className="col-span-1 text-black/60">
                       {fmtTime(row.lastRequestAt || row.latestKeyUsedAt || row.latestKeyCreatedAt)}
                       {row.lastFailedRequestAt ? (
                         <div className="mt-1 text-xs text-red-700">Last failure {fmtTime(row.lastFailedRequestAt)}</div>
@@ -351,6 +456,58 @@ export default function CustomersPage() {
                 ))
               ) : (
                 <div className="p-4 text-sm text-black/55">No customers yet.</div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Agent OS Execution Ledger</CardTitle>
+              <CardDescription>Latest handoff, proof, and result callbacks across customer organizations</CardDescription>
+            </div>
+            <a href="/executions" className="text-sm font-semibold text-black underline underline-offset-4">
+              Open ledger
+            </a>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-lg border border-black/10">
+            <div className="min-w-[960px]">
+              <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/55">
+                <div className="col-span-4">Objective</div>
+                <div className="col-span-2">Customer / Key</div>
+                <div className="col-span-2">Executor</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-2">Updated</div>
+              </div>
+              {recentExecutions.length ? (
+                recentExecutions.slice(0, 25).map((row) => (
+                  <div key={row.id} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-xs">
+                    <div className="col-span-4 min-w-0">
+                      <div className="truncate font-semibold text-black">{row.objective}</div>
+                      <div className="truncate font-mono text-black/40">{row.handoffId}</div>
+                    </div>
+                    <div className="col-span-2 min-w-0">
+                      <div className="truncate text-black/65">{row.apiKey?.userEmail || row.orgId || "-"}</div>
+                      <div className="font-mono text-black/40">{row.apiKey?.prefix || "-"}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="font-semibold text-black">{row.executorType}</div>
+                      <div className="truncate font-mono text-black/40">{row.executorRunId || "-"}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="font-semibold text-black">{row.status}</div>
+                      <div className="text-black/40">{row.approvalMode}</div>
+                    </div>
+                    <div className="col-span-2 text-black/45">{fmtTime(row.updatedAt)}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-sm text-black/55">No execution records yet.</div>
               )}
             </div>
           </div>

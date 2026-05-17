@@ -163,6 +163,23 @@ function resolveConfig(params: {
   };
 }
 
+function assertApiKeyAllowsModel(req: AuthedRequest, config: LLMResolvedConfig) {
+  const apiKey = req.auth?.apiKey;
+  if (!apiKey || req.auth?.isAdmin) return;
+  const allowedModels = Array.isArray(apiKey.allowedModels) ? apiKey.allowedModels : [];
+  if (!allowedModels.length) return;
+
+  const modelIds = [
+    config.model,
+    `${config.provider}:${config.model}`,
+    `${config.provider}/${config.model}`,
+  ];
+
+  if (!modelIds.some((item) => allowedModels.includes(item))) {
+    throw new Error(`API key is not allowed to use model ${config.provider}:${config.model}`);
+  }
+}
+
 router.use(requireApiKey);
 router.use(rateLimitRedisTcp({ windowMs: 60_000, maxPerKeyPerWindow: 120, maxPerIpPerWindow: 120 }));
 
@@ -183,6 +200,7 @@ router.post("/completions", async (req, res) => {
     if (!(req as AuthedRequest).auth?.isAdmin) assertLLMAllowed(config);
     assertLLMCostAllowed(config, req.body);
     assertLLMConfigured(config);
+    assertApiKeyAllowsModel(req as AuthedRequest, config);
 
     if (parsed.stream) {
       res.status(200);
@@ -335,6 +353,7 @@ export const messagesHandler = async (req: any, res: any) => {
     if (!req.auth?.isAdmin) assertLLMAllowed(config);
     assertLLMCostAllowed(config, req.body);
     assertLLMConfigured(config);
+    assertApiKeyAllowsModel(req as AuthedRequest, config);
 
     const messages = normalizeMessages(parsed.messages);
     if (parsed.system) {

@@ -112,6 +112,9 @@ export default function AgentOSPage() {
           <Button variant="secondary" onClick={load} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </Button>
+          <Link href="/executions" className="inline-flex h-10 items-center rounded-lg border border-black/10 px-4 text-sm font-bold text-black hover:bg-black/[0.03]">
+            Execution Ledger
+          </Link>
           <Link href="/docs/reference/agent-os" className="inline-flex h-10 items-center rounded-lg bg-black px-4 text-sm font-bold text-white hover:bg-neutral-900">
             Docs
           </Link>
@@ -131,7 +134,7 @@ export default function AgentOSPage() {
           <CardDescription>Generate Agent OS objects without executing external actions.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 lg:grid-cols-3">
+          <div className="grid gap-3 lg:grid-cols-4">
             <button
               type="button"
               onClick={() =>
@@ -163,6 +166,24 @@ export default function AgentOSPage() {
               <div className="text-sm font-black text-black">Handoff Preview</div>
               <p className="mt-2 text-sm leading-relaxed text-black/55">Package a plan for OneClaw, bots, external agents, or humans.</p>
               <div className="mt-3 text-xs font-semibold text-black/45">{busy === "/v1/handoff/preview" ? "Running..." : "/v1/handoff/preview"}</div>
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                runPreview("/v1/handoff/contracts", {
+                  objective: "Create an OpenClaw execution ledger contract",
+                  targetExecutor: "openclaw",
+                  executorProtocol: "openclaw.v1",
+                  riskLevel: "low",
+                  approvalMode: "auto",
+                  proofRequired: ["execution log", "result summary"],
+                })
+              }
+              className="rounded-2xl border border-black/10 bg-white p-4 text-left transition hover:border-black/25 hover:bg-black/[0.02]"
+            >
+              <div className="text-sm font-black text-black">Handoff Contract</div>
+              <p className="mt-2 text-sm leading-relaxed text-black/55">Create a stored contract with approval, proof, and result callbacks.</p>
+              <div className="mt-3 text-xs font-semibold text-black/45">{busy === "/v1/handoff/contracts" ? "Running..." : "/v1/handoff/contracts"}</div>
             </button>
             <button
               type="button"

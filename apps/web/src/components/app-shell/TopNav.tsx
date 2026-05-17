@@ -73,7 +73,9 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           <NavLink href="/playground">Playground</NavLink>
           <NavLink href="/models">Models</NavLink>
           <NavLink href="/tasks">Tasks</NavLink>
+          <NavLink href="/executions">Executions</NavLink>
           <NavLink href="/keys">Keys</NavLink>
+          <NavLink href="/team">Team</NavLink>
           <NavLink href="/usage">Usage</NavLink>
           <NavLink href="/billing">Billing</NavLink>
         </div>

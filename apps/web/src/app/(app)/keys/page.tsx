@@ -16,10 +16,13 @@ type ApiKeyRow = {
   revokedAt: string | null;
   lastUsedAt: string | null;
   status?: string;
+  environment?: string | null;
   rateLimitRpm?: number | null;
   monthlyBudgetUsd?: number | null;
   scopes?: string[];
   allowedIps?: string[];
+  allowedTasks?: string[];
+  allowedModels?: string[];
 };
 
 function fmtTime(iso?: string | null) {
@@ -46,6 +49,14 @@ function envOf(name?: string | null) {
   return "unlabeled";
 }
 
+function envLabel(row: ApiKeyRow) {
+  const raw = String(row.environment || "").toLowerCase();
+  if (raw === "production") return "prod";
+  if (raw === "staging") return "test";
+  if (raw === "development") return "dev";
+  return envOf(row.name);
+}
+
 function fmtUSD(n?: number | null) {
   if (!n) return "—";
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -61,6 +72,10 @@ export default function KeysPage() {
   const [newRateLimit, setNewRateLimit] = useState("120");
   const [newBudget, setNewBudget] = useState("100");
   const [newScopes, setNewScopes] = useState("generate,chat,models");
+  const [newAllowedTasks, setNewAllowedTasks] = useState("business_strategy,content_engine");
+  const [newAllowedModels, setNewAllowedModels] = useState("");
+  const [newAllowedIps, setNewAllowedIps] = useState("");
+  const [savingPolicyId, setSavingPolicyId] = useState("");
   const [newKeyPlain, setNewKeyPlain] = useState<string | null>(null);
   const [toast, setToast] = useState<string>("");
   const [query, setQuery] = useState("");
@@ -69,13 +84,13 @@ export default function KeysPage() {
 
   const activeRows = useMemo(() => rows.filter((r) => !r.revokedAt), [rows]);
   const revokedRows = useMemo(() => rows.filter((r) => !!r.revokedAt), [rows]);
-  const prodRows = useMemo(() => rows.filter((r) => envOf(r.name) === "prod" && !r.revokedAt), [rows]);
+  const prodRows = useMemo(() => rows.filter((r) => envLabel(r) === "prod" && !r.revokedAt), [rows]);
   const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter((row) => {
       if (statusFilter === "active" && row.revokedAt) return false;
       if (statusFilter === "revoked" && !row.revokedAt) return false;
-      if (envFilter !== "all" && envOf(row.name) !== envFilter) return false;
+      if (envFilter !== "all" && envLabel(row) !== envFilter) return false;
       if (q && !`${row.name || ""} ${row.prefix} ${row.id}`.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -113,9 +128,13 @@ export default function KeysPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: `${newEnv}_${newName.trim()}`.replace(/_{2,}/g, "_"),
+          environment: newEnv === "prod" ? "PRODUCTION" : newEnv === "test" ? "STAGING" : "DEVELOPMENT",
           rateLimitRpm: newRateLimit ? Number(newRateLimit) : undefined,
           monthlyBudgetUsd: newBudget ? Number(newBudget) : undefined,
           scopes: newScopes.split(",").map((x) => x.trim()).filter(Boolean),
+          allowedTasks: newAllowedTasks.split(",").map((x) => x.trim()).filter(Boolean),
+          allowedModels: newAllowedModels.split(",").map((x) => x.trim()).filter(Boolean),
+          allowedIps: newAllowedIps.split(",").map((x) => x.trim()).filter(Boolean),
         }),
       });
 
@@ -133,6 +152,41 @@ export default function KeysPage() {
     } finally {
       setCreating(false);
     }
+  }
+
+  async function savePolicy(row: ApiKeyRow) {
+    setSavingPolicyId(row.id);
+    setToast("");
+    try {
+      const r = await fetch("/api/keys", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: row.id,
+          environment: row.environment || envOf(row.name).toUpperCase(),
+          rateLimitRpm: row.rateLimitRpm || null,
+          monthlyBudgetUsd: row.monthlyBudgetUsd || null,
+          scopes: row.scopes || [],
+          allowedIps: row.allowedIps || [],
+          allowedTasks: row.allowedTasks || [],
+          allowedModels: row.allowedModels || [],
+        }),
+      });
+
+      const text = await r.text();
+      const j = text ? JSON.parse(text) : null;
+      if (!r.ok || !j?.success) throw new Error(j?.error || `HTTP ${r.status}`);
+      setToast("Key policy updated.");
+      await load();
+    } catch (e: any) {
+      setToast(e?.message || "Failed to update key policy");
+    } finally {
+      setSavingPolicyId("");
+    }
+  }
+
+  function updateRow(id: string, patch: Partial<ApiKeyRow>) {
+    setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   }
 
   async function revoke(id: string) {
@@ -195,6 +249,35 @@ export default function KeysPage() {
         <Stat label="Revoked keys" value={`${revokedRows.length}`} sub="Disabled permanently" />
         <Stat label="Total keys" value={`${rows.length}`} sub="Across environments" />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>API Key Security Policy</CardTitle>
+          <CardDescription>
+            Limit keys by environment, spend, RPM, task, model, and IP. These settings create a safer path from free test to production traffic.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+              <div className="text-sm font-bold text-black">Environment</div>
+              <p className="mt-2 text-sm text-black/55">Separate prod, dev, and test keys to reduce blast radius.</p>
+            </div>
+            <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+              <div className="text-sm font-bold text-black">Task allowlist</div>
+              <p className="mt-2 text-sm text-black/55">Restrict a key to public commercial tasks or internal workflows.</p>
+            </div>
+            <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+              <div className="text-sm font-bold text-black">Model allowlist</div>
+              <p className="mt-2 text-sm text-black/55">Prevent accidental premium model spend from one leaked key.</p>
+            </div>
+            <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+              <div className="text-sm font-bold text-black">IP and budget</div>
+              <p className="mt-2 text-sm text-black/55">Use RPM, IP, and monthly budgets for enterprise-grade control.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -289,6 +372,20 @@ export default function KeysPage() {
               </Button>
             </div>
           </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div>
+              <div className="mb-1 text-xs text-black/50">Allowed tasks</div>
+              <Input value={newAllowedTasks} onChange={(e) => setNewAllowedTasks(e.target.value)} placeholder="business_strategy,content_engine" className="border-black/10 bg-white text-black placeholder:text-black/35" />
+            </div>
+            <div>
+              <div className="mb-1 text-xs text-black/50">Allowed models</div>
+              <Input value={newAllowedModels} onChange={(e) => setNewAllowedModels(e.target.value)} placeholder="openai:gpt-5.2,deepseek:deepseek-chat" className="border-black/10 bg-white text-black placeholder:text-black/35" />
+            </div>
+            <div>
+              <div className="mb-1 text-xs text-black/50">Allowed IPs</div>
+              <Input value={newAllowedIps} onChange={(e) => setNewAllowedIps(e.target.value)} placeholder="203.0.113.10,198.51.100.2" className="border-black/10 bg-white text-black placeholder:text-black/35" />
+            </div>
+          </div>
 
           {newKeyPlain ? (
             <div className="rounded-2xl border border-black/10 bg-white/60 p-4">
@@ -372,7 +469,7 @@ export default function KeysPage() {
               ) : (
                 filteredRows.map((r) => {
                 const revoked = !!r.revokedAt;
-                const env = envOf(r.name);
+                const env = envLabel(r);
                 return (
                   <div
                     key={r.id}
@@ -386,12 +483,51 @@ export default function KeysPage() {
                       <div className="font-medium text-black">{r.name || "(no name)"}</div>
                       <div className="text-xs text-black/45">id: {r.id}</div>
                       {r.scopes?.length ? <div className="mt-1 text-xs text-black/45">scopes: {r.scopes.join(", ")}</div> : null}
+                      <div className="mt-2 space-y-1">
+                        <Input
+                          value={(r.allowedTasks || []).join(",")}
+                          onChange={(e) => updateRow(r.id, { allowedTasks: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })}
+                          placeholder="allowed tasks"
+                          disabled={revoked}
+                          className="h-8 text-xs"
+                        />
+                        <Input
+                          value={(r.allowedModels || []).join(",")}
+                          onChange={(e) => updateRow(r.id, { allowedModels: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })}
+                          placeholder="allowed models"
+                          disabled={revoked}
+                          className="h-8 text-xs"
+                        />
+                        <Input
+                          value={(r.allowedIps || []).join(",")}
+                          onChange={(e) => updateRow(r.id, { allowedIps: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })}
+                          placeholder="allowed IPs"
+                          disabled={revoked}
+                          className="h-8 text-xs"
+                        />
+                      </div>
                     </div>
 
                     <div className="col-span-1 flex items-center">
-                      <span className={["rounded-full px-2 py-0.5 text-xs font-semibold", env === "prod" ? "bg-black text-white" : "bg-black/10 text-black/60"].join(" ")}>
-                        {env}
-                      </span>
+                      <Select
+                        value={env}
+                        onChange={(e) =>
+                          updateRow(r.id, {
+                            environment:
+                              e.target.value === "prod"
+                                ? "PRODUCTION"
+                                : e.target.value === "test"
+                                  ? "STAGING"
+                                  : "DEVELOPMENT",
+                          })
+                        }
+                        className="h-8 text-xs"
+                        disabled={revoked}
+                      >
+                        <option value="prod">prod</option>
+                        <option value="dev">dev</option>
+                        <option value="test">test</option>
+                      </Select>
                     </div>
 
                     <div className="col-span-1 flex items-center">
@@ -412,18 +548,35 @@ export default function KeysPage() {
                       </code>
                     </div>
 
-                    <div className="col-span-2 text-right text-xs text-black/60">
-                      <div>{r.rateLimitRpm ? `${r.rateLimitRpm} RPM` : "Default RPM"}</div>
-                      <div>{r.monthlyBudgetUsd ? `${fmtUSD(r.monthlyBudgetUsd)} budget` : "Plan budget"}</div>
+                    <div className="col-span-2 space-y-1 text-right text-xs text-black/60">
+                      <Input
+                        value={r.rateLimitRpm ?? ""}
+                        onChange={(e) => updateRow(r.id, { rateLimitRpm: e.target.value ? Number(e.target.value) : null })}
+                        placeholder="RPM"
+                        disabled={revoked}
+                        className="h-8 text-right text-xs"
+                      />
+                      <Input
+                        value={r.monthlyBudgetUsd ?? ""}
+                        onChange={(e) => updateRow(r.id, { monthlyBudgetUsd: e.target.value ? Number(e.target.value) : null })}
+                        placeholder="Budget USD"
+                        disabled={revoked}
+                        className="h-8 text-right text-xs"
+                      />
                     </div>
                     <div className="col-span-2 flex items-center text-black/70">
                       <span className="text-black/70">{fmtTime(r.lastUsedAt)}</span>
                     </div>
                     <div className="col-span-1 flex items-center justify-end">
                       {!revoked ? (
-                        <Button variant="secondary" size="sm" onClick={() => revoke(r.id)}>
-                          Revoke
-                        </Button>
+                        <div className="flex flex-col gap-1">
+                          <Button variant="secondary" size="sm" onClick={() => savePolicy(r)} disabled={savingPolicyId === r.id}>
+                            {savingPolicyId === r.id ? "Saving" : "Save"}
+                          </Button>
+                          <Button variant="secondary" size="sm" onClick={() => revoke(r.id)}>
+                            Revoke
+                          </Button>
+                        </div>
                       ) : null}
                     </div>
                   </div>

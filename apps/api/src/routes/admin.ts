@@ -23,6 +23,14 @@ function prefixOf(k: string) {
   return k.slice(0, 12);
 }
 
+function normalizeApiKeyEnvironment(raw: string) {
+  const value = String(raw || "").trim().toUpperCase();
+  if (value === "PROD" || value === "PRODUCTION") return "PRODUCTION";
+  if (value === "STAGE" || value === "STAGING" || value === "TEST") return "STAGING";
+  if (value === "DEV" || value === "DEVELOPMENT") return "DEVELOPMENT";
+  return "";
+}
+
 function clientMeta(req: any) {
   return {
     ip: String(req.ip || req.headers?.["x-forwarded-for"] || "").slice(0, 120) || null,
@@ -83,23 +91,156 @@ router.get("/keys", requireAdminKey, async (req, res) => {
       revokedAt: true,
       lastUsedAt: true,
       status: true,
+      environment: true,
       rateLimitRpm: true,
       monthlyBudgetUsd: true,
       scopes: true,
       allowedIps: true,
+      allowedTasks: true,
+      allowedModels: true,
     } as any,
   });
 
   return res.json({ success: true, data: keys, org });
 });
 
+router.get("/team", requireAdminKey, async (req, res) => {
+  const userEmail = String(req.query.userEmail || "").trim().toLowerCase();
+  if (!userEmail) return res.status(400).json({ success: false, error: "userEmail required" });
+
+  const org = await getOrCreateOrgForUserEmail(userEmail);
+
+  const [members, billing, keySummary, usage, recentAudit] = await Promise.all([
+    prisma.membership.findMany({
+      where: { orgId: org.id },
+      orderBy: [{ role: "asc" }, { createdAt: "asc" }] as any,
+      select: {
+        id: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            email: true,
+            name: true,
+            image: true,
+          },
+        },
+      } as any,
+    }),
+    prisma.orgBilling.findUnique({
+      where: { orgId: org.id },
+      select: {
+        plan: true,
+        status: true,
+        currentPeriodEnd: true,
+        cancelAtPeriodEnd: true,
+      } as any,
+    }),
+    prisma.apiKey.groupBy({
+      by: ["status", "environment"],
+      where: { orgId: org.id },
+      _count: { _all: true },
+    } as any),
+    prisma.request.aggregate({
+      where: { orgId: org.id },
+      _count: { _all: true },
+      _sum: {
+        totalTokens: true,
+        estimatedCostUsd: true,
+      },
+      _max: { createdAt: true },
+    } as any),
+    prisma.auditLog.findMany({
+      where: { orgId: org.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        action: true,
+        target: true,
+        metadata: true,
+        createdAt: true,
+      } as any,
+    }),
+  ]);
+
+  const keyCounts = {
+    total: 0,
+    active: 0,
+    revoked: 0,
+    development: 0,
+    staging: 0,
+    production: 0,
+  };
+  const usageAny = usage as any;
+  for (const row of keySummary as any[]) {
+    const count = row._count?._all || 0;
+    keyCounts.total += count;
+    if (row.status === "ACTIVE") keyCounts.active += count;
+    if (row.status === "REVOKED") keyCounts.revoked += count;
+    if (row.environment === "DEVELOPMENT") keyCounts.development += count;
+    if (row.environment === "STAGING") keyCounts.staging += count;
+    if (row.environment === "PRODUCTION") keyCounts.production += count;
+  }
+
+  const currentMembership = (members as any[]).find(
+    (member) => String(member.user?.email || "").toLowerCase() === userEmail
+  );
+
+  return res.json({
+    success: true,
+    data: {
+      org,
+      currentUser: {
+        email: userEmail,
+        role: currentMembership?.role || "OWNER",
+      },
+      billing: billing || { plan: "free", status: "inactive", currentPeriodEnd: null, cancelAtPeriodEnd: false },
+      members: (members as any[]).map((member) => ({
+        id: member.id,
+        email: member.user?.email || null,
+        name: member.user?.name || null,
+        image: member.user?.image || null,
+        role: member.role,
+        createdAt: member.createdAt,
+        updatedAt: member.updatedAt,
+      })),
+      keyCounts,
+      usage: {
+        requests: usageAny._count?._all || 0,
+        tokens: usageAny._sum?.totalTokens || 0,
+        costUsd: usageAny._sum?.estimatedCostUsd || 0,
+        lastRequestAt: usageAny._max?.createdAt || null,
+      },
+      recentAudit,
+      permissions: {
+        canCreateKeys: ["OWNER", "ADMIN"].includes(currentMembership?.role || "OWNER"),
+        canManageBilling: (currentMembership?.role || "OWNER") === "OWNER",
+        canReviewProof: ["OWNER", "ADMIN"].includes(currentMembership?.role || "OWNER"),
+        canManageMembers: (currentMembership?.role || "OWNER") === "OWNER",
+      },
+    },
+  });
+});
+
 router.post("/keys", requireAdminKey, async (req, res) => {
   const userEmail = String(req.body?.userEmail || "").trim().toLowerCase();
   const name = (req.body?.name ? String(req.body.name) : "default").slice(0, 60);
+  const environmentRaw = normalizeApiKeyEnvironment(String(req.body?.environment || ""));
   const rateLimitRpmRaw = req.body?.rateLimitRpm == null ? undefined : Number(req.body.rateLimitRpm);
   const monthlyBudgetUsdRaw = req.body?.monthlyBudgetUsd == null ? undefined : Number(req.body.monthlyBudgetUsd);
   const scopes = Array.isArray(req.body?.scopes)
     ? req.body.scopes.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 20)
+    : [];
+  const allowedIps = Array.isArray(req.body?.allowedIps)
+    ? req.body.allowedIps.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 50)
+    : [];
+  const allowedTasks = Array.isArray(req.body?.allowedTasks)
+    ? req.body.allowedTasks.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 80)
+    : [];
+  const allowedModels = Array.isArray(req.body?.allowedModels)
+    ? req.body.allowedModels.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 80)
     : [];
   if (!userEmail) return res.status(400).json({ success: false, error: "userEmail required" });
 
@@ -116,9 +257,13 @@ router.post("/keys", requireAdminKey, async (req, res) => {
       prefix,
       keyHash,
       status: "ACTIVE", // ✅ 不依赖 enum
+      ...(environmentRaw ? { environment: environmentRaw } : {}),
       ...(Number.isFinite(rateLimitRpmRaw) && Number(rateLimitRpmRaw) > 0 ? { rateLimitRpm: Number(rateLimitRpmRaw) } : {}),
       ...(Number.isFinite(monthlyBudgetUsdRaw) && Number(monthlyBudgetUsdRaw) > 0 ? { monthlyBudgetUsd: Number(monthlyBudgetUsdRaw) } : {}),
       ...(scopes.length ? { scopes } : {}),
+      ...(allowedIps.length ? { allowedIps } : {}),
+      ...(allowedTasks.length ? { allowedTasks } : {}),
+      ...(allowedModels.length ? { allowedModels } : {}),
       org: { connect: { id: org.id } },
     } as any,
     select: {
@@ -136,12 +281,89 @@ router.post("/keys", requireAdminKey, async (req, res) => {
     action: "api_key.created",
     target: rowAny.id,
     apiKeyId: rowAny.id,
-    metadata: { name, prefix, scopes },
+    metadata: { name, prefix, scopes, environment: environmentRaw || null, allowedIps, allowedTasks, allowedModels },
     req,
   });
 
   // 明文只返回一次
   return res.json({ success: true, data: { ...row, plainKey }, org });
+});
+
+router.patch("/keys/:id/policy", requireAdminKey, async (req, res) => {
+  const userEmail = String(req.body?.userEmail || "").trim().toLowerCase();
+  const id = String(req.params.id || "").trim();
+  if (!userEmail || !id) return res.status(400).json({ success: false, error: "userEmail & id required" });
+
+  const org = await getOrCreateOrgForUserEmail(userEmail);
+  const row = await prisma.apiKey.findFirst({
+    where: { id, orgId: org.id, userEmail } as any,
+    select: { id: true } as any,
+  });
+  if (!row) return res.status(404).json({ success: false, error: "not found" });
+
+  const environmentRaw = normalizeApiKeyEnvironment(String(req.body?.environment || ""));
+  const rateLimitRpm = req.body?.rateLimitRpm == null || req.body?.rateLimitRpm === "" ? null : Number(req.body.rateLimitRpm);
+  const monthlyBudgetUsd =
+    req.body?.monthlyBudgetUsd == null || req.body?.monthlyBudgetUsd === "" ? null : Number(req.body.monthlyBudgetUsd);
+  const scopes = Array.isArray(req.body?.scopes)
+    ? req.body.scopes.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 20)
+    : undefined;
+  const allowedIps = Array.isArray(req.body?.allowedIps)
+    ? req.body.allowedIps.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 50)
+    : undefined;
+  const allowedTasks = Array.isArray(req.body?.allowedTasks)
+    ? req.body.allowedTasks.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 80)
+    : undefined;
+  const allowedModels = Array.isArray(req.body?.allowedModels)
+    ? req.body.allowedModels.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 80)
+    : undefined;
+
+  const updated = await prisma.apiKey.update({
+    where: { id } as any,
+    data: {
+      ...(environmentRaw ? { environment: environmentRaw } : {}),
+      ...(Number.isFinite(rateLimitRpm) && Number(rateLimitRpm) > 0 ? { rateLimitRpm: Number(rateLimitRpm) } : { rateLimitRpm: null }),
+      ...(Number.isFinite(monthlyBudgetUsd) && Number(monthlyBudgetUsd) > 0
+        ? { monthlyBudgetUsd: Number(monthlyBudgetUsd) }
+        : { monthlyBudgetUsd: null }),
+      ...(scopes ? { scopes } : {}),
+      ...(allowedIps ? { allowedIps } : {}),
+      ...(allowedTasks ? { allowedTasks } : {}),
+      ...(allowedModels ? { allowedModels } : {}),
+    } as any,
+    select: {
+      id: true,
+      name: true,
+      prefix: true,
+      environment: true,
+      rateLimitRpm: true,
+      monthlyBudgetUsd: true,
+      scopes: true,
+      allowedIps: true,
+      allowedTasks: true,
+      allowedModels: true,
+      updatedAt: true,
+    } as any,
+  });
+
+  await writeAuditLog({
+    userEmail,
+    action: "api_key.policy_updated",
+    target: id,
+    apiKeyId: id,
+    metadata: {
+      environment: environmentRaw || null,
+      rateLimitRpm,
+      monthlyBudgetUsd,
+      scopes,
+      allowedIps,
+      allowedTasks,
+      allowedModels,
+    },
+    req,
+  });
+
+  return res.json({ success: true, data: updated });
 });
 
 router.post("/keys/revoke", requireAdminKey, async (req, res) => {
@@ -198,7 +420,18 @@ router.post("/audit/event", requireAdminKey, async (req, res) => {
 });
 
 router.get("/customers", requireAdminKey, async (_req, res) => {
-  const [keys, requestByKey, requestByOrg, failedByOrg, billingRows, membershipRows, audits, recentFailures] = await Promise.all([
+  const [
+    keys,
+    requestByKey,
+    requestByOrg,
+    failedByOrg,
+    billingRows,
+    membershipRows,
+    audits,
+    recentFailures,
+    executionByOrg,
+    recentExecutions,
+  ] = await Promise.all([
     prisma.apiKey.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -291,6 +524,38 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
         },
       } as any,
     }),
+    (prisma as any).agentExecution.groupBy({
+      by: ["orgId", "status"],
+      _count: { _all: true },
+      _max: { updatedAt: true },
+    }).catch(() => []),
+    (prisma as any).agentExecution.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        handoffId: true,
+        agentPlanId: true,
+        orgId: true,
+        apiKeyId: true,
+        executorType: true,
+        executorRunId: true,
+        objective: true,
+        status: true,
+        approvalMode: true,
+        approvalRequired: true,
+        approvedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        apiKey: {
+          select: {
+            prefix: true,
+            name: true,
+            userEmail: true,
+          },
+        },
+      } as any,
+    }).catch(() => []),
   ]);
 
   const usageByKey = new Map(
@@ -324,6 +589,29 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       },
     ])
   );
+  const executionByOrgMap = new Map<string, any>();
+  for (const row of executionByOrg as any[]) {
+    const orgId = row.orgId || "unknown";
+    const current = executionByOrgMap.get(orgId) || {
+      total: 0,
+      succeeded: 0,
+      failed: 0,
+      running: 0,
+      pending: 0,
+      lastUpdatedAt: null,
+    };
+    const count = row._count?._all || 0;
+    current.total += count;
+    if (row.status === "SUCCEEDED") current.succeeded += count;
+    if (row.status === "FAILED") current.failed += count;
+    if (row.status === "RUNNING") current.running += count;
+    if (row.status === "PENDING_APPROVAL" || row.status === "APPROVED") current.pending += count;
+    current.lastUpdatedAt =
+      row._max?.updatedAt && (!current.lastUpdatedAt || row._max.updatedAt > current.lastUpdatedAt)
+        ? row._max.updatedAt
+        : current.lastUpdatedAt;
+    executionByOrgMap.set(orgId, current);
+  }
   const billingByOrg = new Map(
     billingRows.map((row: any) => [
       row.orgId,
@@ -369,6 +657,7 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       billing: null,
       members: [],
       keys: [],
+      executions: { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, lastUpdatedAt: null },
     };
     const usage = usageByKey.get(key.id) || { requests: 0, tokens: 0, costUsd: 0, lastRequestAt: null };
     current.keyCount += 1;
@@ -403,6 +692,7 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
     });
     current.billing = billingByOrg.get(key.orgId) || current.billing || { plan: "free", status: "inactive" };
     current.members = membersByOrg.get(key.orgId) || current.members || [];
+    current.executions = executionByOrgMap.get(key.orgId) || current.executions;
     customers.set(email, current);
   }
 
@@ -427,6 +717,9 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       billing: audit.orgId ? billingByOrg.get(audit.orgId) || { plan: "free", status: "inactive" } : null,
       members: audit.orgId ? membersByOrg.get(audit.orgId) || [] : [],
       keys: [],
+      executions: audit.orgId
+        ? executionByOrgMap.get(audit.orgId) || { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, lastUpdatedAt: null }
+        : { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, lastUpdatedAt: null },
     };
     if (audit.action === "console.sign_in") {
       current.latestLoginAt =
@@ -488,8 +781,289 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       }),
       recentEvents,
       recentFailedRequests,
+      recentExecutions,
     },
   });
+});
+
+router.get("/agent-executions", requireAdminKey, async (req, res) => {
+  const userEmail = String(req.query.userEmail || "").trim().toLowerCase();
+  const status = String(req.query.status || "").trim();
+  const executorType = String(req.query.executorType || "").trim();
+  const handoffId = String(req.query.handoffId || "").trim();
+  const limit = Math.min(Number(req.query.limit || 50), 200);
+  const org = userEmail ? await getOrCreateOrgForUserEmail(userEmail) : null;
+
+  const records = await (prisma as any).agentExecution.findMany({
+    where: {
+      ...(org ? { orgId: org.id } : {}),
+      ...(status ? { status } : {}),
+      ...(executorType ? { executorType } : {}),
+      ...(handoffId ? { handoffId } : {}),
+    },
+    orderBy: { updatedAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      orgId: true,
+      apiKeyId: true,
+      handoffId: true,
+      agentPlanId: true,
+      protocolVersion: true,
+      executorType: true,
+      executorRunId: true,
+      objective: true,
+      status: true,
+      approvalMode: true,
+      approvalRequired: true,
+      approvedBy: true,
+      approvedAt: true,
+      handoffJson: true,
+      proofJson: true,
+      resultJson: true,
+      error: true,
+      callbackUrl: true,
+      createdAt: true,
+      updatedAt: true,
+      apiKey: {
+        select: {
+          prefix: true,
+          name: true,
+          userEmail: true,
+        },
+      },
+    } as any,
+  }).catch(() => []);
+
+  function buildTimeline(row: any) {
+    const proofReceivedAt = row.proofJson?.receivedAt || null;
+    const resultReceivedAt = row.resultJson?.receivedAt || null;
+    return [
+      {
+        key: "contract_created",
+        label: "Contract created",
+        status: "done",
+        at: row.createdAt,
+      },
+      {
+        key: "approval",
+        label: row.approvalRequired ? "Approval required" : "Auto approved",
+        status: row.approvedAt || !row.approvalRequired ? "done" : "pending",
+        at: row.approvedAt || null,
+      },
+      {
+        key: "executor_received",
+        label: "Executor handoff",
+        status: row.executorRunId || row.status !== "PENDING_APPROVAL" ? "done" : "pending",
+        at: row.updatedAt,
+      },
+      {
+        key: "proof_received",
+        label: "Proof received",
+        status: row.proofJson ? "done" : "pending",
+        at: proofReceivedAt,
+      },
+      {
+        key: "result_received",
+        label: "Result received",
+        status: row.resultJson ? "done" : row.status === "FAILED" ? "failed" : "pending",
+        at: resultReceivedAt,
+      },
+      {
+        key: "completed",
+        label: "Execution completed",
+        status: ["SUCCEEDED", "FAILED", "CANCELED"].includes(row.status) ? "done" : "pending",
+        at: ["SUCCEEDED", "FAILED", "CANCELED"].includes(row.status) ? row.updatedAt : null,
+      },
+    ];
+  }
+
+  function verifyProof(row: any) {
+    if (!row.proofJson) {
+      return {
+        status: "missing",
+        label: "Missing proof",
+        notes: ["No proof callback has been stored for this handoff."],
+      };
+    }
+
+    const reviewStatus = String(row.proofJson?.review?.status || "").toLowerCase();
+    if (reviewStatus === "verified") {
+      return {
+        status: "verified",
+        label: "Verified",
+        notes: [
+          `Reviewed by ${row.proofJson?.review?.reviewer || "operator"}.`,
+          row.proofJson?.review?.note || "Proof accepted by operator review.",
+        ].filter(Boolean),
+      };
+    }
+    if (reviewStatus === "rejected") {
+      return {
+        status: "rejected",
+        label: "Rejected",
+        notes: [
+          `Reviewed by ${row.proofJson?.review?.reviewer || "operator"}.`,
+          row.proofJson?.review?.note || "Proof rejected by operator review.",
+        ].filter(Boolean),
+      };
+    }
+    if (reviewStatus === "needs_review") {
+      return {
+        status: "needs_review",
+        label: "Needs review",
+        notes: [
+          `Reviewed by ${row.proofJson?.review?.reviewer || "operator"}.`,
+          row.proofJson?.review?.note || "Proof requires another review.",
+        ].filter(Boolean),
+      };
+    }
+
+    const artifacts = Array.isArray(row.proofJson?.artifacts) ? row.proofJson.artifacts : [];
+    const verifiedFlag = row.proofJson?.verified === true;
+    const hasArtifacts = artifacts.length > 0 || Boolean(row.proofJson?.summary);
+
+    if (verifiedFlag && hasArtifacts) {
+      return {
+        status: "verified",
+        label: "Verified",
+        notes: ["Proof includes verifier confirmation and reviewable artifacts."],
+      };
+    }
+
+    if (hasArtifacts) {
+      return {
+        status: "needs_review",
+        label: "Needs review",
+        notes: ["Proof was received, but no explicit verifier confirmation was found."],
+      };
+    }
+
+    return {
+      status: "unverified",
+      label: "Unverified",
+      notes: ["Proof payload exists but does not include artifacts or a summary."],
+    };
+  }
+
+  const decoratedRecords = (records as any[]).map((row) => ({
+    ...row,
+    timeline: buildTimeline(row),
+    proofVerification: verifyProof(row),
+  }));
+
+  const summary = decoratedRecords.reduce(
+    (acc, row) => {
+      acc.total += 1;
+      if (row.status === "SUCCEEDED") acc.succeeded += 1;
+      if (row.status === "FAILED") acc.failed += 1;
+      if (row.status === "RUNNING") acc.running += 1;
+      if (row.status === "PENDING_APPROVAL" || row.status === "APPROVED") acc.pending += 1;
+      if (row.proofJson) acc.withProof += 1;
+      if (row.resultJson) acc.withResult += 1;
+      if (row.proofVerification?.status === "verified") acc.verifiedProof += 1;
+      if (row.proofVerification?.status === "needs_review") acc.needsReview += 1;
+      return acc;
+    },
+    {
+      total: 0,
+      succeeded: 0,
+      failed: 0,
+      running: 0,
+      pending: 0,
+      withProof: 0,
+      withResult: 0,
+      verifiedProof: 0,
+      needsReview: 0,
+    }
+  );
+
+  return res.json({
+    success: true,
+    data: {
+      scope: userEmail ? "customer" : "operator",
+      userEmail: userEmail || null,
+      orgId: org?.id || null,
+      filters: {
+        status: status || null,
+        executorType: executorType || null,
+        handoffId: handoffId || null,
+      },
+      summary,
+      executions: decoratedRecords,
+    },
+  });
+});
+
+router.post("/agent-executions/:handoffId/review-proof", requireAdminKey, async (req, res) => {
+  const handoffId = String(req.params.handoffId || "").trim();
+  const reviewer = String(req.body?.reviewer || req.body?.userEmail || "operator").trim().slice(0, 160);
+  const reviewStatus = String(req.body?.reviewStatus || "").trim().toLowerCase();
+  const reviewNote = String(req.body?.reviewNote || "").trim().slice(0, 2000);
+
+  if (!handoffId) return res.status(400).json({ success: false, error: "handoffId required" });
+  if (!["verified", "rejected", "needs_review"].includes(reviewStatus)) {
+    return res.status(400).json({
+      success: false,
+      error: "reviewStatus must be verified, rejected, or needs_review",
+    });
+  }
+
+  const existing = await (prisma as any).agentExecution.findUnique({
+    where: { handoffId },
+    select: {
+      id: true,
+      orgId: true,
+      apiKeyId: true,
+      proofJson: true,
+      status: true,
+    } as any,
+  });
+
+  if (!existing) return res.status(404).json({ success: false, error: "not found" });
+
+  const nextProof = {
+    ...((existing.proofJson && typeof existing.proofJson === "object" ? existing.proofJson : {}) as any),
+    review: {
+      status: reviewStatus,
+      reviewer,
+      reviewedAt: new Date().toISOString(),
+      note: reviewNote || null,
+    },
+    verified: reviewStatus === "verified",
+  };
+
+  const updated = await (prisma as any).agentExecution.update({
+    where: { handoffId },
+    data: {
+      proofJson: nextProof,
+      ...(reviewStatus === "rejected" ? { status: "FAILED", error: reviewNote || "Proof rejected by operator" } : {}),
+    },
+    select: {
+      id: true,
+      handoffId: true,
+      objective: true,
+      status: true,
+      proofJson: true,
+      resultJson: true,
+      updatedAt: true,
+    } as any,
+  });
+
+  await writeAuditLog({
+    action: "agent_execution.proof_reviewed",
+    target: handoffId,
+    apiKeyId: existing.apiKeyId || undefined,
+    metadata: {
+      reviewer,
+      reviewStatus,
+      reviewNote,
+      orgId: existing.orgId,
+    },
+    req,
+  });
+
+  return res.json({ success: true, data: updated });
 });
 
 /** =========================
@@ -584,6 +1158,51 @@ router.get("/usage", requireAdminKey, async (req, res) => {
     },
   });
 
+  const executionWhere: any = { orgId: org.id };
+  if (from) executionWhere.createdAt = { gte: from };
+
+  const executions = await (prisma as any).agentExecution.findMany({
+    where: executionWhere,
+    orderBy: { updatedAt: "desc" },
+    take: 12,
+    select: {
+      id: true,
+      handoffId: true,
+      agentPlanId: true,
+      executorType: true,
+      executorRunId: true,
+      objective: true,
+      status: true,
+      approvalMode: true,
+      approvalRequired: true,
+      proofJson: true,
+      resultJson: true,
+      createdAt: true,
+      updatedAt: true,
+      apiKeyId: true,
+      apiKey: {
+        select: {
+          prefix: true,
+          name: true,
+        },
+      },
+    } as any,
+  }).catch(() => []);
+
+  const executionSummary = (executions as any[]).reduce(
+    (acc, row) => {
+      acc.total += 1;
+      if (row.status === "SUCCEEDED") acc.succeeded += 1;
+      if (row.status === "FAILED") acc.failed += 1;
+      if (row.status === "RUNNING") acc.running += 1;
+      if (row.status === "PENDING_APPROVAL" || row.status === "APPROVED") acc.pending += 1;
+      if (row.proofJson) acc.withProof += 1;
+      if (row.resultJson) acc.withResult += 1;
+      return acc;
+    },
+    { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, withProof: 0, withResult: 0 }
+  );
+
   const totalRequests = total._count._all || 0;
   const errorCount = errors._count._all || 0;
   const data = {
@@ -645,6 +1264,29 @@ router.get("/usage", requireAdminKey, async (req, res) => {
       tokens: r.totalTokens || 0,
       costUSD: Number(r.estimatedCostUsd || 0),
       createdAt: r.createdAt.toISOString(),
+    })),
+    executionSummary,
+    recentExecutions: (executions as any[]).map((row) => ({
+      id: row.id,
+      handoffId: row.handoffId,
+      agentPlanId: row.agentPlanId,
+      executorType: row.executorType,
+      executorRunId: row.executorRunId,
+      objective: row.objective,
+      status: row.status,
+      approvalMode: row.approvalMode,
+      approvalRequired: row.approvalRequired,
+      hasProof: Boolean(row.proofJson),
+      hasResult: Boolean(row.resultJson),
+      apiKeyId: row.apiKeyId,
+      apiKey: row.apiKey
+        ? {
+            prefix: row.apiKey.prefix,
+            name: row.apiKey.name,
+          }
+        : null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
     })),
   };
 

@@ -4,6 +4,7 @@ import { oneAIBaseURL, requireConsoleEmail } from "@/lib/consoleIdentity";
 const allowedPostEndpoints = new Set([
   "/v1/agent-plans",
   "/v1/handoff/preview",
+  "/v1/handoff/contracts",
   "/v1/context/preview",
 ]);
 
