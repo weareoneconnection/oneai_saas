@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n";
 
 type Customer = {
   email: string;
@@ -101,7 +102,31 @@ function nextAction(row: Customer) {
   return "No action until sign-in or key activity.";
 }
 
+function localizeStage(stage: string, isZh: boolean) {
+  if (!isZh) return stage;
+  const map: Record<string, string> = {
+    Customer: "客户",
+    "Cost active": "已产生成本",
+    Activated: "已激活",
+    "Key created": "已创建 key",
+    "Signed in": "已登录",
+    Lead: "线索",
+  };
+  return map[stage] || stage;
+}
+
+function localizeAction(row: Customer, isZh: boolean) {
+  if (!isZh) return nextAction(row);
+  if (row.billing?.status === "active" || row.billing?.status === "trialing") return "保持客户成功触达并监控用量。";
+  if ((row.costUsd || 0) > 0) return "推荐 Pro/Team 套餐，并提供成本控制复核。";
+  if ((row.requestCount || 0) > 0) return "询问生产使用场景和付费 task 需求。";
+  if ((row.activeKeyCount || 0) > 0) return "引导运行 business_strategy 或 content_engine。";
+  if (row.latestLoginAt) return "引导创建 key 并完成一次免费测试。";
+  return "等待登录或 key 活动后再跟进。";
+}
+
 export default function SalesLeadsPage() {
+  const { isZh } = useI18n();
   const [rows, setRows] = useState<Customer[]>([]);
   const [notes, setNotes] = useState<Record<string, LeadNote>>({});
   const [loading, setLoading] = useState(false);
@@ -154,11 +179,11 @@ export default function SalesLeadsPage() {
         ...row,
         score: scoreLead(row),
         stage: leadStage(row),
-        action: nextAction(row),
+        action: localizeAction(row, isZh),
         leadNote: notes[row.email] || { status: "new", note: "", nextFollowUp: "" },
       }))
       .sort((a, b) => b.score - a.score || (b.costUsd || 0) - (a.costUsd || 0));
-  }, [notes, rows]);
+  }, [isZh, notes, rows]);
 
   const summary = useMemo(() => {
     const hot = leads.filter((row) => row.score >= 60 && row.stage !== "Customer").length;
@@ -173,22 +198,62 @@ export default function SalesLeadsPage() {
     const totalPotentialCost = leads.reduce((sum, row) => sum + Number(row.costUsd || 0), 0);
     return { hot, activated, paid, contacted, followUpsDue, totalPotentialCost };
   }, [leads]);
+  const localizedStatusOptions = isZh
+    ? [
+        { value: "new" as const, label: "新线索" },
+        { value: "contacted" as const, label: "已联系" },
+        { value: "qualified" as const, label: "已合格" },
+        { value: "converted" as const, label: "已转化" },
+        { value: "lost" as const, label: "流失" },
+      ]
+    : statusOptions;
+  const c = {
+    eyebrow: isZh ? "OPERATOR REVENUE · 销售线索" : "Operator revenue · Sales leads",
+    title: isZh ? "销售线索" : "Sales Leads",
+    desc: isZh
+      ? "优先跟进已登录、创建 key、运行请求、产生模型成本、遇到失败或触达 Agent OS 的用户。"
+      : "Prioritize users who signed in, created keys, ran requests, generated cost, hit failures, or touched Agent OS.",
+    customers: isZh ? "客户" : "Customers",
+    refresh: isZh ? "刷新" : "Refresh",
+    refreshing: isZh ? "刷新中..." : "Refreshing...",
+    hotLeads: isZh ? "高意向线索" : "Hot leads",
+    activatedLeads: isZh ? "已激活线索" : "Activated leads",
+    paidTrial: isZh ? "付费 / 试用" : "Paid / trial",
+    observedCost: isZh ? "已观测模型成本" : "Observed model cost",
+    contacted: isZh ? "已联系 / 已合格" : "Contacted / qualified",
+    followups: isZh ? "到期跟进" : "Follow-ups due",
+    prioritization: isZh ? "线索优先级" : "Lead Prioritization",
+    prioritizationDesc: isZh
+      ? "评分基于登录、key 创建、用量、模型成本、失败请求和 Agent OS 活动。"
+      : "Score is based on login, key creation, usage, model cost, failures, and Agent OS activity.",
+    lead: isZh ? "线索" : "Lead",
+    score: isZh ? "评分" : "Score",
+    stage: isZh ? "阶段" : "Stage",
+    keys: "Keys",
+    requests: isZh ? "请求" : "Requests",
+    cost: isZh ? "成本" : "Cost",
+    salesStatus: isZh ? "销售状态" : "Sales status",
+    noteFollow: isZh ? "备注 / 跟进" : "Note / Follow-up",
+    signal: isZh ? "信号" : "Signal",
+    ownerNote: isZh ? "负责人备注" : "Owner note",
+    noLeads: isZh ? "暂无线索。" : "No leads yet.",
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="text-xs font-bold uppercase tracking-wide text-black/40">Operator revenue · 销售线索</div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Sales Leads</h1>
+          <div className="text-xs font-bold uppercase tracking-wide text-black/40">{c.eyebrow}</div>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">{c.title}</h1>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-black/55">
-            Prioritize users who signed in, created keys, ran requests, generated cost, hit failures, or touched Agent OS.
+            {c.desc}
           </p>
         </div>
         <div className="flex gap-2">
           <Link href="/customers" className="inline-flex h-10 items-center rounded-lg border border-black/10 px-4 text-sm font-semibold hover:bg-black/[0.03]">
-            Customers
+            {c.customers}
           </Link>
-          <Button onClick={load} disabled={loading}>{loading ? "Refreshing..." : "Refresh"}</Button>
+          <Button onClick={load} disabled={loading}>{loading ? c.refreshing : c.refresh}</Button>
         </div>
       </div>
 
@@ -196,52 +261,52 @@ export default function SalesLeadsPage() {
 
       <div className="grid gap-3 md:grid-cols-4">
         <div className="rounded-lg border border-black/10 bg-white/60 p-4">
-          <div className="text-xs text-black/45">Hot leads</div>
+          <div className="text-xs text-black/45">{c.hotLeads}</div>
           <div className="mt-2 text-2xl font-bold">{fmtNum(summary.hot)}</div>
         </div>
         <div className="rounded-lg border border-black/10 bg-white/60 p-4">
-          <div className="text-xs text-black/45">Activated leads</div>
+          <div className="text-xs text-black/45">{c.activatedLeads}</div>
           <div className="mt-2 text-2xl font-bold">{fmtNum(summary.activated)}</div>
         </div>
         <div className="rounded-lg border border-black/10 bg-white/60 p-4">
-          <div className="text-xs text-black/45">Paid / trial</div>
+          <div className="text-xs text-black/45">{c.paidTrial}</div>
           <div className="mt-2 text-2xl font-bold">{fmtNum(summary.paid)}</div>
         </div>
         <div className="rounded-lg border border-black/10 bg-white/60 p-4">
-          <div className="text-xs text-black/45">Observed model cost</div>
+          <div className="text-xs text-black/45">{c.observedCost}</div>
           <div className="mt-2 text-2xl font-bold">{fmtUsd(summary.totalPotentialCost)}</div>
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-lg border border-black/10 bg-white/60 p-4">
-          <div className="text-xs text-black/45">Contacted / qualified</div>
+          <div className="text-xs text-black/45">{c.contacted}</div>
           <div className="mt-2 text-2xl font-bold">{fmtNum(summary.contacted)}</div>
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <div className="text-xs text-amber-800/70">Follow-ups due</div>
+          <div className="text-xs text-amber-800/70">{c.followups}</div>
           <div className="mt-2 text-2xl font-bold text-amber-950">{fmtNum(summary.followUpsDue)}</div>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Lead Prioritization</CardTitle>
-          <CardDescription>Score is based on login, key creation, usage, model cost, failures, and Agent OS activity.</CardDescription>
+          <CardTitle>{c.prioritization}</CardTitle>
+          <CardDescription>{c.prioritizationDesc}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto rounded-lg border border-black/10">
             <div className="min-w-[1040px]">
               <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/55">
-                <div className="col-span-2">Lead</div>
-                <div className="col-span-1 text-right">Score</div>
-                <div className="col-span-1">Stage</div>
-                <div className="col-span-1 text-right">Keys</div>
-                <div className="col-span-1 text-right">Requests</div>
-                <div className="col-span-1 text-right">Cost</div>
-                <div className="col-span-2">Sales status</div>
-                <div className="col-span-2">Note / Follow-up</div>
-                <div className="col-span-1">Signal</div>
+                <div className="col-span-2">{c.lead}</div>
+                <div className="col-span-1 text-right">{c.score}</div>
+                <div className="col-span-1">{c.stage}</div>
+                <div className="col-span-1 text-right">{c.keys}</div>
+                <div className="col-span-1 text-right">{c.requests}</div>
+                <div className="col-span-1 text-right">{c.cost}</div>
+                <div className="col-span-2">{c.salesStatus}</div>
+                <div className="col-span-2">{c.noteFollow}</div>
+                <div className="col-span-1">{c.signal}</div>
               </div>
               {leads.length ? (
                 leads.map((row) => (
@@ -251,7 +316,7 @@ export default function SalesLeadsPage() {
                       <div className="truncate text-xs text-black/40">org: {row.orgId || "-"}</div>
                     </div>
                     <div className="col-span-1 text-right font-bold text-black">{row.score}</div>
-                    <div className="col-span-1 text-black/70">{row.stage}</div>
+                    <div className="col-span-1 text-black/70">{localizeStage(row.stage, isZh)}</div>
                     <div className="col-span-1 text-right text-black/70">{fmtNum(row.activeKeyCount)} / {fmtNum(row.keyCount)}</div>
                     <div className="col-span-1 text-right text-black/70">{fmtNum(row.requestCount)}</div>
                     <div className="col-span-1 text-right font-semibold text-black">{fmtUsd(row.costUsd)}</div>
@@ -261,7 +326,7 @@ export default function SalesLeadsPage() {
                         onChange={(e) => updateNote(row.email, { status: e.target.value as LeadStatus })}
                         className="h-9 w-full rounded-lg border border-black/10 bg-white px-2 text-xs font-semibold text-black"
                       >
-                        {statusOptions.map((option) => (
+                        {localizedStatusOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -273,7 +338,7 @@ export default function SalesLeadsPage() {
                       <input
                         value={row.leadNote.note}
                         onChange={(e) => updateNote(row.email, { note: e.target.value })}
-                        placeholder="Owner note"
+                        placeholder={c.ownerNote}
                         className="h-9 w-full rounded-lg border border-black/10 bg-white px-2 text-xs text-black outline-none focus:border-black/30"
                       />
                       <input
@@ -289,7 +354,7 @@ export default function SalesLeadsPage() {
                   </div>
                 ))
               ) : (
-                <div className="p-4 text-sm text-black/55">No leads yet.</div>
+                <div className="p-4 text-sm text-black/55">{c.noLeads}</div>
               )}
             </div>
           </div>

@@ -1,5 +1,6 @@
 import "./globals.css";
 import React from "react";
+import { I18nProvider } from "@/lib/i18n";
 
 export const metadata = {
   title: "OneAI",
@@ -9,7 +10,9 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <I18nProvider>{children}</I18nProvider>
+      </body>
     </html>
   );
 }

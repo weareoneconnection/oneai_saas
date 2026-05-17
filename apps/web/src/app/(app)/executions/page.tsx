@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { useI18n } from "@/lib/i18n";
 
 type ExecutionRow = {
   id: string;
@@ -153,6 +154,7 @@ function Timeline({ items }: { items?: TimelineItem[] }) {
 }
 
 export default function ExecutionsPage() {
+  const { isZh } = useI18n();
   const [rows, setRows] = useState<ExecutionRow[]>([]);
   const [summary, setSummary] = useState<ExecutionSummary | null>(null);
   const [loading, setLoading] = useState(false);
@@ -246,36 +248,89 @@ export default function ExecutionsPage() {
   }, [rows, summary]);
 
   const completionRate = derived.total ? Math.round((derived.succeeded / derived.total) * 100) : 0;
+  const c = {
+    agentOs: "Agent OS",
+    ledger: isZh ? "执行账本" : "Execution Ledger",
+    title: isZh ? "执行账本" : "Execution Ledger",
+    subtitle: isZh
+      ? "追踪 handoff 合约、审批、执行器证明和最终结果。OneAI 记录并验证闭环；OneClaw、OpenClaw、bot 或人工负责执行。"
+      : "Track handoff contracts, approvals, executor proof, and final results. OneAI records and verifies the loop; OneClaw, OpenClaw, bots, or humans execute.",
+    refresh: isZh ? "刷新" : "Refresh",
+    refreshing: isZh ? "刷新中..." : "Refreshing...",
+    contracts: isZh ? "合约" : "Contracts",
+    storedHandoffs: isZh ? "已存 handoff" : "Stored handoffs",
+    succeeded: isZh ? "成功" : "Succeeded",
+    completion: isZh ? "完成率" : "completion",
+    proofReceived: isZh ? "收到证明" : "Proof received",
+    evidence: isZh ? "执行器证据" : "Executor evidence",
+    verifiedProof: isZh ? "已验证证明" : "Verified proof",
+    needReview: isZh ? "需要复核" : "need review",
+    myOrg: isZh ? "我的组织" : "My organization",
+    operatorGlobal: isZh ? "运营方全局" : "Operator global",
+    allStatuses: isZh ? "全部状态" : "All statuses",
+    approved: isZh ? "已批准" : "Approved",
+    running: isZh ? "运行中" : "Running",
+    failed: isZh ? "失败" : "Failed",
+    canceled: isZh ? "已取消" : "Canceled",
+    allExecutors: isZh ? "全部执行器" : "All executors",
+    recentTitle: isZh ? "最近执行" : "Recent Executions",
+    recentDesc: isZh ? "按执行器、审批、证明和结果状态查看 handoff 生命周期。" : "Handoff lifecycle by executor, approval, proof, and result status.",
+    objective: isZh ? "目标" : "Objective",
+    executor: isZh ? "执行器" : "Executor",
+    status: isZh ? "状态" : "Status",
+    proofResult: isZh ? "证明 / 结果" : "Proof / Result",
+    updated: isZh ? "更新时间" : "Updated",
+    approval: isZh ? "审批" : "approval",
+    proof: isZh ? "证明" : "Proof",
+    result: isZh ? "结果" : "Result",
+    verify: isZh ? "验证" : "Verify",
+    yes: isZh ? "是" : "yes",
+    no: isZh ? "否" : "no",
+    details: isZh ? "详情" : "Details",
+    empty: isZh ? "暂无 Agent OS 执行记录。通过 API 创建 handoff 合约后会出现在这里。" : "No Agent OS executions yet. Create a handoff contract from the API to populate this ledger.",
+    detailTitle: isZh ? "执行详情" : "Execution Detail",
+    detailDesc: isZh ? "所选 handoff 的合约、证明和最终结果。" : "Contract, proof, and final result for the selected handoff.",
+    openDetail: isZh ? "打开详情" : "Open detail",
+    apiKey: "API key",
+    reviewTitle: isZh ? "运营方证明复核" : "Operator Proof Review",
+    reviewDesc: isZh ? "将证明标记为已验证、拒绝或需要进一步复核。仅运营方操作。" : "Mark proof as verified, rejected, or needing another review. Operator-only action.",
+    reviewNote: isZh ? "复核备注" : "Review note",
+    saving: isZh ? "保存中..." : "Saving...",
+    markVerified: isZh ? "标记已验证" : "Mark verified",
+    needsReview: isZh ? "需要复核" : "Needs review",
+    rejectProof: isZh ? "拒绝证明" : "Reject proof",
+    selectHint: isZh ? "选择一条执行记录查看证明和结果详情。" : "Select an execution to inspect proof and result details.",
+  };
 
   return (
     <div className="max-w-full overflow-hidden space-y-6">
       <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge>Agent OS</Badge>
-            <Badge>Execution Ledger</Badge>
+            <Badge>{c.agentOs}</Badge>
+            <Badge>{c.ledger}</Badge>
             {error ? <span className="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">{error}</span> : null}
           </div>
-          <h1 className="mt-3 text-3xl font-black tracking-tight text-black">Execution Ledger</h1>
+          <h1 className="mt-3 text-3xl font-black tracking-tight text-black">{c.title}</h1>
           <p className="mt-2 max-w-3xl text-wrap text-sm leading-relaxed text-black/55">
-            Track handoff contracts, approvals, executor proof, and final results. OneAI records and verifies the loop; OneClaw, OpenClaw, bots, or humans execute.
+            {c.subtitle}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <Button variant="secondary" onClick={load} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh"}
+            {loading ? c.refreshing : c.refresh}
           </Button>
           <Link href="/agent-os" className="inline-flex h-10 items-center rounded-lg bg-black px-4 text-sm font-bold text-white hover:bg-neutral-900">
-            Agent OS
+            {c.agentOs}
           </Link>
         </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Contracts" value={derived.total} sub="Stored handoffs" />
-        <Stat label="Succeeded" value={derived.succeeded} sub={`${completionRate}% completion`} />
-        <Stat label="Proof received" value={derived.withProof} sub="Executor evidence" />
-        <Stat label="Verified proof" value={derived.verifiedProof || 0} sub={`${derived.needsReview || 0} need review`} />
+        <Stat label={c.contracts} value={derived.total} sub={c.storedHandoffs} />
+        <Stat label={c.succeeded} value={derived.succeeded} sub={`${completionRate}% ${c.completion}`} />
+        <Stat label={c.proofReceived} value={derived.withProof} sub={c.evidence} />
+        <Stat label={c.verifiedProof} value={derived.verifiedProof || 0} sub={`${derived.needsReview || 0} ${c.needReview}`} />
       </div>
 
       <Card className="min-w-0 overflow-hidden">
@@ -285,27 +340,27 @@ export default function ExecutionsPage() {
             onChange={(event) => setScope(event.target.value as "customer" | "operator")}
             className="h-10 rounded-lg border border-black/10 bg-white px-3 text-sm font-semibold"
           >
-            <option value="customer">My organization</option>
-            <option value="operator">Operator global</option>
+            <option value="customer">{c.myOrg}</option>
+            <option value="operator">{c.operatorGlobal}</option>
           </select>
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
             className="h-10 rounded-lg border border-black/10 bg-white px-3 text-sm"
           >
-            <option value="">All statuses</option>
-            <option value="APPROVED">Approved</option>
-            <option value="RUNNING">Running</option>
-            <option value="SUCCEEDED">Succeeded</option>
-            <option value="FAILED">Failed</option>
-            <option value="CANCELED">Canceled</option>
+            <option value="">{c.allStatuses}</option>
+            <option value="APPROVED">{c.approved}</option>
+            <option value="RUNNING">{c.running}</option>
+            <option value="SUCCEEDED">{c.succeeded}</option>
+            <option value="FAILED">{c.failed}</option>
+            <option value="CANCELED">{c.canceled}</option>
           </select>
           <select
             value={executorFilter}
             onChange={(event) => setExecutorFilter(event.target.value)}
             className="h-10 rounded-lg border border-black/10 bg-white px-3 text-sm"
           >
-            <option value="">All executors</option>
+            <option value="">{c.allExecutors}</option>
             <option value="oneclaw">OneClaw</option>
             <option value="openclaw">OpenClaw</option>
             <option value="bot">Bot</option>
@@ -318,18 +373,18 @@ export default function ExecutionsPage() {
       <div className="grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]">
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Recent Executions</CardTitle>
-            <CardDescription>Handoff lifecycle by executor, approval, proof, and result status.</CardDescription>
+            <CardTitle>{c.recentTitle}</CardTitle>
+            <CardDescription>{c.recentDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto rounded-lg border border-black/10">
               <div className="min-w-[900px]">
                 <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/55">
-                  <div className="col-span-4">Objective</div>
-                  <div className="col-span-2">Executor</div>
-                  <div className="col-span-2">Status</div>
-                  <div className="col-span-2">Proof / Result</div>
-                  <div className="col-span-2">Updated</div>
+                  <div className="col-span-4">{c.objective}</div>
+                  <div className="col-span-2">{c.executor}</div>
+                  <div className="col-span-2">{c.status}</div>
+                  <div className="col-span-2">{c.proofResult}</div>
+                  <div className="col-span-2">{c.updated}</div>
                 </div>
                 {rows.length ? (
                   rows.map((row) => (
@@ -352,23 +407,23 @@ export default function ExecutionsPage() {
                       </div>
                       <div className="col-span-2">
                         <StatusPill status={row.status} />
-                        <div className="mt-1 text-xs text-black/45">{row.approvalMode} approval</div>
+                        <div className="mt-1 text-xs text-black/45">{row.approvalMode} {c.approval}</div>
                       </div>
                       <div className="col-span-2 text-xs text-black/55">
-                        <div>Proof: {row.proofJson ? "yes" : "no"}</div>
-                        <div>Result: {row.resultJson ? "yes" : "no"}</div>
-                        <div>Verify: {row.proofVerification?.label || "-"}</div>
+                        <div>{c.proof}: {row.proofJson ? c.yes : c.no}</div>
+                        <div>{c.result}: {row.resultJson ? c.yes : c.no}</div>
+                        <div>{c.verify}: {row.proofVerification?.label || "-"}</div>
                       </div>
                       <div className="col-span-2 text-xs text-black/45">
                         {fmtTime(row.updatedAt)}
                         <Link href={`/executions/${encodeURIComponent(row.handoffId)}`} className="mt-1 block font-semibold text-black underline underline-offset-4">
-                          Details
+                          {c.details}
                         </Link>
                       </div>
                     </button>
                   ))
                 ) : (
-                  <div className="p-4 text-sm text-black/55">No Agent OS executions yet. Create a handoff contract from the API to populate this ledger.</div>
+                  <div className="p-4 text-sm text-black/55">{c.empty}</div>
                 )}
               </div>
             </div>
@@ -377,8 +432,8 @@ export default function ExecutionsPage() {
 
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Execution Detail</CardTitle>
-            <CardDescription>Contract, proof, and final result for the selected handoff.</CardDescription>
+            <CardTitle>{c.detailTitle}</CardTitle>
+            <CardDescription>{c.detailDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             {selected ? (
@@ -393,52 +448,52 @@ export default function ExecutionsPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${verificationTone(selected.proofVerification?.status)}`}>
-                      Proof: {selected.proofVerification?.label || "Unknown"}
+                      {c.proof}: {selected.proofVerification?.label || "Unknown"}
                     </span>
                     <Link href={`/executions/${encodeURIComponent(selected.handoffId)}`} className="rounded-full border border-black/10 px-2.5 py-1 text-xs font-bold text-black hover:bg-black/[0.03]">
-                      Open detail
+                      {c.openDetail}
                     </Link>
                   </div>
                   <div className="mt-4 grid gap-3 text-xs md:grid-cols-2">
                     <div>
-                      <div className="text-black/45">Executor</div>
+                      <div className="text-black/45">{c.executor}</div>
                       <div className="font-semibold text-black">{selected.executorType}</div>
                     </div>
                     <div>
-                      <div className="text-black/45">Approval</div>
+                      <div className="text-black/45">{c.approval}</div>
                       <div className="font-semibold text-black">{selected.approvalMode} · {selected.approvalRequired ? "required" : "not required"}</div>
                     </div>
                     <div>
-                      <div className="text-black/45">API key</div>
+                      <div className="text-black/45">{c.apiKey}</div>
                       <div className="font-mono text-black">{selected.apiKey?.prefix || "-"}</div>
                     </div>
                     <div>
-                      <div className="text-black/45">Updated</div>
+                      <div className="text-black/45">{c.updated}</div>
                       <div className="text-black">{fmtTime(selected.updatedAt)}</div>
                     </div>
                   </div>
                 </div>
                 <Timeline items={selected.timeline} />
                 <div className="rounded-lg border border-black/10 bg-white/70 p-4">
-                  <div className="text-sm font-black text-black">Operator Proof Review</div>
+                  <div className="text-sm font-black text-black">{c.reviewTitle}</div>
                   <p className="mt-1 text-xs text-black/45">
-                    Mark proof as verified, rejected, or needing another review. Operator-only action.
+                    {c.reviewDesc}
                   </p>
                   <textarea
                     value={reviewNote}
                     onChange={(event) => setReviewNote(event.target.value)}
-                    placeholder="Review note"
+                    placeholder={c.reviewNote}
                     className="mt-3 min-h-20 w-full rounded-lg border border-black/10 bg-white p-3 text-sm outline-none focus:border-black/30"
                   />
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button size="sm" onClick={() => reviewProof("verified")} disabled={!!reviewing}>
-                      {reviewing === "verified" ? "Saving..." : "Mark verified"}
+                      {reviewing === "verified" ? c.saving : c.markVerified}
                     </Button>
                     <Button variant="secondary" size="sm" onClick={() => reviewProof("needs_review")} disabled={!!reviewing}>
-                      Needs review
+                      {c.needsReview}
                     </Button>
                     <Button variant="secondary" size="sm" onClick={() => reviewProof("rejected")} disabled={!!reviewing}>
-                      Reject proof
+                      {c.rejectProof}
                     </Button>
                   </div>
                 </div>
@@ -454,7 +509,7 @@ export default function ExecutionsPage() {
               </div>
             ) : (
               <div className="rounded-lg border border-black/10 bg-white/70 p-4 text-sm text-black/55">
-                Select an execution to inspect proof and result details.
+                {c.selectHint}
               </div>
             )}
           </CardContent>

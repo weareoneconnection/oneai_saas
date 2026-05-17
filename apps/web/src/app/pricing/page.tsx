@@ -1,5 +1,9 @@
+"use client";
+
 // apps/web/src/app/pricing/page.tsx
 import Link from "next/link";
+import { LanguageToggle } from "@/components/i18n/LanguageToggle";
+import { useI18n } from "@/lib/i18n";
 
 const CONTACT_SALES_EMAIL = "info@weareoneconnection.com";
 const CONTACT_SALES_HREF =
@@ -7,68 +11,9 @@ const CONTACT_SALES_HREF =
 const CONTACT_TELEGRAM_HREF = "https://t.me/waocfounder";
 const CONTACT_X_HREF = "https://x.com/waoconnectone?s=21";
 
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    desc: "For local testing and validating structured tasks. 适合测试和早期接入。",
-    features: ["1,000 requests / month · 每月 1,000 次请求", "$10 model cost guard · 模型成本保护", "30 RPM", "cheap + balanced modes"],
-  },
-  {
-    name: "Pro",
-    price: "$29/mo",
-    desc: "For builders shipping apps on OneAI API. 适合正在上线产品的开发者和 SaaS 团队。",
-    features: [
-      "50,000 requests / month · 每月 50,000 次请求",
-      "$500 model cost guard · 模型成本保护",
-      "120 RPM",
-      "cheap, balanced, fast, auto modes",
-    ],
-  },
-  {
-    name: "Team",
-    price: "$99/mo",
-    desc: "For teams needing shared billing and controls. 适合需要团队协作、调试和模型权限的商业团队。",
-    features: [
-      "250,000 requests / month · 每月 250,000 次请求",
-      "$2,500 model cost guard · 模型成本保护",
-      "600 RPM",
-      "premium mode, debug trace, model registry",
-      "Agent OS preview + handoff contracts · Agent OS 预览和交接合同",
-    ],
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    desc: "For custom providers, limits, and support. 适合需要私有策略、定制模型和更高额度的生产团队。",
-    features: [
-      "Custom request volume · 定制请求量",
-      "Custom model-cost guard · 定制模型成本保护",
-      "Dedicated provider policy · 专属 provider 策略",
-      "Custom models, health checks, support · 定制模型、健康检查和支持",
-      "Private handoff protocol · 私有 Agent OS 交接协议",
-    ],
-  },
-];
-
-const matrix = [
-  ["Monthly requests", "1,000", "50,000", "250,000", "Custom"],
-  ["Monthly model-cost guard", "$10", "$500", "$2,500", "Custom"],
-  ["API key rate limit", "30 RPM", "120 RPM", "600 RPM", "Custom"],
-  ["Per-request maxCostUsd", "$0.05", "$1", "$5", "Custom"],
-  ["Routing modes", "cheap, balanced", "cheap, balanced, fast, auto", "all modes", "all modes"],
-  ["Task tiers", "free", "free + pro", "free + pro + team", "all tiers"],
-  ["Debug trace", "locked", "locked", "enabled", "enabled"],
-  ["Explicit provider/model", "locked", "locked", "enabled", "enabled"],
-  ["Model registry and health", "locked", "locked", "enabled", "enabled"],
-  ["Agent OS preview", "locked", "locked", "enabled", "enabled"],
-  ["Handoff contracts", "locked", "locked", "preview", "custom"],
-  ["Context preview", "locked", "locked", "enabled", "custom"],
-  ["Custom provider policy", "locked", "locked", "limited", "enabled"],
-  ["Private executor policy", "locked", "locked", "locked", "enabled"],
-];
-
 function Header() {
+  const { isZh } = useI18n();
+
   return (
     <header className="border-b border-black/10">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
@@ -78,29 +23,101 @@ function Header() {
           </div>
           <div className="min-w-0 leading-tight">
             <div className="text-sm font-bold">OneAI API</div>
-            <div className="truncate text-xs text-black/50">Pricing 价格</div>
+            <div className="truncate text-xs text-black/50">{isZh ? "价格" : "Pricing"}</div>
           </div>
         </Link>
         <nav className="hidden items-center gap-6 text-sm font-medium text-black/65 md:flex">
           <Link href="/use-cases" className="hover:text-black">
-            Use Cases
+            {isZh ? "使用场景" : "Use Cases"}
           </Link>
           <Link href="/docs" className="hover:text-black">
-            Docs 文档
+            {isZh ? "文档" : "Docs"}
           </Link>
           <Link href="/security" className="hover:text-black">
-            Security 安全
+            {isZh ? "安全" : "Security"}
           </Link>
           <Link href="/dashboard" className="hover:text-black">
-            Console 控制台
+            {isZh ? "控制台" : "Console"}
           </Link>
         </nav>
+        <LanguageToggle compact />
       </div>
     </header>
   );
 }
 
 export default function PricingPage() {
+  const { isZh } = useI18n();
+  const c = (en: string, zh: string) => (isZh ? zh : en);
+
+  const plans = [
+    {
+      name: "Free",
+      price: "$0",
+      desc: c("For local testing and validating structured tasks.", "适合测试和早期接入。"),
+      features: [
+        c("1,000 requests / month", "每月 1,000 次请求"),
+        c("$10 model cost guard", "$10 模型成本保护"),
+        "30 RPM",
+        c("cheap + balanced modes", "cheap + balanced 模式"),
+      ],
+    },
+    {
+      name: "Pro",
+      price: "$29/mo",
+      desc: c("For builders shipping apps on OneAI API.", "适合正在上线产品的开发者和 SaaS 团队。"),
+      features: [
+        c("50,000 requests / month", "每月 50,000 次请求"),
+        c("$500 model cost guard", "$500 模型成本保护"),
+        "120 RPM",
+        c("cheap, balanced, fast, auto modes", "cheap、balanced、fast、auto 模式"),
+      ],
+    },
+    {
+      name: "Team",
+      price: "$99/mo",
+      desc: c(
+        "For teams needing shared billing, debug traces, and model controls.",
+        "适合需要团队协作、调试和模型权限的商业团队。"
+      ),
+      features: [
+        c("250,000 requests / month", "每月 250,000 次请求"),
+        c("$2,500 model cost guard", "$2,500 模型成本保护"),
+        "600 RPM",
+        c("premium mode, debug trace, model registry", "premium 模式、debug trace、模型注册表"),
+        c("Agent OS preview + handoff contracts", "Agent OS 预览和交接合同"),
+      ],
+    },
+    {
+      name: "Enterprise",
+      price: c("Custom", "定制"),
+      desc: c(
+        "For custom providers, limits, contracts, and support.",
+        "适合需要私有策略、定制模型和更高额度的生产团队。"
+      ),
+      features: [
+        c("Custom request volume", "定制请求量"),
+        c("Custom model-cost guard", "定制模型成本保护"),
+        c("Dedicated provider policy", "专属 provider 策略"),
+        c("Custom models, health checks, support", "定制模型、健康检查和支持"),
+        c("Private handoff protocol", "私有 Agent OS 交接协议"),
+      ],
+    },
+  ];
+
+  const matrix = [
+    [c("Monthly requests", "每月请求量"), "1,000", "50,000", "250,000", c("Custom", "定制")],
+    [c("Monthly model-cost guard", "每月模型成本保护"), "$10", "$500", "$2,500", c("Custom", "定制")],
+    [c("API key rate limit", "API key 限流"), "30 RPM", "120 RPM", "600 RPM", c("Custom", "定制")],
+    ["maxCostUsd", "$0.05", "$1", "$5", c("Custom", "定制")],
+    [c("Routing modes", "路由模式"), "cheap, balanced", "cheap, balanced, fast, auto", c("all modes", "全部模式"), c("all modes", "全部模式")],
+    [c("Task tiers", "Task 等级"), "free", "free + pro", "free + pro + team", c("all tiers", "全部等级")],
+    [c("Debug trace", "调试追踪"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
+    [c("Explicit provider/model", "指定 provider/model"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
+    [c("Model registry and health", "模型注册表和健康检查"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
+    [c("Agent OS preview", "Agent OS 预览"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
+  ];
+
   return (
     <main className="bg-white text-black">
       <Header />
@@ -108,15 +125,16 @@ export default function PricingPage() {
       <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-20">
         <div className="max-w-3xl">
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-            Commercial API pricing · 商用 API 价格
+            {c("Commercial API pricing", "商用 API 价格")}
           </div>
           <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl md:text-5xl">
-            Sell full-model intelligence with cost controls built in.
+            {c("Sell full-model intelligence with cost controls built in.", "用内置成本控制售卖全模型智能能力。")}
           </h1>
           <p className="mt-5 text-base leading-relaxed text-black/65">
-            OneAI pricing is built around commercial API access: model routing,
-            structured outputs, customer usage, billing, and cost guardrails.
-            价格体系围绕商用 API、结构化输出、用量统计和成本控制设计。
+            {c(
+              "OneAI pricing is built around commercial API access: model routing, structured outputs, customer usage, billing, and cost guardrails.",
+              "OneAI 的价格体系围绕商用 API、模型路由、结构化输出、客户用量、账单和成本控制设计。"
+            )}
           </p>
         </div>
 
@@ -157,18 +175,19 @@ export default function PricingPage() {
                     : "bg-black text-white hover:bg-neutral-900",
                 ].join(" ")}
               >
-                {plan.name === "Free" ? "Start free 免费开始" : "Contact sales 联系开通"}
+                {plan.name === "Free" ? c("Start free", "免费开始") : c("Contact sales", "联系开通")}
               </Link>
             </div>
           ))}
         </div>
 
         <div className="mt-6 rounded-lg border border-black/10 bg-black/[0.02] p-5">
-          <div className="text-sm font-bold text-black">Manual onboarding · 人工开通</div>
+          <div className="text-sm font-bold text-black">{c("Manual onboarding", "人工开通")}</div>
           <p className="mt-2 text-sm leading-relaxed text-black/60">
-            Stripe checkout is temporarily hidden. For Pro, Team, or Enterprise
-            access, contact us and we will activate the plan manually.
-            暂时采用人工开通，需要付费权限可通过邮箱、Telegram 或 X 联系。
+            {c(
+              "Stripe checkout is temporarily hidden. For Pro, Team, or Enterprise access, contact us and we will activate the plan manually.",
+              "Stripe checkout 暂时隐藏。需要 Pro、Team 或企业版权限时，请通过邮箱、Telegram 或 X 联系，我们会人工开通。"
+            )}
           </p>
           <div className="mt-3 flex flex-wrap gap-4 text-sm font-semibold">
             <a href={CONTACT_SALES_HREF} className="text-black underline underline-offset-4">
@@ -185,15 +204,16 @@ export default function PricingPage() {
 
         <div className="mt-10 rounded-lg border border-black/10 bg-white p-6 shadow-sm">
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-            Upgrade path · 升级路径
+            {c("Upgrade path", "升级路径")}
           </div>
           <h2 className="mt-2 text-2xl font-bold tracking-tight">
-            Start free, ship with Pro, customize with Team.
+            {c("Start free, ship with Pro, customize with Team.", "免费开始，Pro 上线，Team 定制。")}
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-black/60">
-            OneAI is designed to let customers test real Task Intelligence before
-            paying, then upgrade only when production traffic, paid workflows, or
-            custom controls are needed. 先免费验证真实任务智能，再按生产用量和定制需求升级。
+            {c(
+              "OneAI lets customers test real Task Intelligence before paying, then upgrade when production traffic, paid workflows, or custom controls are needed.",
+              "OneAI 允许客户先免费验证真实 Task Intelligence，再在需要生产流量、付费 workflow 或定制控制时升级。"
+            )}
           </p>
           <div className="mt-5 grid gap-3 md:grid-cols-4">
             {[
@@ -215,13 +235,13 @@ export default function PricingPage() {
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link href="/playground" className="inline-flex h-10 items-center rounded-lg bg-black px-4 text-sm font-bold text-white hover:bg-neutral-900">
-              Test free tasks 免费测试
+              {c("Test free tasks", "免费测试")}
             </Link>
             <Link href="/use-cases" className="inline-flex h-10 items-center rounded-lg border border-black/10 px-4 text-sm font-bold text-black hover:bg-black/[0.03]">
-              View use cases 使用场景
+              {c("View use cases", "查看使用场景")}
             </Link>
             <a href={CONTACT_SALES_HREF} className="inline-flex h-10 items-center rounded-lg border border-black/10 px-4 text-sm font-bold text-black hover:bg-black/[0.03]">
-              Contact sales 联系开通
+              {c("Contact sales", "联系开通")}
             </a>
           </div>
         </div>
@@ -229,17 +249,17 @@ export default function PricingPage() {
         <div className="mt-12">
           <div className="max-w-2xl">
             <div className="text-xs font-bold uppercase tracking-wide text-black/45">
-              Permission matrix · 权限矩阵
+              {c("Permission matrix", "权限矩阵")}
             </div>
             <h2 className="mt-2 text-2xl font-bold tracking-tight">
-              The same limits are enforced by the API. 页面展示的限制会由 API 实际执行。
+              {c("The same limits are enforced by the API.", "页面展示的限制会由 API 实际执行。")}
             </h2>
           </div>
 
           <div className="mt-6 overflow-x-auto rounded-lg border border-black/10">
             <div className="min-w-[760px]">
               <div className="grid grid-cols-[1.4fr_repeat(4,1fr)] bg-black/[0.03] px-4 py-3 text-xs font-semibold text-black/60">
-                <div>Capability 能力</div>
+                <div>{c("Capability", "能力")}</div>
                 <div>Free</div>
                 <div>Pro</div>
                 <div>Team</div>
@@ -263,43 +283,50 @@ export default function PricingPage() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">Model gateway · 模型网关</div>
+            <div className="text-sm font-bold">{c("Model gateway", "模型网关")}</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
-              Chat Completions, streaming, model catalog, health checks, and provider readiness.
-              支持模型网关、流式输出、模型目录和健康检查。
+              {c(
+                "Chat Completions, streaming, model catalog, health checks, and provider readiness.",
+                "支持模型网关、流式输出、模型目录和健康检查。"
+              )}
             </p>
           </div>
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">成本控制 · Cost controls</div>
+            <div className="text-sm font-bold">{c("Cost controls", "成本控制")}</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
-              Provider costs are tracked per request and controlled by routing policy,
-              plan gates, monthly budgets, and maxCostUsd. 每次请求统计成本并控制风险。
+              {c(
+                "Provider costs are tracked per request and controlled by routing policy, plan gates, monthly budgets, and maxCostUsd.",
+                "每次请求都会统计 provider 成本，并通过路由策略、套餐限制、月度预算和 maxCostUsd 控制风险。"
+              )}
             </p>
           </div>
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">Task intelligence · 任务智能</div>
+            <div className="text-sm font-bold">{c("Task intelligence", "任务智能")}</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
-              Generate business_strategy, content_engine, support_brain, and custom
-              workflow intelligence. 支持结构化业务输出和客户 workflow 定制。
+              {c(
+                "Generate business_strategy, content_engine, support_brain, and custom workflow intelligence.",
+                "生成 business_strategy、content_engine、support_brain 和客户定制 workflow 智能。"
+              )}
             </p>
           </div>
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">Agent OS handoff · Agent OS 交接</div>
+            <div className="text-sm font-bold">{c("Agent OS handoff", "Agent OS 交接")}</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
-              Team and Enterprise plans can preview agent plans, context packets,
-              and handoff contracts. OneAI plans; external executors act.
-              Team 和企业版支持计划、上下文和交接预览。
+              {c(
+                "Team and Enterprise plans can preview agent plans, context packets, and handoff contracts. OneAI plans; external executors act.",
+                "Team 和企业版支持 agent plans、context packets 和 handoff contracts。OneAI 负责规划，外部执行器负责执行。"
+              )}
             </p>
           </div>
         </div>
 
         <div className="mt-10 rounded-lg border border-black/10 bg-black p-6 text-white">
-          <div className="text-sm font-bold text-white">Which plan fits which use case?</div>
+          <div className="text-sm font-bold text-white">{c("Which plan fits which use case?", "不同场景适合哪个套餐？")}</div>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {[
-              ["Free", "Validate business_strategy and content_engine before paid traffic."],
-              ["Pro", "Ship customer-facing support, market, decision, and campaign intelligence."],
-              ["Team", "Build custom task contracts and controlled internal workflows."],
+              ["Free", c("Validate business_strategy and content_engine before paid traffic.", "在付费流量前验证 business_strategy 和 content_engine。")],
+              ["Pro", c("Ship customer-facing support, market, decision, and campaign intelligence.", "上线面向客户的支持、市场、决策和 campaign intelligence。")],
+              ["Team", c("Build custom task contracts and controlled internal workflows.", "构建自定义 task contract 和受控内部 workflow。")],
             ].map(([name, desc]) => (
               <div key={name} className="rounded-lg border border-white/10 bg-white/[0.06] p-4">
                 <div className="text-sm font-black text-white">{name}</div>
@@ -308,7 +335,7 @@ export default function PricingPage() {
             ))}
           </div>
           <Link href="/use-cases" className="mt-5 inline-flex rounded-lg bg-white px-5 py-2 text-sm font-bold text-black hover:bg-white/90">
-            View use cases
+            {c("View use cases", "查看使用场景")}
           </Link>
         </div>
       </section>

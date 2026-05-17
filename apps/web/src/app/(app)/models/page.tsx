@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
+import { useI18n } from "@/lib/i18n";
 
 type ModelRow = {
   id?: string;
@@ -55,10 +56,6 @@ type ModelsResponse = {
     | ModelRow[];
 };
 
-function yesNo(v?: boolean) {
-  return v ? "Yes" : "No";
-}
-
 function pillClass(ok?: boolean) {
   return ok
     ? "border-green-200 bg-green-50 text-green-700"
@@ -96,6 +93,7 @@ function extractPayload(json: ModelsResponse) {
 }
 
 export default function ModelsPage() {
+  const { isZh } = useI18n();
   const [config, setConfig] = useState<ReturnType<typeof extractPayload>["config"]>(null);
   const [models, setModels] = useState<ModelRow[]>([]);
   const [catalogSync, setCatalogSync] = useState<ReturnType<typeof extractPayload>["catalogSync"]>(null);
@@ -229,40 +227,88 @@ export default function ModelsPage() {
   const pricedModelCount = models.filter((m) => m.hasPricing).length;
   const testedOkCount = models.filter((m) => m.health?.ok).length;
   const estimateOptions = models.filter((row) => row.hasPricing).slice(0, 120);
+  const c = {
+    infrastructure: isZh ? "基础设施" : "Infrastructure",
+    models: isZh ? "模型" : "Models",
+    title: isZh ? "模型注册表" : "Model Registry",
+    subtitle: isZh
+      ? "Provider 目录、配置状态、价格覆盖和路由模式。"
+      : "Provider catalog, configuration status, pricing coverage, and routing modes.",
+    sync: isZh ? "同步模型目录" : "Sync catalog",
+    syncing: isZh ? "同步中..." : "Syncing...",
+    refresh: isZh ? "刷新" : "Refresh",
+    loading: isZh ? "加载中..." : "Loading...",
+    defaultRoute: isZh ? "默认路由" : "Default route",
+    configuredProviders: isZh ? "已配置 Provider" : "Configured providers",
+    callableModels: isZh ? "可调用模型" : "Callable models",
+    pricedTested: isZh ? "有价格 / 已检测" : "Priced / tested",
+    estimator: isZh ? "成本估算器" : "Cost estimator",
+    estimatorDesc: isZh ? "在生产流量发送前预估模型成本。" : "Estimate model cost before sending production traffic.",
+    estimated: isZh ? "预估：" : "Estimated: ",
+    selectPricedModel: isZh ? "选择有价格的模型" : "Select priced model",
+    promptTokens: isZh ? "输入 tokens" : "Prompt tokens",
+    completionTokens: isZh ? "输出 tokens" : "Completion tokens",
+    estimate: isZh ? "估算" : "Estimate",
+    estimating: isZh ? "估算中..." : "Estimating...",
+    search: isZh ? "搜索 provider 或模型..." : "Search provider or model...",
+    allProviders: isZh ? "全部 Provider" : "All providers",
+    allStatus: isZh ? "全部状态" : "All status",
+    configuredOnly: isZh ? "仅已配置" : "Configured only",
+    pricingCovered: isZh ? "有价格覆盖" : "Pricing covered",
+    toolSupport: isZh ? "支持工具" : "Tool support",
+    catalogSync: isZh ? "目录同步" : "Catalog sync",
+    notSynced: isZh ? "未同步" : "not synced",
+    syncedModels: isZh ? "同步模型数" : "Synced models",
+    showing: isZh ? "当前显示" : "Showing",
+    provider: isZh ? "Provider" : "Provider",
+    model: isZh ? "模型" : "Model",
+    modes: isZh ? "模式" : "Modes",
+    ready: isZh ? "就绪" : "Ready",
+    json: "JSON",
+    tools: isZh ? "工具" : "Tools",
+    price: isZh ? "价格" : "Price",
+    test: isZh ? "检测..." : "Test...",
+    live: isZh ? "在线" : "Live",
+    noKey: isZh ? "无 key" : "No key",
+    yes: isZh ? "是" : "Yes",
+    no: isZh ? "否" : "No",
+    empty: isZh ? "暂无模型数据。" : "No model data loaded.",
+  };
+  const yn = (v?: boolean) => (v ? c.yes : c.no);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge>Infrastructure</Badge>
-            <Badge>Models</Badge>
+            <Badge>{c.infrastructure}</Badge>
+            <Badge>{c.models}</Badge>
             {err ? <span className="text-xs text-red-600">{err}</span> : null}
           </div>
-          <h1 className="mt-3 text-2xl font-bold tracking-tight text-black">Model Registry</h1>
-          <p className="mt-1 text-sm text-black/55">Provider catalog, configuration status, pricing coverage, and routing modes.</p>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-black">{c.title}</h1>
+          <p className="mt-1 text-sm text-black/55">{c.subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" onClick={syncCatalog} disabled={syncing}>{syncing ? "Syncing..." : "Sync catalog"}</Button>
-          <Button variant="secondary" onClick={load} disabled={loading}>{loading ? "Loading..." : "Refresh"}</Button>
+          <Button variant="secondary" onClick={syncCatalog} disabled={syncing}>{syncing ? c.syncing : c.sync}</Button>
+          <Button variant="secondary" onClick={load} disabled={loading}>{loading ? c.loading : c.refresh}</Button>
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-4">
         <div className="rounded-lg border border-black/10 p-4">
-          <div className="text-xs text-black/50">Default route</div>
+          <div className="text-xs text-black/50">{c.defaultRoute}</div>
           <div className="mt-2 text-lg font-semibold">{config?.defaultProvider || "-"}:{config?.defaultModel || "-"}</div>
         </div>
         <div className="rounded-lg border border-black/10 p-4">
-          <div className="text-xs text-black/50">Configured providers</div>
+          <div className="text-xs text-black/50">{c.configuredProviders}</div>
           <div className="mt-2 text-lg font-semibold">{configured.length || 0}</div>
         </div>
         <div className="rounded-lg border border-black/10 p-4">
-          <div className="text-xs text-black/50">Callable models</div>
+          <div className="text-xs text-black/50">{c.callableModels}</div>
           <div className="mt-2 text-lg font-semibold">{configuredModelCount}</div>
         </div>
         <div className="rounded-lg border border-black/10 p-4">
-          <div className="text-xs text-black/50">Priced / tested</div>
+          <div className="text-xs text-black/50">{c.pricedTested}</div>
           <div className="mt-2 text-lg font-semibold">{pricedModelCount} / {testedOkCount}</div>
         </div>
       </div>
@@ -270,12 +316,12 @@ export default function ModelsPage() {
       <div className="rounded-lg border border-black/10 bg-white p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="text-sm font-semibold text-black">Cost estimator</div>
-            <p className="mt-1 text-sm text-black/55">Estimate model cost before sending production traffic.</p>
+            <div className="text-sm font-semibold text-black">{c.estimator}</div>
+            <p className="mt-1 text-sm text-black/55">{c.estimatorDesc}</p>
           </div>
           {estimate ? (
             <div className="rounded-lg border border-black/10 bg-black/[0.03] px-4 py-2 text-sm">
-              <span className="text-black/50">Estimated: </span>
+              <span className="text-black/50">{c.estimated}</span>
               <b>{fmtPrice(estimate.estimatedCostUsd)}</b>
               <span className="ml-2 text-xs text-black/40">{Number(estimate.totalTokens || 0).toLocaleString()} tokens</span>
             </div>
@@ -283,52 +329,52 @@ export default function ModelsPage() {
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-[1fr_150px_170px_140px]">
           <Select value={estimateModelId} onChange={(e) => setEstimateModelId(e.target.value)}>
-            <option value="">Select priced model</option>
+            <option value="">{c.selectPricedModel}</option>
             {estimateOptions.map((row) => (
               <option key={`${row.provider}:${row.model}`} value={`${row.provider}:${row.model}`}>
                 {row.provider}:{row.model}
               </option>
             ))}
           </Select>
-          <Input value={promptTokens} onChange={(e) => setPromptTokens(e.target.value)} placeholder="Prompt tokens" className="border-black/10 bg-white text-black placeholder:text-black/35" />
-          <Input value={completionTokens} onChange={(e) => setCompletionTokens(e.target.value)} placeholder="Completion tokens" className="border-black/10 bg-white text-black placeholder:text-black/35" />
+          <Input value={promptTokens} onChange={(e) => setPromptTokens(e.target.value)} placeholder={c.promptTokens} className="border-black/10 bg-white text-black placeholder:text-black/35" />
+          <Input value={completionTokens} onChange={(e) => setCompletionTokens(e.target.value)} placeholder={c.completionTokens} className="border-black/10 bg-white text-black placeholder:text-black/35" />
           <Button variant="secondary" onClick={estimateCost} disabled={estimating || !models.length}>
-            {estimating ? "Estimating..." : "Estimate"}
+            {estimating ? c.estimating : c.estimate}
           </Button>
         </div>
       </div>
 
       <div className="rounded-lg border border-black/10 p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_180px_180px]">
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search provider or model..." className="border-black/10 bg-white text-black placeholder:text-black/35" />
+          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={c.search} className="border-black/10 bg-white text-black placeholder:text-black/35" />
           <Select value={providerFilter} onChange={(e) => setProviderFilter(e.target.value)}>
-            <option value="all">All providers</option>
+            <option value="all">{c.allProviders}</option>
             {providers.map((provider) => <option key={provider} value={provider}>{provider}</option>)}
           </Select>
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">All status</option>
-            <option value="configured">Configured only</option>
-            <option value="pricing">Pricing covered</option>
-            <option value="tools">Tool support</option>
+            <option value="all">{c.allStatus}</option>
+            <option value="configured">{c.configuredOnly}</option>
+            <option value="pricing">{c.pricingCovered}</option>
+            <option value="tools">{c.toolSupport}</option>
           </Select>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-black/50">
-          <span>Catalog sync: {catalogSync?.syncedAt ? new Date(catalogSync.syncedAt).toLocaleString() : "not synced"}</span>
-          <span>Synced models: {catalogSync?.count ?? 0}</span>
-          <span>Showing: {filtered.length}</span>
+          <span>{c.catalogSync}: {catalogSync?.syncedAt ? new Date(catalogSync.syncedAt).toLocaleString() : c.notSynced}</span>
+          <span>{c.syncedModels}: {catalogSync?.count ?? 0}</span>
+          <span>{c.showing}: {filtered.length}</span>
         </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-black/10">
         <div className="min-w-[860px]">
           <div className="grid grid-cols-12 gap-2 bg-black/5 px-3 py-2 text-xs font-semibold text-black/60">
-            <div className="col-span-2">Provider</div>
-            <div className="col-span-4">Model</div>
-            <div className="col-span-2">Modes</div>
-            <div className="col-span-1 text-right">Ready</div>
-            <div className="col-span-1 text-right">JSON</div>
-            <div className="col-span-1 text-right">Tools</div>
-            <div className="col-span-1 text-right">Price</div>
+            <div className="col-span-2">{c.provider}</div>
+            <div className="col-span-4">{c.model}</div>
+            <div className="col-span-2">{c.modes}</div>
+            <div className="col-span-1 text-right">{c.ready}</div>
+            <div className="col-span-1 text-right">{c.json}</div>
+            <div className="col-span-1 text-right">{c.tools}</div>
+            <div className="col-span-1 text-right">{c.price}</div>
           </div>
           {filtered.length ? (
             filtered.map((row) => (
@@ -344,12 +390,12 @@ export default function ModelsPage() {
                   title={row.health?.error || (row.health?.testedAt ? `Last tested ${new Date(row.health.testedAt).toLocaleString()}` : "Run a lightweight health check")}
                   className={`rounded-full border px-2 py-0.5 text-xs disabled:cursor-not-allowed ${pillClass(row.configured && row.health?.ok !== false)}`}
                 >
-                  {testingId === `${row.provider}:${row.model}` ? "Test..." : row.health?.ok ? "Live" : row.configured ? "Ready" : "No key"}
+                  {testingId === `${row.provider}:${row.model}` ? c.test : row.health?.ok ? c.live : row.configured ? c.ready : c.noKey}
                 </button>
                 {row.health?.latencyMs ? <div className="mt-1 text-xs text-black/35">{row.health.latencyMs}ms</div> : null}
               </div>
-              <div className="col-span-1 text-right">{yesNo(row.supportsJson)}</div>
-              <div className="col-span-1 text-right">{yesNo(row.supportsTools)}</div>
+              <div className="col-span-1 text-right">{yn(row.supportsJson)}</div>
+              <div className="col-span-1 text-right">{yn(row.supportsTools)}</div>
               <div className="col-span-1 text-right">
                 {row.pricing ? (
                   <div title={`source: ${row.pricing.source}`} className="text-xs text-black/70">
@@ -357,13 +403,13 @@ export default function ModelsPage() {
                     <div className="text-black/35">/ {fmtPrice(row.pricing.outputCostPer1MTokens)}</div>
                   </div>
                 ) : (
-                  yesNo(row.hasPricing)
+                  yn(row.hasPricing)
                 )}
               </div>
               </div>
             ))
           ) : (
-            <div className="p-4 text-sm text-black/60">No model data loaded.</div>
+            <div className="p-4 text-sm text-black/60">{c.empty}</div>
           )}
         </div>
       </div>

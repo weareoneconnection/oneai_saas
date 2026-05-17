@@ -5,6 +5,8 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { LanguageToggle } from "@/components/i18n/LanguageToggle";
+import { useI18n } from "@/lib/i18n";
 
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
@@ -40,7 +42,23 @@ function NavLink({
 
 export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
   const { data } = useSession();
+  const { isZh } = useI18n();
   const email = data?.user?.email;
+  const nav = isZh
+    ? {
+        menu: "打开菜单",
+        homeLabel: "返回 OneAI 首页",
+        homeTitle: "返回首页",
+        subtitle: email ? `首页 · ${email}` : "首页 · 商业智能控制台",
+        test: "测试",
+      }
+    : {
+        menu: "Open menu",
+        homeLabel: "Back to OneAI home",
+        homeTitle: "Back to home",
+        subtitle: email ? `Home · ${email}` : "Home · Commercial intelligence console",
+        test: "Test",
+      };
 
   return (
     <div className="flex w-full items-center justify-between gap-3">
@@ -48,7 +66,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
         <button
           type="button"
           onClick={onMenuClick}
-          aria-label="Open menu"
+          aria-label={nav.menu}
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 bg-white hover:bg-black/5 md:hidden"
         >
           <span className="text-base leading-none">☰</span>
@@ -56,8 +74,8 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
 
         <Link
           href="/"
-          aria-label="Back to OneAI home"
-          title="Back to home / 返回首页"
+          aria-label={nav.homeLabel}
+          title={nav.homeTitle}
           className="flex min-w-0 items-center gap-3 rounded-xl transition hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-black/10 bg-white">
@@ -65,9 +83,7 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
           <div className="min-w-0 leading-tight">
             <div className="truncate text-sm font-semibold">OneAI API</div>
-            <div className="truncate text-xs text-black/50">
-              {email ? `Home / 首页 · ${email}` : "Home / 首页 · Commercial intelligence console"}
-            </div>
+            <div className="truncate text-xs text-black/50">{nav.subtitle}</div>
           </div>
         </Link>
       </div>
@@ -88,12 +104,18 @@ export function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
 
         <div className="mx-2 hidden h-6 w-px bg-black/10 md:block" />
 
+        <div className="hidden items-center md:flex">
+          <LanguageToggle compact />
+        </div>
+
+        <div className="mx-2 hidden h-6 w-px bg-black/10 md:block" />
+
         <div className="hidden items-center gap-1 md:flex">
           <NavLink href="/docs">Docs</NavLink>
         </div>
 
         <div className="md:hidden">
-          <NavLink href="/playground">Test</NavLink>
+          <NavLink href="/playground">{nav.test}</NavLink>
         </div>
       </div>
     </div>

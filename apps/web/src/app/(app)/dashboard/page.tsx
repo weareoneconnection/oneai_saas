@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n";
 
 type EnvKey = "prod" | "dev" | "staging";
 type DashboardSource = "live" | "demo" | "empty";
@@ -338,6 +339,7 @@ function EnvPill({ env }: { env: EnvKey }) {
 }
 
 export default function DashboardPage() {
+  const { isZh } = useI18n();
   const [data, setData] = useState<DashboardPayload>(() => buildEmptyData());
   const [source, setSource] = useState<DashboardSource>("empty");
   const [models, setModels] = useState<ModelRow[]>([]);
@@ -484,6 +486,59 @@ export default function DashboardPage() {
     return { total, stable, schemaCovered, paid };
   }, [tasks]);
 
+  const c = {
+    console: isZh ? "控制台" : "Console",
+    analytics: isZh ? "分析" : "Analytics",
+    source: isZh ? "来源" : "Source",
+    dashboard: "Dashboard",
+    subtitle: isZh ? "API 健康、成本、keys、模型、tasks 和生产就绪度。" : "API health, cost, keys, models, tasks, and production readiness.",
+    refresh: isZh ? "刷新" : "Refresh",
+    refreshing: isZh ? "刷新中..." : "Refreshing...",
+    useDemo: isZh ? "使用演示数据" : "Use Demo",
+    empty: isZh ? "还没有线上用量数据。先创建 API key，在 Playground 运行一次请求，然后刷新 Dashboard。" : "No live usage data found yet. Create an API key, run a request in Playground, then refresh this dashboard.",
+    gettingStarted: isZh ? "快速开始" : "Getting Started",
+    gettingStartedDesc: isZh ? "从空账号到可计费 OneAI API 集成的最快路径。" : "The fastest path from empty account to a billable OneAI API integration.",
+    productGuide: isZh ? "产品说明" : "Product guide",
+    commercialPath: isZh ? "商业上线路径" : "Commercial Launch Path",
+    commercialPathDesc: isZh ? "新客户在把 OneAI API 作为付费生产依赖前应完成的事项。" : "What a new customer should complete before OneAI API becomes a paid production dependency.",
+    agentOsReady: isZh ? "Agent OS 就绪度" : "Agent OS Readiness",
+    agentOsReadyDesc: isZh ? "面向计划、handoff 预览、上下文预览和清晰执行边界的旁路基础设施。" : "Sidecar infrastructure for plans, handoff previews, context previews, and clear execution boundaries.",
+    openAgentOs: isZh ? "打开 Agent OS" : "Open Agent OS",
+    operatorSummary: isZh ? "运营摘要" : "Operator Summary",
+    operatorSummaryDesc: isZh ? "流量、成本、错误和 keys 的一屏商业健康检查。" : "One-screen commercial health check for traffic, cost, errors, and keys.",
+    nextActions: isZh ? "建议下一步" : "Recommended Next Actions",
+    nextActionsDesc: isZh ? "更大客户流量前需要检查的事项。" : "What to check before heavier customer traffic.",
+    requests24h: isZh ? "请求数 (24h)" : "Requests (24h)",
+    tokens24h: isZh ? "Tokens (24h)" : "Tokens (24h)",
+    cost24h: isZh ? "成本 (24h)" : "Cost (24h)",
+    activeKeys: isZh ? "活跃 Keys" : "Active Keys",
+    quality: isZh ? "质量" : "Quality",
+    errorRate: isZh ? "错误率" : "Error rate",
+    usage24h: isZh ? "24h 用量" : "24h Usage",
+    usageTrend: isZh ? "请求 + 成本趋势" : "Requests + Cost trend",
+    envSegmentation: isZh ? "环境分组" : "Environment Segmentation",
+    modelReadiness: isZh ? "模型就绪度" : "Model Readiness",
+    modelReadinessDesc: isZh ? "目录、已配置 provider、价格和健康检测" : "Catalog, configured providers, pricing, health checks",
+    taskReadiness: isZh ? "Task 就绪度" : "Task Readiness",
+    taskReadinessDesc: isZh ? "注册表、稳定 workflow、schemas 和付费 tiers" : "Registry, stable workflows, schemas, paid tiers",
+    commercialReady: isZh ? "商业就绪度" : "Commercial Readiness",
+    commercialReadyDesc: isZh ? "更大客户流量前的运营动作" : "Next operator actions before heavier customer traffic",
+    no24h: isZh ? "暂无 24h 用量数据。" : "No 24h usage data yet.",
+    noEnv: isZh ? "暂无环境用量。" : "No environment usage yet.",
+    openModels: isZh ? "打开 Models" : "Open Models",
+    modelDocs: isZh ? "模型文档" : "Model Docs",
+    openTasks: isZh ? "打开 Tasks" : "Open Tasks",
+    testTask: isZh ? "测试 Task" : "Test Task",
+    modelBreakdown: isZh ? "模型用量拆分" : "Model Usage Breakdown",
+    forecast: isZh ? "成本预测 (7 天)" : "Cost Forecast (7 days)",
+    keyUsage: isZh ? "Key 级用量" : "Key-level Usage",
+    manageKeys: isZh ? "管理 Keys" : "Manage Keys",
+    noRows: isZh ? "暂无数据行。" : "No rows.",
+    noModelUsage: isZh ? "暂无模型用量。" : "No model usage yet.",
+    noForecast: isZh ? "暂无预测数据。" : "No forecast available yet.",
+    noKeyUsage: isZh ? "暂无 key 级用量。" : "No key-level usage yet.",
+  };
+
   const readinessItems = [
     {
       label: "Gateway",
@@ -527,42 +582,42 @@ export default function DashboardPage() {
     {
       label: "Capabilities",
       value: "/v1/capabilities",
-      desc: "Capability directory is available beside existing task registry.",
+      desc: isZh ? "能力目录已在现有 task registry 旁路可用。" : "Capability directory is available beside existing task registry.",
       href: "/agent-os",
       good: true,
     },
     {
       label: "Agent plans",
       value: "/v1/agent-plans",
-      desc: "Plan contracts can be generated without executing actions.",
+      desc: isZh ? "可以生成计划合约，但不执行动作。" : "Plan contracts can be generated without executing actions.",
       href: "/playground",
       good: true,
     },
     {
       label: "Handoff preview",
       value: "/v1/handoff/preview",
-      desc: "Plans can be packaged for OneClaw, bots, agents, or humans.",
+      desc: isZh ? "计划可以打包给 OneClaw、bot、agent 或人工。" : "Plans can be packaged for OneClaw, bots, agents, or humans.",
       href: "/agent-os",
       good: true,
     },
     {
       label: "Context preview",
       value: "/v1/context/preview",
-      desc: "Thread, customer, memory, retrieval, and policy context can be normalized.",
+      desc: isZh ? "可以规范线程、客户、记忆、检索和策略上下文。" : "Thread, customer, memory, retrieval, and policy context can be normalized.",
       href: "/playground",
       good: true,
     },
     {
       label: "Execution boundary",
-      value: "Disabled by default",
-      desc: "OneAI coordinates intelligence. Execution stays outside OneAI.",
+      value: isZh ? "默认禁用" : "Disabled by default",
+      desc: isZh ? "OneAI 协调智能，执行保留在 OneAI 外部。" : "OneAI coordinates intelligence. Execution stays outside OneAI.",
       href: "/docs/reference/agent-os",
       good: true,
     },
     {
       label: "Execution ledger",
       value: "/executions",
-      desc: "Proof, approval, and result callbacks are visible after handoff.",
+      desc: isZh ? "Handoff 后 proof、approval 和 result callbacks 可见。" : "Proof, approval, and result callbacks are visible after handoff.",
       href: "/executions",
       good: true,
     },
@@ -579,41 +634,41 @@ export default function DashboardPage() {
 
     const signals = [
       {
-        title: requests ? "Traffic active" : "No 24h traffic",
+        title: requests ? (isZh ? "流量已记录" : "Traffic active") : (isZh ? "暂无 24h 流量" : "No 24h traffic"),
         desc: requests
-          ? `${fmtNum(requests)} request(s) recorded in the last 24 hours.`
-          : "Run Playground or send a customer API request to validate production traffic.",
+          ? `${fmtNum(requests)} ${isZh ? "个请求在过去 24 小时内被记录。" : "request(s) recorded in the last 24 hours."}`
+          : isZh ? "运行 Playground 或发送客户 API 请求验证生产流量。" : "Run Playground or send a customer API request to validate production traffic.",
         tone: requests ? "green" : "amber",
         href: "/playground",
       },
       {
-        title: cost > 0 ? "Cost is tracked" : "No cost recorded",
+        title: cost > 0 ? (isZh ? "成本已记录" : "Cost is tracked") : (isZh ? "暂无成本记录" : "No cost recorded"),
         desc: cost > 0
-          ? `${fmtUSD(cost)} estimated model cost in the last 24 hours.`
-          : "Cost will appear after model calls with pricing coverage.",
+          ? `${fmtUSD(cost)} ${isZh ? "过去 24 小时预估模型成本。" : "estimated model cost in the last 24 hours."}`
+          : isZh ? "有价格覆盖的模型调用后会出现成本。" : "Cost will appear after model calls with pricing coverage.",
         tone: cost > 10 ? "amber" : cost > 0 ? "green" : "amber",
         href: "/usage",
       },
       {
-        title: errors >= 2 ? "Error rate needs review" : "Error rate healthy",
-        desc: `Current error rate is ${pct(errors)}.`,
+        title: errors >= 2 ? (isZh ? "错误率需要复核" : "Error rate needs review") : (isZh ? "错误率健康" : "Error rate healthy"),
+        desc: `${isZh ? "当前错误率" : "Current error rate is"} ${pct(errors)}.`,
         tone: errors >= 5 ? "red" : errors >= 2 ? "amber" : "green",
         href: "/usage",
       },
       {
-        title: activeKeys ? "Keys available" : "Create first API key",
+        title: activeKeys ? (isZh ? "Keys 可用" : "Keys available") : (isZh ? "创建第一个 API key" : "Create first API key"),
         desc: activeKeys
-          ? `${fmtNum(activeKeys)} active key(s) available for customer traffic.`
-          : "Create a key before sending external customer traffic.",
+          ? `${fmtNum(activeKeys)} ${isZh ? "个 active key 可用于客户流量。" : "active key(s) available for customer traffic."}`
+          : isZh ? "发送外部客户流量前先创建 key。" : "Create a key before sending external customer traffic.",
         tone: activeKeys ? "green" : "amber",
         href: "/keys",
       },
     ];
 
     const nextActions = [
-      requests ? ["Inspect Usage", "Review top tasks, expensive calls, and recent failures.", "/usage"] : ["Run a request", "Open Playground and test business_strategy or content_engine.", "/playground"],
-      topModel ? ["Review top model", `${topModel.provider || "provider"}:${topModel.model} is leading cost.`, "/models"] : ["Check models", "Confirm configured providers, pricing coverage, and health checks.", "/models"],
-      taskStats.total ? ["Test public tasks", `${taskStats.total} task(s) are visible in the public registry.`, "/tasks"] : ["Seed tasks", "Publish the commercial task registry before selling access.", "/tasks"],
+      requests ? [isZh ? "查看 Usage" : "Inspect Usage", isZh ? "复核热门 tasks、高成本调用和最近失败。" : "Review top tasks, expensive calls, and recent failures.", "/usage"] : [isZh ? "运行一次请求" : "Run a request", isZh ? "打开 Playground 测试 business_strategy 或 content_engine。" : "Open Playground and test business_strategy or content_engine.", "/playground"],
+      topModel ? [isZh ? "复核最高成本模型" : "Review top model", `${topModel.provider || "provider"}:${topModel.model} ${isZh ? "是当前成本主力。" : "is leading cost."}`, "/models"] : [isZh ? "检查模型" : "Check models", isZh ? "确认已配置 providers、价格覆盖和健康检测。" : "Confirm configured providers, pricing coverage, and health checks.", "/models"],
+      taskStats.total ? [isZh ? "测试公开 tasks" : "Test public tasks", `${taskStats.total} ${isZh ? "个 task 在公开 registry 中可见。" : "task(s) are visible in the public registry."}`, "/tasks"] : [isZh ? "发布 tasks" : "Seed tasks", isZh ? "售卖 access 前发布商业 task registry。" : "Publish the commercial task registry before selling access.", "/tasks"],
     ];
 
     return { signals, nextActions };
@@ -627,34 +682,34 @@ export default function DashboardPage() {
     return [
       {
         step: "1",
-        title: "Create an API key",
-        desc: "Start with a server-side key and a small monthly budget.",
+        title: isZh ? "创建 API key" : "Create an API key",
+        desc: isZh ? "从服务端 key 和小额月预算开始。" : "Start with a server-side key and a small monthly budget.",
         href: "/keys",
-        status: hasKey ? "Done" : "Start",
+        status: hasKey ? (isZh ? "完成" : "Done") : (isZh ? "开始" : "Start"),
         done: hasKey,
       },
       {
         step: "2",
-        title: "Run a free test",
-        desc: "Use business_strategy or content_engine before paid traffic.",
+        title: isZh ? "运行免费测试" : "Run a free test",
+        desc: isZh ? "付费流量前先用 business_strategy 或 content_engine。" : "Use business_strategy or content_engine before paid traffic.",
         href: "/playground",
-        status: hasTraffic ? "Done" : "Test",
+        status: hasTraffic ? (isZh ? "完成" : "Done") : (isZh ? "测试" : "Test"),
         done: hasTraffic,
       },
       {
         step: "3",
-        title: "Check usage",
-        desc: "Confirm requests, tokens, cost, latency, and failures.",
+        title: isZh ? "检查用量" : "Check usage",
+        desc: isZh ? "确认请求、tokens、成本、延迟和失败。" : "Confirm requests, tokens, cost, latency, and failures.",
         href: "/usage",
-        status: hasUsage ? "Live" : "Review",
+        status: hasUsage ? (isZh ? "在线" : "Live") : (isZh ? "复核" : "Review"),
         done: hasUsage,
       },
       {
         step: "4",
-        title: "Choose upgrade path",
-        desc: "Move to Pro or Team when customers need higher limits and paid tasks.",
+        title: isZh ? "选择升级路径" : "Choose upgrade path",
+        desc: isZh ? "客户需要更高限制和付费 tasks 时升级到 Pro 或 Team。" : "Move to Pro or Team when customers need higher limits and paid tasks.",
         href: "/billing",
-        status: "Plan",
+        status: isZh ? "计划" : "Plan",
         done: false,
       },
     ];
@@ -669,20 +724,20 @@ export default function DashboardPage() {
 
     return {
       readyCount,
-      status: readyCount >= 3 ? "Commercial-ready" : readyCount >= 2 ? "Almost ready" : "Setup needed",
+      status: readyCount >= 3 ? (isZh ? "商业就绪" : "Commercial-ready") : readyCount >= 2 ? (isZh ? "接近就绪" : "Almost ready") : (isZh ? "需要配置" : "Setup needed"),
       actions: [
         hasKey
-          ? ["Keys ready", "At least one active API key exists.", "/keys"]
-          : ["Create key", "Create a customer-safe server-side API key.", "/keys"],
+          ? [isZh ? "Keys 就绪" : "Keys ready", isZh ? "至少已有一个 active API key。" : "At least one active API key exists.", "/keys"]
+          : [isZh ? "创建 key" : "Create key", isZh ? "创建客户安全的服务端 API key。" : "Create a customer-safe server-side API key.", "/keys"],
         hasTraffic
-          ? ["Traffic live", "Usage is recording in the dashboard.", "/usage"]
-          : ["Run test", "Run business_strategy or content_engine in Playground.", "/playground"],
+          ? [isZh ? "流量在线" : "Traffic live", isZh ? "Dashboard 正在记录用量。" : "Usage is recording in the dashboard.", "/usage"]
+          : [isZh ? "运行测试" : "Run test", isZh ? "在 Playground 运行 business_strategy 或 content_engine。" : "Run business_strategy or content_engine in Playground.", "/playground"],
         hasCost
-          ? ["Cost visible", "Model cost is available for margin planning.", "/usage"]
-          : ["Check pricing", "Confirm model pricing and cost estimates before selling.", "/models"],
+          ? [isZh ? "成本可见" : "Cost visible", isZh ? "模型成本可用于毛利规划。" : "Model cost is available for margin planning.", "/usage"]
+          : [isZh ? "检查价格" : "Check pricing", isZh ? "售卖前确认模型价格和成本估算。" : "Confirm model pricing and cost estimates before selling.", "/models"],
         lowError
-          ? ["Quality healthy", "Current error rate is within launch tolerance.", "/usage"]
-          : ["Review failures", "Fix failed requests before inviting customers.", "/usage"],
+          ? [isZh ? "质量健康" : "Quality healthy", isZh ? "当前错误率在上线容忍范围内。" : "Current error rate is within launch tolerance.", "/usage"]
+          : [isZh ? "复核失败" : "Review failures", isZh ? "邀请客户前修复失败请求。" : "Fix failed requests before inviting customers.", "/usage"],
       ],
     };
   }, [data.kpis.activeKeys, data.kpis.cost24hUSD, data.kpis.errorRatePct, data.kpis.requests24h]);
@@ -696,10 +751,10 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge>Console</Badge>
-            <Badge>Analytics</Badge>
+            <Badge>{c.console}</Badge>
+            <Badge>{c.analytics}</Badge>
             <span className="text-xs text-black/45">
-              Source: <b className="text-black">{sourceBadge}</b>
+              {c.source}: <b className="text-black">{sourceBadge}</b>
             </span>
             {analyticsErr ? (
               <span className="text-xs text-amber-700">Analytics: {analyticsErr}</span>
@@ -709,10 +764,8 @@ export default function DashboardPage() {
             ) : null}
           </div>
 
-          <h1 className="mt-3 text-2xl font-extrabold text-black">Dashboard</h1>
-          <p className="mt-1 text-sm text-black/55">
-            API health, cost, keys, models, tasks, and production readiness.
-          </p>
+          <h1 className="mt-3 text-2xl font-extrabold text-black">{c.dashboard}</h1>
+          <p className="mt-1 text-sm text-black/55">{c.subtitle}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -722,7 +775,7 @@ export default function DashboardPage() {
             disabled={loading}
             className="whitespace-nowrap"
           >
-            {loading ? "Refreshing..." : "Refresh"}
+            {loading ? c.refreshing : c.refresh}
           </Button>
 
           {showDemoButton ? (
@@ -735,7 +788,7 @@ export default function DashboardPage() {
               }}
               className="whitespace-nowrap"
             >
-              Use Demo
+              {c.useDemo}
             </Button>
           ) : null}
         </div>
@@ -743,7 +796,7 @@ export default function DashboardPage() {
 
       {source === "empty" && !loading ? (
         <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-black/60">
-          No live usage data found yet. Create an API key, run a request in Playground, then refresh this dashboard.
+          {c.empty}
         </div>
       ) : null}
 
@@ -751,16 +804,16 @@ export default function DashboardPage() {
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
-              <CardTitle>Getting Started</CardTitle>
+              <CardTitle>{c.gettingStarted}</CardTitle>
               <CardDescription>
-                The fastest path from empty account to a billable OneAI API integration.
+                {c.gettingStartedDesc}
               </CardDescription>
             </div>
             <Link
               href="/docs/product-guide"
               className="inline-flex h-9 items-center justify-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black transition hover:bg-black/[0.03]"
             >
-              Product guide
+              {c.productGuide}
             </Link>
           </div>
         </CardHeader>
@@ -797,9 +850,9 @@ export default function DashboardPage() {
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
-              <CardTitle>Commercial Launch Path</CardTitle>
+              <CardTitle>{c.commercialPath}</CardTitle>
               <CardDescription>
-                What a new customer should complete before OneAI API becomes a paid production dependency.
+                {c.commercialPathDesc}
               </CardDescription>
             </div>
             <span className="inline-flex rounded-full bg-black px-3 py-1 text-xs font-semibold text-white">
@@ -855,16 +908,16 @@ export default function DashboardPage() {
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
-              <CardTitle>Agent OS Readiness</CardTitle>
+              <CardTitle>{c.agentOsReady}</CardTitle>
               <CardDescription>
-                Sidecar infrastructure for plans, handoff previews, context previews, and clear execution boundaries.
+                {c.agentOsReadyDesc}
               </CardDescription>
             </div>
             <Link
               href="/agent-os"
               className="inline-flex h-9 items-center justify-center rounded-lg bg-black px-3 text-sm font-semibold text-white transition hover:bg-neutral-900"
             >
-              Open Agent OS
+              {c.openAgentOs}
             </Link>
           </div>
         </CardHeader>
@@ -893,8 +946,8 @@ export default function DashboardPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.55fr)]">
         <Card>
           <CardHeader>
-            <CardTitle>Operator Summary</CardTitle>
-            <CardDescription>One-screen commercial health check for traffic, cost, errors, and keys.</CardDescription>
+            <CardTitle>{c.operatorSummary}</CardTitle>
+            <CardDescription>{c.operatorSummaryDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 md:grid-cols-2">
@@ -921,8 +974,8 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recommended Next Actions</CardTitle>
-            <CardDescription>What to check before heavier customer traffic.</CardDescription>
+            <CardTitle>{c.nextActions}</CardTitle>
+            <CardDescription>{c.nextActionsDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">
@@ -943,14 +996,14 @@ export default function DashboardPage() {
 
       {/* KPI row */}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        <KpiCard label="Requests (24h)" value={fmtNum(data.kpis.requests24h)} />
-        <KpiCard label="Tokens (24h)" value={fmtNum(data.kpis.tokens24h)} />
-        <KpiCard label="Cost (24h)" value={fmtUSD(data.kpis.cost24hUSD)} />
-        <KpiCard label="Active Keys" value={fmtNum(data.kpis.activeKeys)} />
+        <KpiCard label={c.requests24h} value={fmtNum(data.kpis.requests24h)} />
+        <KpiCard label={c.tokens24h} value={fmtNum(data.kpis.tokens24h)} />
+        <KpiCard label={c.cost24h} value={fmtUSD(data.kpis.cost24hUSD)} />
+        <KpiCard label={c.activeKeys} value={fmtNum(data.kpis.activeKeys)} />
         <KpiCard
-          label="Quality"
+          label={c.quality}
           value={data.kpis.p95LatencyMs === undefined ? "—" : `${data.kpis.p95LatencyMs}ms`}
-          sub={`Error rate: ${pct(data.kpis.errorRatePct)}`}
+          sub={`${c.errorRate}: ${pct(data.kpis.errorRatePct)}`}
         />
       </div>
 
@@ -960,8 +1013,8 @@ export default function DashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle>24h Usage</CardTitle>
-                <CardDescription>Requests + Cost trend</CardDescription>
+                <CardTitle>{c.usage24h}</CardTitle>
+                <CardDescription>{c.usageTrend}</CardDescription>
               </div>
               <div className="text-xs text-black/45">
                 {new Date(data.range.fromISO).toLocaleString()} →{" "}
@@ -990,7 +1043,7 @@ export default function DashboardPage() {
               </>
             ) : (
               <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-black/10 text-sm text-black/45">
-                No 24h usage data yet.
+                {c.no24h}
               </div>
             )}
           </CardContent>
@@ -998,7 +1051,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Environment Segmentation</CardTitle>
+            <CardTitle>{c.envSegmentation}</CardTitle>
             <CardDescription>prod / staging / dev</CardDescription>
           </CardHeader>
 
@@ -1029,7 +1082,7 @@ export default function DashboardPage() {
               </>
             ) : (
               <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-black/10 text-sm text-black/45">
-                No environment usage yet.
+                {c.noEnv}
               </div>
             )}
           </CardContent>
@@ -1039,8 +1092,8 @@ export default function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Model Readiness</CardTitle>
-            <CardDescription>Catalog, configured providers, pricing, health checks</CardDescription>
+            <CardTitle>{c.modelReadiness}</CardTitle>
+            <CardDescription>{c.modelReadinessDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
@@ -1058,13 +1111,13 @@ export default function DashboardPage() {
                 href="/models"
                 className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-900"
               >
-                Open Models
+                {c.openModels}
               </Link>
               <Link
                 href="/docs/reference/models"
                 className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]"
               >
-                Model Docs
+                {c.modelDocs}
               </Link>
             </div>
           </CardContent>
@@ -1072,8 +1125,8 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Task Readiness</CardTitle>
-            <CardDescription>Registry, stable workflows, schemas, paid tiers</CardDescription>
+            <CardTitle>{c.taskReadiness}</CardTitle>
+            <CardDescription>{c.taskReadinessDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
@@ -1087,13 +1140,13 @@ export default function DashboardPage() {
                 href="/tasks"
                 className="rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-900"
               >
-                Open Tasks
+                {c.openTasks}
               </Link>
               <Link
                 href="/playground"
                 className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]"
               >
-                Test Task
+                {c.testTask}
               </Link>
             </div>
           </CardContent>
@@ -1101,8 +1154,8 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Commercial Readiness</CardTitle>
-            <CardDescription>Next operator actions before heavier customer traffic</CardDescription>
+            <CardTitle>{c.commercialReady}</CardTitle>
+            <CardDescription>{c.commercialReadyDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">
@@ -1130,7 +1183,7 @@ export default function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Model Usage Breakdown</CardTitle>
+            <CardTitle>{c.modelBreakdown}</CardTitle>
             <CardDescription>Tokens / requests / cost</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1147,7 +1200,7 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-black/10 text-sm text-black/45">
-                  No model usage yet.
+                  {c.noModelUsage}
                 </div>
               )}
             </div>
@@ -1171,7 +1224,7 @@ export default function DashboardPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="px-3 py-6 text-sm text-black/45">No rows.</div>
+                  <div className="px-3 py-6 text-sm text-black/45">{c.noRows}</div>
                 )}
               </div>
             </div>
@@ -1180,7 +1233,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Cost Forecast (7 days)</CardTitle>
+            <CardTitle>{c.forecast}</CardTitle>
             <CardDescription>Projected spend trend</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1202,7 +1255,7 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-black/10 text-sm text-black/45">
-                  No forecast available yet.
+                  {c.noForecast}
                 </div>
               )}
             </div>
@@ -1233,14 +1286,14 @@ export default function DashboardPage() {
         <CardHeader>
           <div className="flex items-end justify-between gap-3">
             <div>
-              <CardTitle>Key-level Usage</CardTitle>
+              <CardTitle>{c.keyUsage}</CardTitle>
               <CardDescription>Top keys by cost (24h)</CardDescription>
             </div>
             <Link
               href="/keys"
               className="rounded-lg border border-black/15 px-4 py-2 text-sm font-semibold hover:bg-black/[0.03]"
             >
-              Manage Keys
+              {c.manageKeys}
             </Link>
           </div>
         </CardHeader>
@@ -1281,7 +1334,7 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <div className="px-3 py-6 text-sm text-black/45">
-                  No key-level usage yet.
+                  {c.noKeyUsage}
                 </div>
               )}
             </div>

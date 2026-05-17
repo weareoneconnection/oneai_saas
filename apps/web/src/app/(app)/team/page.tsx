@@ -4,6 +4,7 @@ import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { useI18n } from "@/lib/i18n";
 
 const roles = [
   {
@@ -119,11 +120,8 @@ function fmtTime(value?: string | null) {
   return date.toLocaleString();
 }
 
-function boolLabel(value?: boolean) {
-  return value ? "Allowed" : "Locked";
-}
-
 export default function TeamPage() {
+  const { isZh } = useI18n();
   const [payload, setPayload] = useState<TeamPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [memberEmail, setMemberEmail] = useState("");
@@ -179,15 +177,93 @@ export default function TeamPage() {
   }, []);
 
   const data = payload?.data;
+  const c = {
+    title: isZh ? "团队与组织权限" : "Team and Organization Access",
+    subtitle: isZh
+      ? "OneAI 已具备组织、成员和角色基础。这个页面把它变成客户可见的企业权限模型，同时不改变现有 API。"
+      : "OneAI already has organization membership and role foundations. This page turns that structure into a customer-facing enterprise access model without changing existing APIs.",
+    operatorCustomers: isZh ? "运营方客户" : "Operator customers",
+    unavailable: isZh ? "团队数据不可用" : "Team data unavailable",
+    unable: isZh ? "无法加载团队数据。" : "Unable to load team data.",
+    organization: isZh ? "组织" : "Organization",
+    currentOrg: isZh ? "当前客户组织" : "Current customer org",
+    yourRole: isZh ? "你的角色" : "Your role",
+    signIn: isZh ? "登录后加载" : "Sign in to load",
+    plan: isZh ? "套餐" : "Plan",
+    activeKeys: isZh ? "活跃 keys" : "Active keys",
+    totalKeys: isZh ? "总 keys" : "total keys",
+    liveMembers: isZh ? "实时成员" : "Live Members",
+    liveMembersDesc: isZh ? "从当前组织 membership 表加载的成员。" : "Members loaded from the current organization membership table.",
+    invite: isZh ? "邀请或更新成员" : "Invite or update member",
+    inviteDesc: isZh ? "仅 Owner 操作。成员会加入此组织，所有变更都会写入审计日志。" : "Owner-only action. The member is attached to this organization and all changes are audit logged.",
+    saving: isZh ? "保存中..." : "Saving...",
+    addMember: isZh ? "添加成员" : "Add member",
+    member: isZh ? "成员" : "Member",
+    role: isZh ? "角色" : "Role",
+    joined: isZh ? "加入时间" : "Joined",
+    actions: isZh ? "操作" : "Actions",
+    removing: isZh ? "移除中..." : "Removing...",
+    remove: isZh ? "移除" : "Remove",
+    loadingMembers: isZh ? "成员加载中..." : "Loading members...",
+    noMembers: isZh ? "暂无成员。" : "No members loaded.",
+    liveAccess: isZh ? "实时权限状态" : "Live Access State",
+    liveAccessDesc: isZh ? "当前组织权限和用量 footprint。" : "Current organization permissions and usage footprint.",
+    requests: isZh ? "请求" : "Requests",
+    modelCost: isZh ? "模型成本" : "Model cost",
+    prodKeys: isZh ? "生产 keys" : "Production keys",
+    tokens: "Tokens",
+    allowed: isZh ? "允许" : "Allowed",
+    locked: isZh ? "锁定" : "Locked",
+    permissionMatrix: isZh ? "权限矩阵" : "Permission Matrix",
+    permissionDesc: isZh ? "客户组织的默认企业权限。" : "Default enterprise permissions for customer organizations.",
+    capability: isZh ? "能力" : "Capability",
+    allowedRoles: isZh ? "允许角色" : "Allowed roles",
+    rollout: isZh ? "企业上线状态" : "Enterprise Rollout State",
+    rolloutDesc: isZh ? "当前已经具备的基础，以及需要保持显式的内容。" : "What is already true, and what should remain explicit.",
+    boundary: isZh ? "商业边界" : "Commercial Boundary",
+    boundaryDesc: isZh ? "团队权限管理 OneAI 智能基础设施访问。执行仍在 OneAI 外部。" : "Team permissions govern access to OneAI intelligence infrastructure. Execution stays outside OneAI.",
+    keys: "Keys",
+    audit: isZh ? "审计" : "Audit",
+    legalDocs: isZh ? "法务文档" : "Legal docs",
+  };
+  const boolLabel = (value?: boolean) => (value ? c.allowed : c.locked);
   const permissionRows = useMemo(() => {
     const permissions = data?.permissions || {};
     return [
-      ["Create keys", boolLabel(permissions.canCreateKeys)],
-      ["Manage billing", boolLabel(permissions.canManageBilling)],
-      ["Review proof", boolLabel(permissions.canReviewProof)],
-      ["Manage members", boolLabel(permissions.canManageMembers)],
+      [isZh ? "创建 keys" : "Create keys", boolLabel(permissions.canCreateKeys)],
+      [isZh ? "管理支付" : "Manage billing", boolLabel(permissions.canManageBilling)],
+      [isZh ? "复核 proof" : "Review proof", boolLabel(permissions.canReviewProof)],
+      [isZh ? "管理成员" : "Manage members", boolLabel(permissions.canManageMembers)],
     ];
-  }, [data?.permissions]);
+  }, [data?.permissions, isZh]);
+  const localizedRoles = isZh
+    ? [
+        { role: "Owner", desc: "拥有组织、支付关系、套餐策略和生产访问最终审批。", permissions: ["支付控制", "API key 策略", "成员角色变更", "Agent OS proof 复核"] },
+        { role: "Admin", desc: "运营客户侧基础设施，拥有 keys、用量和支持工作流的高信任访问。", permissions: ["创建 keys", "复核用量", "管理模型策略", "查看审计事件"] },
+        { role: "Member", desc: "基于已批准 tasks、models 和 API keys 构建与测试，但不能改变组织策略。", permissions: ["使用已批准 keys", "运行 Playground 测试", "查看自身用量", "阅读文档"] },
+        { role: "Viewer", desc: "只读 dashboard、发票、执行记录和审计轨迹，不改变生产状态。", permissions: ["只读用量", "只读支付", "只读执行记录", "只读文档"] },
+      ]
+    : roles;
+  const localizedMatrix = isZh
+    ? [
+        ["创建 API keys", "Owner / Admin"],
+        ["设置预算、RPM、IP allowlists", "Owner / Admin"],
+        ["修改支付套餐", "Owner"],
+        ["查看发票", "Owner / Admin / Viewer"],
+        ["查看用量和成本", "Owner / Admin / Member / Viewer"],
+        ["运行商业 tasks", "Owner / Admin / Member"],
+        ["复核 Agent OS proof", "Owner / Admin"],
+        ["修改成员角色", "Owner"],
+      ]
+    : matrix;
+  const localizedRollout = isZh
+    ? [
+        "后端已经存在 Organization、Membership 和 Role 数据。",
+        "当前控制台访问由 Google/console login 和 operator checks 保护。",
+        "下一步企业能力是自助邀请、移除和角色变更流程。",
+        "角色、key、支付、失败请求等变化应继续写入审计日志。",
+      ]
+    : rollout;
 
   return (
     <div className="max-w-full overflow-hidden space-y-6">
@@ -197,26 +273,25 @@ export default function TeamPage() {
             <Badge>Team</Badge>
             <Badge>RBAC</Badge>
           </div>
-          <h1 className="mt-4 text-wrap text-3xl font-bold tracking-tight">Team and Organization Access</h1>
+          <h1 className="mt-4 text-wrap text-3xl font-bold tracking-tight">{c.title}</h1>
           <p className="mt-2 max-w-3xl text-wrap text-sm leading-relaxed text-black/60">
-            OneAI already has organization membership and role foundations. This page turns that
-            structure into a customer-facing enterprise access model without changing existing APIs.
+            {c.subtitle}
           </p>
         </div>
         <Link
           href="/customers"
           className="inline-flex items-center justify-center rounded-lg border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-black/[0.03]"
         >
-          Operator customers
+          {c.operatorCustomers}
         </Link>
       </div>
 
       {payload && !payload.success ? (
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
-            <CardTitle className="text-red-900">Team data unavailable</CardTitle>
+            <CardTitle className="text-red-900">{c.unavailable}</CardTitle>
             <CardDescription className="text-red-800">
-              {payload.error || "Unable to load team data."}
+              {payload.error || c.unable}
               {payload.hint ? ` ${payload.hint}` : ""}
             </CardDescription>
           </CardHeader>
@@ -232,25 +307,25 @@ export default function TeamPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader>
-            <CardDescription>Organization</CardDescription>
+            <CardDescription>{c.organization}</CardDescription>
             <CardTitle>{data?.org?.name || (loading ? "Loading..." : "-")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xs text-black/45">{data?.org?.slug || "Current customer org"}</div>
+            <div className="text-xs text-black/45">{data?.org?.slug || c.currentOrg}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Your role</CardDescription>
+            <CardDescription>{c.yourRole}</CardDescription>
             <CardTitle>{data?.currentUser?.role || "-"}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="truncate text-xs text-black/45">{data?.currentUser?.email || "Sign in to load"}</div>
+            <div className="truncate text-xs text-black/45">{data?.currentUser?.email || c.signIn}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Plan</CardDescription>
+            <CardDescription>{c.plan}</CardDescription>
             <CardTitle>{data?.billing?.plan || "-"}</CardTitle>
           </CardHeader>
           <CardContent>
@@ -259,11 +334,11 @@ export default function TeamPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Active keys</CardDescription>
+            <CardDescription>{c.activeKeys}</CardDescription>
             <CardTitle>{fmtNum(data?.keyCounts?.active)}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xs text-black/45">{fmtNum(data?.keyCounts?.total)} total keys</div>
+            <div className="text-xs text-black/45">{fmtNum(data?.keyCounts?.total)} {c.totalKeys}</div>
           </CardContent>
         </Card>
       </div>
@@ -271,14 +346,14 @@ export default function TeamPage() {
       <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Live Members</CardTitle>
-            <CardDescription>Members loaded from the current organization membership table.</CardDescription>
+            <CardTitle>{c.liveMembers}</CardTitle>
+            <CardDescription>{c.liveMembersDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="mb-4 rounded-lg border border-black/10 bg-black/[0.02] p-4">
-              <div className="text-sm font-bold text-black">Invite or update member</div>
+              <div className="text-sm font-bold text-black">{c.invite}</div>
               <p className="mt-1 text-xs text-black/50">
-                Owner-only action. The member is attached to this organization and all changes are audit logged.
+                {c.inviteDesc}
               </p>
               <div className="mt-3 grid gap-3 md:grid-cols-[1fr_160px_auto]">
                 <input
@@ -303,7 +378,7 @@ export default function TeamPage() {
                   onClick={() => saveMember({ email: memberEmail, role: memberRole })}
                   className="h-10 rounded-lg bg-black px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-black/30"
                 >
-                  {busy === "invite" ? "Saving..." : "Add member"}
+                  {busy === "invite" ? c.saving : c.addMember}
                 </button>
               </div>
             </div>
@@ -311,10 +386,10 @@ export default function TeamPage() {
               <table className="min-w-[780px] w-full text-left text-sm">
                 <thead className="bg-black/[0.04] text-xs uppercase tracking-wide text-black/45">
                   <tr>
-                    <th className="px-4 py-3">Member</th>
-                    <th className="px-4 py-3">Role</th>
-                    <th className="px-4 py-3">Joined</th>
-                    <th className="px-4 py-3">Actions</th>
+                    <th className="px-4 py-3">{c.member}</th>
+                    <th className="px-4 py-3">{c.role}</th>
+                    <th className="px-4 py-3">{c.joined}</th>
+                    <th className="px-4 py-3">{c.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/10">
@@ -346,7 +421,7 @@ export default function TeamPage() {
                             disabled={busy === `remove:${member.id}` || member.email === data?.currentUser?.email}
                             className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 disabled:cursor-not-allowed disabled:opacity-40"
                           >
-                            {busy === `remove:${member.id}` ? "Removing..." : "Remove"}
+                            {busy === `remove:${member.id}` ? c.removing : c.remove}
                           </button>
                         </td>
                       </tr>
@@ -354,7 +429,7 @@ export default function TeamPage() {
                   ) : (
                     <tr>
                       <td className="px-4 py-8 text-center text-black/45" colSpan={4}>
-                        {loading ? "Loading members..." : "No members loaded."}
+                        {loading ? c.loadingMembers : c.noMembers}
                       </td>
                     </tr>
                   )}
@@ -366,25 +441,25 @@ export default function TeamPage() {
 
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Live Access State</CardTitle>
-            <CardDescription>Current organization permissions and usage footprint.</CardDescription>
+            <CardTitle>{c.liveAccess}</CardTitle>
+            <CardDescription>{c.liveAccessDesc}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg border border-black/10 bg-black/[0.02] p-3">
-                <div className="text-xs text-black/45">Requests</div>
+                <div className="text-xs text-black/45">{c.requests}</div>
                 <div className="mt-1 text-xl font-bold">{fmtNum(data?.usage?.requests)}</div>
               </div>
               <div className="rounded-lg border border-black/10 bg-black/[0.02] p-3">
-                <div className="text-xs text-black/45">Model cost</div>
+                <div className="text-xs text-black/45">{c.modelCost}</div>
                 <div className="mt-1 text-xl font-bold">{fmtUsd(data?.usage?.costUsd)}</div>
               </div>
               <div className="rounded-lg border border-black/10 bg-black/[0.02] p-3">
-                <div className="text-xs text-black/45">Production keys</div>
+                <div className="text-xs text-black/45">{c.prodKeys}</div>
                 <div className="mt-1 text-xl font-bold">{fmtNum(data?.keyCounts?.production)}</div>
               </div>
               <div className="rounded-lg border border-black/10 bg-black/[0.02] p-3">
-                <div className="text-xs text-black/45">Tokens</div>
+                <div className="text-xs text-black/45">{c.tokens}</div>
                 <div className="mt-1 text-xl font-bold">{fmtNum(data?.usage?.tokens)}</div>
               </div>
             </div>
@@ -401,7 +476,7 @@ export default function TeamPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {roles.map((item) => (
+        {localizedRoles.map((item) => (
           <Card key={item.role}>
             <CardHeader>
               <CardTitle>{item.role}</CardTitle>
@@ -423,20 +498,20 @@ export default function TeamPage() {
       <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Permission Matrix</CardTitle>
-            <CardDescription>Default enterprise permissions for customer organizations.</CardDescription>
+            <CardTitle>{c.permissionMatrix}</CardTitle>
+            <CardDescription>{c.permissionDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto rounded-lg border border-black/10">
               <table className="min-w-[620px] w-full text-left text-sm">
                 <thead className="bg-black/[0.04] text-xs uppercase tracking-wide text-black/45">
                   <tr>
-                    <th className="px-4 py-3">Capability</th>
-                    <th className="px-4 py-3">Allowed roles</th>
+                    <th className="px-4 py-3">{c.capability}</th>
+                    <th className="px-4 py-3">{c.allowedRoles}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/10">
-                  {matrix.map(([capability, allowed]) => (
+                  {localizedMatrix.map(([capability, allowed]) => (
                     <tr key={capability}>
                       <td className="px-4 py-4 font-semibold text-black">{capability}</td>
                       <td className="px-4 py-4 text-black/60">{allowed}</td>
@@ -450,12 +525,12 @@ export default function TeamPage() {
 
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Enterprise Rollout State</CardTitle>
-            <CardDescription>What is already true, and what should remain explicit.</CardDescription>
+            <CardTitle>{c.rollout}</CardTitle>
+            <CardDescription>{c.rolloutDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {rollout.map((item, index) => (
+              {localizedRollout.map((item, index) => (
                 <div key={item} className="flex gap-3 rounded-lg border border-black/10 bg-black/[0.02] p-3">
                   <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black text-xs font-bold text-white">
                     {index + 1}
@@ -470,25 +545,25 @@ export default function TeamPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Commercial Boundary</CardTitle>
+          <CardTitle>{c.boundary}</CardTitle>
           <CardDescription>
-            Team permissions govern access to OneAI intelligence infrastructure. Execution stays outside OneAI.
+            {c.boundaryDesc}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-lg border border-black/10 bg-black/[0.02] p-4">
-              <div className="text-sm font-bold">Keys</div>
-              <p className="mt-2 text-sm text-black/60">Per-key policy can control budgets, RPM, IPs, task allowlists, and model allowlists.</p>
+              <div className="text-sm font-bold">{c.keys}</div>
+              <p className="mt-2 text-sm text-black/60">{isZh ? "每个 key 的策略可控制预算、RPM、IP、task allowlists 和 model allowlists。" : "Per-key policy can control budgets, RPM, IPs, task allowlists, and model allowlists."}</p>
             </div>
             <div className="rounded-lg border border-black/10 bg-black/[0.02] p-4">
-              <div className="text-sm font-bold">Audit</div>
-              <p className="mt-2 text-sm text-black/60">Login, key, billing, request, failure, and Agent OS events are designed to be traceable.</p>
+              <div className="text-sm font-bold">{c.audit}</div>
+              <p className="mt-2 text-sm text-black/60">{isZh ? "登录、key、支付、请求、失败和 Agent OS 事件都设计为可追踪。" : "Login, key, billing, request, failure, and Agent OS events are designed to be traceable."}</p>
             </div>
             <div className="rounded-lg border border-black/10 bg-black/[0.02] p-4">
-              <div className="text-sm font-bold">Legal docs</div>
+              <div className="text-sm font-bold">{c.legalDocs}</div>
               <p className="mt-2 text-sm text-black/60">
-                SLA, DPA, invoices, terms, and privacy documents are linked from Docs, Security, and Billing.
+                {isZh ? "SLA、DPA、发票、条款和隐私文档可从 Docs、Security 和 Billing 进入。" : "SLA, DPA, invoices, terms, and privacy documents are linked from Docs, Security, and Billing."}
               </p>
             </div>
           </div>

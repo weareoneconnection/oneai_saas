@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useI18n } from "@/lib/i18n";
 
 type SystemNode = {
   id: string;
@@ -126,10 +127,10 @@ function SystemNodeCard({ node }: { node: SystemNode }) {
   );
 }
 
-function MobileSystemPreview() {
+function MobileSystemPreview({ nodes }: { nodes: SystemNode[] }) {
   return (
     <div className="grid gap-3 lg:hidden">
-      {systemNodes.map((node) => (
+      {nodes.map((node) => (
         <div
           key={node.id}
           className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-xl"
@@ -153,7 +154,7 @@ function MobileSystemPreview() {
   );
 }
 
-function DesktopSystemMap() {
+function DesktopSystemMap({ nodes, copy }: { nodes: SystemNode[]; copy: { coreSubtitle: string; chips: string[]; preview: string; previewDesc: string } }) {
   return (
     <div className="hidden lg:block">
       <Glass className="relative overflow-hidden p-4">
@@ -249,11 +250,11 @@ function DesktopSystemMap() {
               </div>
 
               <div className="mt-2 text-xs font-semibold leading-relaxed text-emerald-100/62">
-                Commercial AI Operating Layer
+                {copy.coreSubtitle}
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2">
-                {["route", "shape", "guard", "track"].map((item) => (
+                {copy.chips.map((item) => (
                   <div
                     key={item}
                     className="rounded-xl border border-emerald-300/15 bg-emerald-300/[0.08] px-2 py-2 text-xs font-black text-emerald-100/75"
@@ -265,7 +266,7 @@ function DesktopSystemMap() {
             </div>
           </div>
 
-          {systemNodes.map((node) => (
+          {nodes.map((node) => (
             <SystemNodeCard key={node.id} node={node} />
           ))}
 
@@ -273,10 +274,10 @@ function DesktopSystemMap() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-xs font-black uppercase tracking-[0.2em] text-white/35">
-                  System preview
+                  {copy.preview}
                 </div>
                 <div className="mt-1 text-sm font-bold text-white/70">
-                  Request path shown for product explanation only.
+                  {copy.previewDesc}
                 </div>
               </div>
 
@@ -299,6 +300,45 @@ function DesktopSystemMap() {
 }
 
 export function DynamicSystemMap() {
+  const { isZh } = useI18n();
+  const localizedLifecycle = isZh
+    ? [
+        ["01", "认证 key", "校验 API key、客户套餐和访问 scope。"],
+        ["02", "选择 API surface", "根据产品需求选择 Generate、Chat、Messages 或 Agent OS 预览。"],
+        ["03", "塑造智能输出", "把产品意图转换成稳定 task、message 或 handoff 合约。"],
+        ["04", "应用路由", "选择低成本、均衡、高级或显式模型行为。"],
+        ["05", "执行策略", "应用成本保护、套餐权限和请求规则。"],
+        ["06", "调用模型或 handoff", "路由到模型 provider，或准备不执行动作的 Agent OS handoff 对象。"],
+        ["07", "追踪用量", "记录请求、客户、用量、成本和支付上下文。"],
+      ]
+    : lifecycle;
+  const localizedNodes = isZh
+    ? [
+        { ...systemNodes[0], eyebrow: "输入", title: "你的产品", desc: "SaaS app · backend · agent · internal tool" },
+        { ...systemNodes[1], eyebrow: "模型", title: "模型 Providers", desc: "OpenAI · Anthropic · Google · xAI · DeepSeek · OpenRouter" },
+        { ...systemNodes[2], eyebrow: "工作流", title: "Task Intelligence", desc: "business_strategy · content_engine · support_brain" },
+        { ...systemNodes[3], eyebrow: "Handoff", title: "Agent OS 预览", desc: "agent plans · context packets · external execution boundary" },
+        { ...systemNodes[4], eyebrow: "治理", title: "策略与成本保护", desc: "routing mode · maxCostUsd · plan gates" },
+        { ...systemNodes[5], eyebrow: "商业", title: "商业控制台", desc: "keys · usage · customers · billing · cost" },
+      ]
+    : systemNodes;
+  const copy = {
+    eyebrow: isZh ? "系统图" : "System Map",
+    title: isZh ? "一次请求，经过多层商业智能。" : "One request. Multiple layers of commercial intelligence.",
+    desc: isZh
+      ? "每一次 AI 请求都可以经过认证、任务结构化、模型路由、成本策略、供应商执行、用量记录和支付就绪可见性。"
+      : "Every AI request can move through authentication, task shaping, routing, cost policy, provider execution, usage tracking, and billing-ready visibility.",
+    zhLine: isZh
+      ? "OneAI 把模型访问、Task Intelligence、Agent OS handoff 和商业控制统一成一个可运营的智能大脑。"
+      : "OneAI unifies model access, Task Intelligence, Agent OS handoff, and commercial controls into one operable intelligence brain.",
+    lifecycleTitle: isZh ? "请求生命周期" : "Request lifecycle",
+    previewNote: isZh ? "系统预览 · 非生产实时数据" : "System preview · not live production data",
+    preview: isZh ? "预览" : "preview",
+    coreSubtitle: isZh ? "商业 AI 操作层" : "Commercial AI Operating Layer",
+    chips: isZh ? ["路由", "塑形", "保护", "追踪"] : ["route", "shape", "guard", "track"],
+    mapPreview: isZh ? "系统预览" : "System preview",
+    mapPreviewDesc: isZh ? "请求路径仅用于产品解释。" : "Request path shown for product explanation only.",
+  };
   return (
     <section className="relative overflow-hidden border-b border-white/10 bg-[#030712]">
       <style>{`
@@ -343,41 +383,39 @@ export function DynamicSystemMap() {
         <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
           <div>
             <div className="inline-flex rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-emerald-200">
-              System Map
+              {copy.eyebrow}
             </div>
 
             <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight tracking-tight text-white md:text-6xl">
-              One request. Multiple layers of commercial intelligence.
+              {copy.title}
             </h2>
 
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/58 md:text-lg">
-              Every AI request can move through authentication, task shaping,
-              routing, cost policy, provider execution, usage tracking, and
-              billing-ready visibility.
+              {copy.desc}
             </p>
 
             <p className="mt-4 max-w-2xl text-sm font-bold leading-relaxed text-emerald-100/75 md:text-base">
-              每一次 AI 请求都可以经过认证、任务结构化、模型路由、成本策略、供应商执行、用量记录和商业控制台。
+              {copy.zhLine}
             </p>
 
             <Glass className="mt-8 p-4">
               <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
                 <div>
                   <div className="text-sm font-black text-white">
-                    Request lifecycle
+                    {copy.lifecycleTitle}
                   </div>
                   <div className="mt-1 text-xs text-white/38">
-                    System preview · not live production data
+                    {copy.previewNote}
                   </div>
                 </div>
 
                 <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-xs font-black text-amber-200">
-                  preview
+                  {copy.preview}
                 </span>
               </div>
 
               <div className="mt-4 grid gap-2">
-                {lifecycle.map(([step, title, desc]) => (
+                {localizedLifecycle.map(([step, title, desc]) => (
                   <div
                     key={step}
                     className="group grid grid-cols-[42px_1fr] gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 transition hover:border-emerald-300/25 hover:bg-white/[0.06]"
@@ -401,8 +439,8 @@ export function DynamicSystemMap() {
           </div>
 
           <div className="relative">
-            <DesktopSystemMap />
-            <MobileSystemPreview />
+            <DesktopSystemMap nodes={localizedNodes} copy={{ coreSubtitle: copy.coreSubtitle, chips: copy.chips, preview: copy.mapPreview, previewDesc: copy.mapPreviewDesc }} />
+            <MobileSystemPreview nodes={localizedNodes} />
 
             <div className="pointer-events-none absolute -inset-4 -z-10 rounded-[2.4rem] bg-emerald-400/10 blur-3xl" />
           </div>

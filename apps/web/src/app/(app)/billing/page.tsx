@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { useI18n } from "@/lib/i18n";
 
 type BillingData = {
   plan: "free" | "pro" | "team" | "business" | string;
@@ -145,6 +146,16 @@ const planMatrix = [
   ["Private executor policy", "locked", "locked", "locked", "enabled"],
 ];
 
+type PlanCardData = {
+  key: "free" | "pro" | "team" | "enterprise";
+  name: string;
+  price: string;
+  desc: string;
+  cta: string;
+  env?: string;
+  features: readonly string[];
+};
+
 function statusClass(status: string) {
   const s = status.toLowerCase();
   if (s === "active") return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700";
@@ -212,7 +223,7 @@ function PlanCard({
   busy,
   onCheckout,
 }: {
-  plan: (typeof plans)[number];
+  plan: PlanCardData;
   currentPlan: string;
   busy: string | null;
   onCheckout: (tier: "pro" | "team") => void;
@@ -270,7 +281,9 @@ function PlanCard({
         {canCheckout ? (
           <Button
             variant={isCurrent ? "secondary" : "primary"}
-            onClick={() => onCheckout(plan.key)}
+            onClick={() => {
+              if (plan.key === "pro" || plan.key === "team") onCheckout(plan.key);
+            }}
             disabled={busy !== null || !priceId}
             className="w-full"
           >
@@ -308,6 +321,8 @@ function PlanCard({
 }
 
 export default function BillingPage() {
+  const { isZh } = useI18n();
+  const c = (en: string, zh: string) => (isZh ? zh : en);
   const [data, setData] = useState<BillingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"pro" | "team" | "portal" | null>(null);
@@ -337,6 +352,56 @@ export default function BillingPage() {
     !!data?.stripeConfig?.priceTeam;
   const webhookReady = !!data?.stripeConfig?.webhookSecret;
   const selfServeReady = ENABLE_STRIPE_CHECKOUT && stripeReady && webhookReady;
+  const localizedPlans = plans.map((item) => {
+    if (item.key === "free") {
+      return {
+        ...item,
+        desc: c("Validate the API, generate test outputs, and inspect usage.", "验证 API、生成测试输出并查看用量。"),
+        cta: c("Current free access", "当前免费权限"),
+        features: [c("Developer API key", "开发者 API key"), c("Basic task access", "基础 task 权限"), c("Usage dashboard", "用量看板")],
+      };
+    }
+    if (item.key === "pro") {
+      return {
+        ...item,
+        desc: c("For builders shipping production workflows on top of OneAI.", "适合基于 OneAI 上线生产 workflow 的开发者。"),
+        cta: c("Upgrade to Pro", "升级到 Pro"),
+        features: [
+          c("Higher request limits", "更高请求额度"),
+          c("Cost-aware model routing", "成本感知模型路由"),
+          "Request IDs and idempotency",
+          c("Customer usage analytics", "客户用量分析"),
+        ],
+      };
+    }
+    if (item.key === "team") {
+      return {
+        ...item,
+        desc: c("For teams that need shared usage, stronger limits, and billing ops.", "适合需要共享用量、更强限额和账单运营的团队。"),
+        cta: c("Upgrade to Team", "升级到 Team"),
+        features: [
+          c("Shared organization billing", "组织共享账单"),
+          c("API key governance", "API key 治理"),
+          c("Provider/model policy", "Provider/model 策略"),
+          c("Agent OS preview and handoff contracts", "Agent OS 预览和交接合同"),
+          c("Priority commercial support", "优先商业支持"),
+        ],
+      };
+    }
+    return {
+      ...item,
+      price: c("Custom", "定制"),
+      desc: c("For production customers that need custom policy, provider controls, and support.", "适合需要定制策略、provider 控制和支持的生产客户。"),
+      cta: c("Contact sales", "联系销售"),
+      features: [
+        c("Custom request and cost limits", "定制请求和成本限制"),
+        c("Custom provider/model policy", "定制 provider/model 策略"),
+        c("Private model configuration", "私有模型配置"),
+        c("Private Agent OS handoff protocol", "私有 Agent OS 交接协议"),
+        c("Launch support and operational review", "上线支持和运营检查"),
+      ],
+    };
+  });
 
   async function load() {
     setLoading(true);
@@ -436,16 +501,18 @@ export default function BillingPage() {
             <Badge>Commercial API</Badge>
           </div>
           <h1 className="mt-3 text-2xl font-bold tracking-tight text-black">
-            Plans and Billing
+            {c("Plans and Billing", "套餐和账单")}
           </h1>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-black/55">
-            Sell reliable OneAI API access with model routing, usage visibility,
-            and cost controls. Stripe handles subscription and invoices.
+            {c(
+              "Sell reliable OneAI API access with model routing, usage visibility, and cost controls. Stripe handles subscription and invoices.",
+              "通过模型路由、用量可见性和成本控制售卖可靠的 OneAI API。Stripe 负责订阅和发票。"
+            )}
           </p>
           {!ENABLE_STRIPE_CHECKOUT ? (
             <div className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-800">
-              <span>Manual sales mode</span>
-              <span className="text-amber-900/50">Contact:</span>
+              <span>{c("Manual sales mode", "人工销售模式")}</span>
+              <span className="text-amber-900/50">{c("Contact:", "联系：")}</span>
               <a className="underline underline-offset-2" href={CONTACT_SALES_HREF}>
                 {CONTACT_SALES_EMAIL}
               </a>
@@ -461,13 +528,13 @@ export default function BillingPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-md border border-black/10 bg-black/[0.03] px-2 py-1 text-xs font-medium text-black/65">
-            {loading ? "Loading plan" : `Plan: ${effectivePlan}`}
+            {loading ? c("Loading plan", "套餐加载中") : `${c("Plan", "套餐")}: ${effectivePlan}`}
           </span>
           <span className={`rounded-md border px-2 py-1 text-xs font-medium ${statusClass(status)}`}>
             {status}
           </span>
           <span className={`rounded-md border px-2 py-1 text-xs font-medium ${riskClass}`}>
-            Usage: {riskLabel}
+            {c("Usage", "用量")}: {riskLabel}
           </span>
           <Button
             variant="secondary"
@@ -475,7 +542,7 @@ export default function BillingPage() {
             onClick={openPortal}
             disabled={busy === "portal" || !canPortal}
           >
-            {busy === "portal" ? "Opening..." : "Manage Billing"}
+            {busy === "portal" ? c("Opening...", "打开中...") : c("Manage Billing", "管理账单")}
           </Button>
         </div>
       </div>
@@ -484,34 +551,38 @@ export default function BillingPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-lg border border-black/10 p-4">
-          <div className="text-xs text-black/50">Current plan</div>
+          <div className="text-xs text-black/50">{c("Current plan", "当前套餐")}</div>
           <div className="mt-2 text-lg font-semibold capitalize">{effectivePlan}</div>
         </div>
         <div className="rounded-lg border border-black/10 p-4">
-          <div className="text-xs text-black/50">Subscription status</div>
+          <div className="text-xs text-black/50">{c("Subscription status", "订阅状态")}</div>
           <div className="mt-2 text-lg font-semibold capitalize">{status}</div>
         </div>
         <div className="rounded-lg border border-black/10 p-4">
-          <div className="text-xs text-black/50">Current period end</div>
+          <div className="text-xs text-black/50">{c("Current period end", "当前周期结束")}</div>
           <div className="mt-2 text-lg font-semibold">{periodEnd}</div>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-lg border border-black/10 bg-white p-4">
-          <div className="text-xs text-black/50">Requests remaining</div>
+          <div className="text-xs text-black/50">{c("Requests remaining", "剩余请求数")}</div>
           <div className="mt-2 text-xl font-semibold">{fmtNum(data?.remaining?.requests || 0)}</div>
           <div className="mt-2 text-xs text-black/45">{requestUsagePct.toFixed(1)}% used this month</div>
         </div>
         <div className="rounded-lg border border-black/10 bg-white p-4">
-          <div className="text-xs text-black/50">Model budget remaining</div>
+          <div className="text-xs text-black/50">{c("Model budget remaining", "剩余模型预算")}</div>
           <div className="mt-2 text-xl font-semibold">{fmtUsd(data?.remaining?.costUsd || 0)}</div>
           <div className="mt-2 text-xs text-black/45">{costUsagePct.toFixed(1)}% used this month</div>
         </div>
         <div className="rounded-lg border border-black/10 bg-white p-4">
-          <div className="text-xs text-black/50">Recommended action</div>
+          <div className="text-xs text-black/50">{c("Recommended action", "建议动作")}</div>
           <div className="mt-2 text-sm font-semibold text-black">
-            {riskLevel >= 90 ? "Upgrade or increase limits before customer traffic fails." : riskLevel >= 70 ? "Monitor usage and prepare an upgrade path." : "Current plan is within healthy operating range."}
+            {riskLevel >= 90
+              ? c("Upgrade or increase limits before customer traffic fails.", "请在客户流量失败前升级或提高额度。")
+              : riskLevel >= 70
+                ? c("Monitor usage and prepare an upgrade path.", "请监控用量并准备升级路径。")
+                : c("Current plan is within healthy operating range.", "当前套餐处于健康运行范围。")}
           </div>
         </div>
       </div>
@@ -520,16 +591,16 @@ export default function BillingPage() {
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
-              <CardTitle>Upgrade Path</CardTitle>
+              <CardTitle>{c("Upgrade Path", "升级路径")}</CardTitle>
               <CardDescription>
-                A simple commercial path from free validation to paid production usage.
+                {c("A simple commercial path from free validation to paid production usage.", "从免费验证到付费生产用量的简单商业路径。")}
               </CardDescription>
             </div>
             <Link
               href="/pricing"
               className="inline-flex h-9 items-center justify-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black transition hover:bg-black/[0.03]"
             >
-              Compare plans
+              {c("Compare plans", "比较套餐")}
             </Link>
           </div>
         </CardHeader>
@@ -554,13 +625,13 @@ export default function BillingPage() {
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/playground" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
-              Test free tasks
+              {c("Test free tasks", "测试免费 tasks")}
             </Link>
             <Link href="/agent-os" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
-              Preview Agent OS
+              {c("Preview Agent OS", "预览 Agent OS")}
             </Link>
             <Link href={CONTACT_SALES_HREF} className="inline-flex h-9 items-center rounded-lg bg-black px-3 text-sm font-semibold text-white hover:bg-neutral-900">
-              Contact sales
+              {c("Contact sales", "联系销售")}
             </Link>
             <a href={CONTACT_TELEGRAM_HREF} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center rounded-lg border border-black/10 px-3 text-sm font-semibold text-black hover:bg-black/[0.03]">
               Telegram
@@ -571,9 +642,9 @@ export default function BillingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Commercial Billing Loop</CardTitle>
+          <CardTitle>{c("Commercial Billing Loop", "商业账单闭环")}</CardTitle>
           <CardDescription>
-            Self-serve upgrade, Stripe checkout, webhook sync, plan policy, and audit trail in one loop.
+            {c("Self-serve upgrade, Stripe checkout, webhook sync, plan policy, and audit trail in one loop.", "自助升级、Stripe checkout、webhook 同步、套餐策略和审计日志形成一个闭环。")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -756,7 +827,7 @@ export default function BillingPage() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-4">
-        {plans.map((item) => (
+        {localizedPlans.map((item) => (
           <PlanCard
             key={item.key}
             plan={item}

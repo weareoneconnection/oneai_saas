@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/Card";
+import { useI18n } from "@/lib/i18n";
 
 type TaskKey = string;
 type Mode = "cheap" | "balanced" | "fast" | "premium" | "auto";
@@ -298,6 +299,8 @@ function PrettyJson({ value }: { value: unknown }) {
 }
 
 export default function PlaygroundPage() {
+  const { isZh } = useI18n();
+  const c = (en: string, zh: string) => (isZh ? zh : en);
   const [playgroundMode, setPlaygroundMode] = useState<PlaygroundMode>("task");
   const [tasks, setTasks] = useState<TaskOption[]>([]);
   const [type, setType] = useState<TaskKey>(DEFAULT_TASK);
@@ -688,22 +691,22 @@ print(data)`;
             <Badge>Playground</Badge>
             <span className="text-xs text-black/45">
               {playgroundMode === "task"
-                ? "Structured generation tester"
+                ? c("Structured generation tester", "结构化生成测试")
                 : playgroundMode === "chat"
-                  ? "Model gateway tester"
-                  : "Agent OS preview tester"}
+                  ? c("Model gateway tester", "模型网关测试")
+                  : c("Agent OS preview tester", "Agent OS 预览测试")}
             </span>
             {taskLoadWarning ? <span className="text-xs text-amber-700">{taskLoadWarning}</span> : null}
           </div>
 
-          <h1 className="mt-3 text-2xl font-bold tracking-tight text-black">Generate Playground</h1>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-black">{c("Generate Playground", "生成测试台")}</h1>
           <p className="mt-1 text-sm text-black/55">
-            Test OneAI tasks, standard chat completions, model routing, usage, and traces.
+            {c("Test OneAI tasks, standard chat completions, model routing, usage, and traces.", "测试 OneAI tasks、标准 chat completions、模型路由、用量和 trace。")}
           </p>
         </div>
 
         <Button onClick={run} disabled={loading}>
-          {loading ? "Running..." : "Run request"}
+          {loading ? c("Running...", "运行中...") : c("Run request", "运行请求")}
         </Button>
       </div>
 
@@ -765,13 +768,16 @@ print(data)`;
           <CardHeader>
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
-                <CardTitle>Commercial presets</CardTitle>
+                <CardTitle>{c("Commercial presets", "商用预设")}</CardTitle>
                 <CardDescription>
-                  Load a real OneAI business task with recommended mode, model, input JSON, and cost guard.
+                  {c(
+                    "Load a real OneAI business task with recommended mode, model, input JSON, and cost guard.",
+                    "载入真实 OneAI 商用 task，包含推荐 mode、model、input JSON 和成本保护。"
+                  )}
                 </CardDescription>
               </div>
               <div className="text-xs font-semibold text-black/45">
-                Free tasks can run immediately. Pro/Team presets show paid-plan behavior.
+                {c("Free tasks can run immediately. Pro/Team presets show paid-plan behavior.", "Free task 可直接运行，Pro/Team 预设用于展示付费套餐行为。")}
               </div>
             </div>
           </CardHeader>
@@ -822,13 +828,13 @@ print(data)`;
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Request</CardTitle>
+              <CardTitle>{c("Request", "请求")}</CardTitle>
               <CardDescription>
                 {playgroundMode === "task"
                   ? selectedTask.description
                   : playgroundMode === "chat"
-                    ? "OpenAI-compatible chat completions through OneAI routing."
-                    : "Agent OS preview endpoints for plans, handoff, and context. OneAI does not execute external actions."}
+                    ? c("OpenAI-compatible chat completions through OneAI routing.", "通过 OneAI 路由调用 OpenAI-compatible chat completions。")
+                    : c("Agent OS preview endpoints for plans, handoff, and context. OneAI does not execute external actions.", "Agent OS 预览 endpoint：plans、handoff 和 context。OneAI 不执行外部动作。")}
               </CardDescription>
             </CardHeader>
 
@@ -836,9 +842,9 @@ print(data)`;
               {playgroundMode === "agent" ? (
                 <>
                   <div className="grid gap-3 md:grid-cols-3">
-                    <Stat label="Boundary" value="preview_only" />
-                    <Stat label="Execution" value="disabled" />
-                    <Stat label="Owner" value="OneAI brain" />
+                    <Stat label={c("Boundary", "边界")} value="preview_only" />
+                    <Stat label={c("Execution", "执行")} value="disabled" />
+                    <Stat label={c("Owner", "负责人")} value="OneAI brain" />
                   </div>
 
                   <label className="block">
@@ -852,7 +858,7 @@ print(data)`;
 
                   <label className="block">
                     <div className="mb-1 flex items-center justify-between gap-2 text-xs text-black/50">
-                      <span>Preview JSON</span>
+                      <span>{c("Preview JSON", "预览 JSON")}</span>
                       <span className="flex items-center gap-3">
                         {parseError ? <span className="text-red-600">Invalid JSON: {parseError}</span> : null}
                         <button
@@ -860,7 +866,7 @@ print(data)`;
                           onClick={() => copyText("Agent OS JSON", agentInput)}
                           className="font-semibold text-black hover:underline"
                         >
-                          Copy JSON
+                          {c("Copy JSON", "复制 JSON")}
                         </button>
                       </span>
                     </div>
@@ -870,9 +876,9 @@ print(data)`;
               ) : playgroundMode === "task" ? (
                 <>
                   <div className="grid gap-3 md:grid-cols-3">
-                    <Stat label="Selected task" value={<code>{type}</code>} />
-                    <Stat label="Tier" value={selectedTask.tier || "-"} />
-                    <Stat label="Maturity" value={selectedTask.maturity || "-"} />
+                    <Stat label={c("Selected task", "已选 task")} value={<code>{type}</code>} />
+                    <Stat label={c("Tier", "等级")} value={selectedTask.tier || "-"} />
+                    <Stat label={c("Maturity", "成熟度")} value={selectedTask.maturity || "-"} />
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
@@ -891,7 +897,7 @@ print(data)`;
                     </label>
 
                     <label className="block">
-                      <div className="mb-1 text-xs text-black/50">Routing mode</div>
+                      <div className="mb-1 text-xs text-black/50">{c("Routing mode", "路由模式")}</div>
                       <Select value={mode} onChange={(e) => setMode(e.target.value as Mode)}>
                         {modes.map((item) => (
                           <option key={item} value={item}>
@@ -904,7 +910,7 @@ print(data)`;
 
                   <div className="grid gap-3 md:grid-cols-3">
                     <label className="block">
-                      <div className="mb-1 text-xs text-black/50">Provider override</div>
+                      <div className="mb-1 text-xs text-black/50">{c("Provider override", "Provider 覆盖")}</div>
                       <Input
                         value={provider}
                         onChange={(e) => setProvider(e.target.value)}
@@ -914,7 +920,7 @@ print(data)`;
                     </label>
 
                     <label className="block">
-                      <div className="mb-1 text-xs text-black/50">Model override</div>
+                      <div className="mb-1 text-xs text-black/50">{c("Model override", "模型覆盖")}</div>
                       <Input
                         value={model}
                         onChange={(e) => setModel(e.target.value)}
@@ -924,7 +930,7 @@ print(data)`;
                     </label>
 
                     <label className="block">
-                      <div className="mb-1 text-xs text-black/50">Max cost USD</div>
+                      <div className="mb-1 text-xs text-black/50">{c("Max cost USD", "最大成本 USD")}</div>
                       <Input
                         value={maxCostUsd}
                         onChange={(e) => setMaxCostUsd(e.target.value)}
@@ -944,7 +950,7 @@ print(data)`;
                           onClick={() => copyText("Input JSON", input)}
                           className="font-semibold text-black hover:underline"
                         >
-                          Copy JSON
+                          {c("Copy JSON", "复制 JSON")}
                         </button>
                       </span>
                     </div>
@@ -962,7 +968,7 @@ print(data)`;
                         onClick={() => copyText("Chat JSON", chatInput)}
                         className="font-semibold text-black hover:underline"
                       >
-                        Copy JSON
+                        {c("Copy JSON", "复制 JSON")}
                       </button>
                     </span>
                   </div>
@@ -976,15 +982,15 @@ print(data)`;
             <CardHeader>
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <CardTitle>cURL Preview</CardTitle>
-                  <CardDescription>Same payload for external API callers.</CardDescription>
+                  <CardTitle>{c("cURL Preview", "cURL 预览")}</CardTitle>
+                  <CardDescription>{c("Same payload for external API callers.", "外部 API 调用方可使用同样 payload。")}</CardDescription>
                 </div>
                 <Button
                   type="button"
                   variant="secondary"
                   onClick={() => copyText("cURL", curlPreview)}
                 >
-                  Copy cURL
+                  {c("Copy cURL", "复制 cURL")}
                 </Button>
               </div>
             </CardHeader>
@@ -997,15 +1003,15 @@ print(data)`;
             <CardHeader>
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <CardTitle>Production Code</CardTitle>
-                  <CardDescription>Copy server-side examples after your Playground request works.</CardDescription>
+                  <CardTitle>{c("Production Code", "生产代码")}</CardTitle>
+                  <CardDescription>{c("Copy server-side examples after your Playground request works.", "Playground 请求跑通后，可复制服务端示例代码。")}</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="secondary" onClick={() => copyText("Node.js", nodePreview)}>
-                    Copy Node.js
+                    {c("Copy Node.js", "复制 Node.js")}
                   </Button>
                   <Button type="button" variant="secondary" onClick={() => copyText("Python", pythonPreview)}>
-                    Copy Python
+                    {c("Copy Python", "复制 Python")}
                   </Button>
                 </div>
               </div>
@@ -1022,7 +1028,7 @@ print(data)`;
                 </div>
               </div>
               <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-900">
-                Keep <code>ONEAI_API_KEY</code> on the server. Do not expose it in browser or mobile client code.
+                {c("Keep", "请将")} <code>ONEAI_API_KEY</code> {c("on the server. Do not expose it in browser or mobile client code.", "保存在服务端，不要暴露在浏览器或移动端代码中。")}
               </div>
             </CardContent>
           </Card>
@@ -1033,7 +1039,7 @@ print(data)`;
             <CardHeader>
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <CardTitle>Response</CardTitle>
+                  <CardTitle>{c("Response", "响应")}</CardTitle>
                   <CardDescription>{explain(result)}</CardDescription>
                 </div>
 
@@ -1047,7 +1053,7 @@ print(data)`;
                         : "bg-red-100 text-red-800",
                   ].join(" ")}
                 >
-                  {result ? (result.success ? "Success" : result.code || "Error") : "Idle"}
+                  {result ? (result.success ? c("Success", "成功") : result.code || c("Error", "错误")) : c("Idle", "等待")}
                 </span>
               </div>
             </CardHeader>
@@ -1055,9 +1061,9 @@ print(data)`;
             <CardContent className="space-y-4">
               <div className="grid gap-3 md:grid-cols-4">
                 <Stat label="Request ID" value={result?.requestId || result?.id ? <code>{String(result.requestId || result.id).slice(0, 12)}</code> : "-"} />
-                <Stat label="Attempts" value={result?.attempts ?? "-"} />
-                <Stat label="Latency" value={result?.latencyMs || result?.oneai?.trace?.latencyMs ? `${result.latencyMs || result.oneai.trace.latencyMs}ms` : "-"} />
-                <Stat label="Cost" value={usageCost ? `$${Number(usageCost).toFixed(6)}` : "-"} />
+                <Stat label={c("Attempts", "尝试次数")} value={result?.attempts ?? "-"} />
+                <Stat label={c("Latency", "延迟")} value={result?.latencyMs || result?.oneai?.trace?.latencyMs ? `${result.latencyMs || result.oneai.trace.latencyMs}ms` : "-"} />
+                <Stat label={c("Cost", "成本")} value={usageCost ? `$${Number(usageCost).toFixed(6)}` : "-"} />
               </div>
 
               {result?.usage ? (
