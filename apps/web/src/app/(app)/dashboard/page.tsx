@@ -760,7 +760,7 @@ export default function DashboardPage() {
             {analyticsErr && !isConsoleAccessNotice(analyticsErr) ? (
               <span className="text-xs text-amber-700">Analytics: {analyticsErr}</span>
             ) : null}
-            {registryErr ? (
+            {registryErr && !isConsoleAccessNotice(registryErr) ? (
               <span className="text-xs text-red-600">Registry: {registryErr}</span>
             ) : null}
           </div>
@@ -795,11 +795,14 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {analyticsErr && isConsoleAccessNotice(analyticsErr) ? (
-        <SignInRequired message={analyticsErr} />
+      {(analyticsErr && isConsoleAccessNotice(analyticsErr)) ||
+      (registryErr && isConsoleAccessNotice(registryErr)) ? (
+        <SignInRequired message={[analyticsErr, registryErr].filter(Boolean).join(" · ")} />
       ) : null}
 
-      {source === "empty" && !loading ? (
+      {source === "empty" &&
+      !loading &&
+      !isConsoleAccessNotice([analyticsErr, registryErr].filter(Boolean).join(" ")) ? (
         <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-black/60">
           {c.empty}
         </div>

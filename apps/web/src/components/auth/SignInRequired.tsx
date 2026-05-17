@@ -7,6 +7,12 @@ export function isConsoleAccessNotice(message?: string | null) {
   const text = String(message || "").toLowerCase();
   return (
     text.includes("unauthorized") ||
+    text.includes("http 401") ||
+    text.includes("status 401") ||
+    text.includes("401") ||
+    text.includes("http 403") ||
+    text.includes("status 403") ||
+    text.includes("403") ||
     text.includes("sign in") ||
     text.includes("missing api key") ||
     text.includes("invalid api key") ||
