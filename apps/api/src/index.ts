@@ -59,7 +59,6 @@ app.post(
 );
 app.use("/v1/tasks", tasksRoute);
 app.use("/v1/usage", usageRoute);
-app.use("/v1", agentOsRoute);
 
 // ===== Admin =====
 app.use("/v1/admin", adminRoute);
@@ -69,6 +68,11 @@ app.use("/v1/admin-dashboard", adminDashboardRouter);
 
 // ===== Billing =====
 app.use("/v1/billing", billingRoute);
+
+// ===== Agent OS catch-all under /v1 =====
+// Keep this after concrete /v1 routes. The Agent OS router has its own API-key
+// middleware and would otherwise intercept /v1/admin/* before admin auth runs.
+app.use("/v1", agentOsRoute);
 
 // ===== 404 兜底 =====
 app.use((_req, res) => {

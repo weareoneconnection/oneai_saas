@@ -9,6 +9,12 @@ export function oneAIBaseURL() {
   return String(raw).replace(/\/$/, "");
 }
 
+export function oneAIBaseURLs() {
+  const primary = oneAIBaseURL();
+  const production = "https://oneai-saas-api-production.up.railway.app";
+  return Array.from(new Set([primary, production].map((url) => url.replace(/\/$/, ""))));
+}
+
 export function oneAIAdminKey() {
   return String(
     process.env.ONEAI_ADMIN_API_KEY ||

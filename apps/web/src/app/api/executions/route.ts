@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   oneAIAdminKey,
-  oneAIBaseURL,
+  oneAIBaseURLs,
   requireConsoleEmail,
   requireConsoleOperator,
 } from "@/lib/consoleIdentity";
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
     let lastStatus = 500;
     let lastJson: any = null;
     for (const apiKey of keys) {
-      const upstream = await fetch(`${oneAIBaseURL()}/v1/executions?limit=${encodeURIComponent(limit)}`, {
+      const upstream = await fetch(`${oneAIBaseURLs()[0]}/v1/executions?limit=${encodeURIComponent(limit)}`, {
         headers: {
           accept: "application/json",
           "x-api-key": apiKey,
@@ -107,20 +107,31 @@ export async function GET(req: Request) {
     }, { status: 200 });
   }
 
-  const url = `${oneAIBaseURL()}/v1/admin/agent-executions?${params.toString()}`;
+  let lastJson: any = null;
+  let lastStatus = 502;
+  for (const base of oneAIBaseURLs()) {
+    const url = `${base}/v1/admin/agent-executions?${params.toString()}`;
+    const upstream = await fetch(url, {
+      headers: {
+        accept: "application/json",
+        "x-admin-key": adminKey,
+      },
+      cache: "no-store",
+    }).catch((error) => {
+      lastJson = { success: false, error: error?.message || "execution_fetch_failed", base };
+      lastStatus = 502;
+      return null;
+    });
+    if (!upstream) continue;
+    lastStatus = upstream.status;
+    lastJson = await readJsonSafe(upstream);
+    if (upstream.ok) {
+      return NextResponse.json(lastJson || { success: false, error: "empty_response" }, { status: upstream.status });
+    }
+    if (![401, 403, 500, 502, 503, 504].includes(upstream.status)) break;
+  }
 
-  const upstream = await fetch(url, {
-    headers: {
-      accept: "application/json",
-      "x-admin-key": adminKey,
-    },
-    cache: "no-store",
-  });
-
-  const json = await readJsonSafe(upstream);
-  return NextResponse.json(json || { success: false, error: "empty_response" }, {
-    status: upstream.status,
-  });
+  return NextResponse.json(lastJson || { success: false, error: "execution_fetch_failed" }, { status: lastStatus });
 }
 
 export async function POST(req: Request) {
@@ -142,7 +153,7 @@ export async function POST(req: Request) {
   }
 
   const upstream = await fetch(
-    `${oneAIBaseURL()}/v1/admin/agent-executions/${encodeURIComponent(handoffId)}/review-proof`,
+    `${oneAIBaseURLs()[0]}/v1/admin/agent-executions/${encodeURIComponent(handoffId)}/review-proof`,
     {
       method: "POST",
       headers: {
