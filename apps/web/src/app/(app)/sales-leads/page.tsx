@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { SignInRequired, isConsoleAccessNotice } from "@/components/auth/SignInRequired";
 import { useI18n } from "@/lib/i18n";
 
 type Customer = {
@@ -257,7 +258,8 @@ export default function SalesLeadsPage() {
         </div>
       </div>
 
-      {err ? <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{err}</div> : null}
+      {err && isConsoleAccessNotice(err) ? <SignInRequired message={err} /> : null}
+      {err && !isConsoleAccessNotice(err) ? <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{err}</div> : null}
 
       <div className="grid gap-3 md:grid-cols-4">
         <div className="rounded-lg border border-black/10 bg-white/60 p-4">

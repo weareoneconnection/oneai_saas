@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
+import { SignInRequired, isConsoleAccessNotice } from "@/components/auth/SignInRequired";
 import { useI18n } from "@/lib/i18n";
 
 type UsageResp = {
@@ -315,7 +316,7 @@ export default function UsagePage() {
             <span className="text-xs text-black/45">
               {c.range}: <b className="text-black">{rangeLabel}</b>
             </span>
-            {err ? <span className="text-xs text-red-600">Error: {err}</span> : null}
+            {err && !isConsoleAccessNotice(err) ? <span className="text-xs text-red-600">Error: {err}</span> : null}
           </div>
 
           <h1 className="mt-3 text-2xl font-extrabold text-black">{c.title}</h1>
@@ -334,6 +335,8 @@ export default function UsagePage() {
           </Button>
         </div>
       </div>
+
+      {err && isConsoleAccessNotice(err) ? <SignInRequired message={err} /> : null}
 
       {/* Empty */}
       {!data ? (

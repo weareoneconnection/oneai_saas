@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { SignInRequired, isConsoleAccessNotice } from "@/components/auth/SignInRequired";
 import { useI18n } from "@/lib/i18n";
 
 type EnvKey = "prod" | "dev" | "staging";
@@ -756,7 +757,7 @@ export default function DashboardPage() {
             <span className="text-xs text-black/45">
               {c.source}: <b className="text-black">{sourceBadge}</b>
             </span>
-            {analyticsErr ? (
+            {analyticsErr && !isConsoleAccessNotice(analyticsErr) ? (
               <span className="text-xs text-amber-700">Analytics: {analyticsErr}</span>
             ) : null}
             {registryErr ? (
@@ -793,6 +794,10 @@ export default function DashboardPage() {
           ) : null}
         </div>
       </div>
+
+      {analyticsErr && isConsoleAccessNotice(analyticsErr) ? (
+        <SignInRequired message={analyticsErr} />
+      ) : null}
 
       {source === "empty" && !loading ? (
         <div className="rounded-2xl border border-black/10 bg-white p-4 text-sm text-black/60">

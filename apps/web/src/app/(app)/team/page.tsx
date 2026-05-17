@@ -4,6 +4,7 @@ import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { SignInRequired, isConsoleAccessNotice } from "@/components/auth/SignInRequired";
 import { useI18n } from "@/lib/i18n";
 
 const roles = [
@@ -286,7 +287,11 @@ export default function TeamPage() {
         </Link>
       </div>
 
-      {payload && !payload.success ? (
+      {payload && !payload.success && isConsoleAccessNotice(`${payload.error || ""} ${payload.hint || ""}`) ? (
+        <SignInRequired message={payload.hint || payload.error} />
+      ) : null}
+
+      {payload && !payload.success && !isConsoleAccessNotice(`${payload.error || ""} ${payload.hint || ""}`) ? (
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
             <CardTitle className="text-red-900">{c.unavailable}</CardTitle>

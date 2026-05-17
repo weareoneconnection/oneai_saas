@@ -109,10 +109,10 @@ export async function GET(req: Request) {
     }
 
     /**
-     * IMPORTANT:
-     * The API server route is /v1/admin-dashboard, not /v1/admin/dashboard.
+     * API server mounts adminDashboardRouter at /v1/admin-dashboard,
+     * and the router exposes /dashboard.
      */
-    const url = `${oneAIBaseURL()}/v1/admin-dashboard?range=${encodeURIComponent(
+    const url = `${oneAIBaseURL()}/v1/admin-dashboard/dashboard?range=${encodeURIComponent(
       range
     )}&userEmail=${encodeURIComponent(identity.email)}`;
 

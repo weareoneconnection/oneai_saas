@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { SignInRequired, isConsoleAccessNotice } from "@/components/auth/SignInRequired";
 import { useI18n } from "@/lib/i18n";
 
 type Capability = {
@@ -137,7 +138,7 @@ export default function AgentOSPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge>{c.infrastructure}</Badge>
             <Badge>{c.previewBadge}</Badge>
-            {error ? <span className="text-xs text-red-600">{error}</span> : null}
+            {error && !isConsoleAccessNotice(error) ? <span className="text-xs text-red-600">{error}</span> : null}
           </div>
           <h1 className="mt-3 text-2xl font-extrabold text-black">{c.title}</h1>
           <p className="mt-1 max-w-3xl text-sm leading-relaxed text-black/55">
@@ -156,6 +157,8 @@ export default function AgentOSPage() {
           </Link>
         </div>
       </div>
+
+      {error && isConsoleAccessNotice(error) ? <SignInRequired message={error} /> : null}
 
       <div className="grid gap-3 md:grid-cols-4">
         <Stat label={c.capabilities} value={`${capabilities.length}`} sub={c.taskAgentOs} />

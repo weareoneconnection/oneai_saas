@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { SignInRequired, isConsoleAccessNotice } from "@/components/auth/SignInRequired";
 
 type Customer = {
   email: string;
@@ -322,7 +323,9 @@ export default function CustomersPage() {
         </Button>
       </div>
 
-      {err ? (
+      {err && isConsoleAccessNotice(err) ? <SignInRequired message={err} /> : null}
+
+      {err && !isConsoleAccessNotice(err) ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {err}
         </div>

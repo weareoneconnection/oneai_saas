@@ -39,7 +39,7 @@ function p95(values: number[]): number | undefined {
   return arr[idx];
 }
 
-router.get("/dashboard", requireAdminKey, async (req, res) => {
+router.get(["/", "/dashboard"], requireAdminKey, async (req, res) => {
   try {
     const range = String(req.query.range || "24h");
     const userEmail = String(req.query.userEmail || "").trim().toLowerCase();
