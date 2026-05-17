@@ -16,6 +16,7 @@ const quick = [
   { title: "SLA Overview", desc: "Enterprise service-level expectations and support boundary.", href: "/legal/sla" },
   { title: "DPA Overview", desc: "Customer data processing, provider routing, and deletion/export path.", href: "/legal/dpa" },
   { title: "Invoices", desc: "Stripe portal, manual invoices, billing evidence, and plan changes.", href: "/legal/invoices" },
+  { title: "Enterprise Contract", desc: "Order form, MSA, DPA, SLA, billing, and support contract pack.", href: "/legal/enterprise-contract" },
   { title: "Terms", desc: "Service boundary, acceptable use, API key responsibility, and plan limits.", href: "/legal/terms" },
   { title: "Privacy", desc: "Account data, request data, secrets, logs, and customer requests.", href: "/legal/privacy" },
   { title: "Errors", desc: "Retryable failures and customer-safe errors.", href: "/docs/reference/errors" },

@@ -185,6 +185,7 @@ export default function SecurityPage() {
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {[
+              ["Contract", "/legal/enterprise-contract"],
               ["SLA", "/legal/sla"],
               ["DPA", "/legal/dpa"],
               ["Invoices", "/legal/invoices"],

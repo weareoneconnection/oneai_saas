@@ -49,6 +49,7 @@ type ProofVerification = {
 type Payload = {
   success: boolean;
   error?: string;
+  warning?: string;
   data?: {
     summary?: ExecutionSummary;
     executions?: ExecutionRow[];
@@ -176,6 +177,7 @@ export default function ExecutionsPage() {
       const nextRows = json.data?.executions || [];
       setRows(nextRows);
       setSummary(json.data?.summary || null);
+      setError(json.warning || "");
       setSelected((current) => current || nextRows[0] || null);
     } catch (err: any) {
       setError(err?.message || "Failed to load execution ledger");
@@ -246,20 +248,20 @@ export default function ExecutionsPage() {
   const completionRate = derived.total ? Math.round((derived.succeeded / derived.total) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
+    <div className="max-w-full overflow-hidden space-y-6">
+      <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge>Agent OS</Badge>
             <Badge>Execution Ledger</Badge>
-            {error ? <span className="text-xs text-red-600">{error}</span> : null}
+            {error ? <span className="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">{error}</span> : null}
           </div>
           <h1 className="mt-3 text-3xl font-black tracking-tight text-black">Execution Ledger</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-black/55">
+          <p className="mt-2 max-w-3xl text-wrap text-sm leading-relaxed text-black/55">
             Track handoff contracts, approvals, executor proof, and final results. OneAI records and verifies the loop; OneClaw, OpenClaw, bots, or humans execute.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <Button variant="secondary" onClick={load} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </Button>
@@ -269,15 +271,15 @@ export default function ExecutionsPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Contracts" value={derived.total} sub="Stored handoffs" />
         <Stat label="Succeeded" value={derived.succeeded} sub={`${completionRate}% completion`} />
         <Stat label="Proof received" value={derived.withProof} sub="Executor evidence" />
         <Stat label="Verified proof" value={derived.verifiedProof || 0} sub={`${derived.needsReview || 0} need review`} />
       </div>
 
-      <Card>
-        <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center">
+      <Card className="min-w-0 overflow-hidden">
+        <CardContent className="flex min-w-0 flex-col gap-3 p-4 md:flex-row md:flex-wrap md:items-center">
           <select
             value={scope}
             onChange={(event) => setScope(event.target.value as "customer" | "operator")}
@@ -313,7 +315,7 @@ export default function ExecutionsPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+      <div className="grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.85fr)]">
         <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Recent Executions</CardTitle>

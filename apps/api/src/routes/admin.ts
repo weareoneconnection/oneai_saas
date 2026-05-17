@@ -31,6 +31,12 @@ function normalizeApiKeyEnvironment(raw: string) {
   return "";
 }
 
+function normalizeOrgRole(raw: string) {
+  const value = String(raw || "").trim().toUpperCase();
+  if (["OWNER", "ADMIN", "MEMBER", "VIEWER"].includes(value)) return value;
+  return "";
+}
+
 function clientMeta(req: any) {
   return {
     ip: String(req.ip || req.headers?.["x-forwarded-for"] || "").slice(0, 120) || null,
@@ -68,6 +74,25 @@ async function writeAuditLog(params: {
   } catch (err) {
     console.error("[admin] failed to write audit log", err);
   }
+}
+
+async function assertCanManageTeam(actorEmail: string) {
+  const org = await getOrCreateOrgForUserEmail(actorEmail);
+  const membership = await prisma.membership.findFirst({
+    where: {
+      orgId: org.id,
+      user: { email: actorEmail },
+    } as any,
+    select: { role: true },
+  } as any);
+
+  if ((membership as any)?.role !== "OWNER") {
+    const err = new Error("Only organization owners can manage team members");
+    (err as any).statusCode = 403;
+    throw err;
+  }
+
+  return org;
 }
 
 /** =========================
@@ -222,6 +247,141 @@ router.get("/team", requireAdminKey, async (req, res) => {
       },
     },
   });
+});
+
+router.post("/team/members", requireAdminKey, async (req, res) => {
+  const actorEmail = String(req.body?.userEmail || "").trim().toLowerCase();
+  const memberEmail = String(req.body?.memberEmail || "").trim().toLowerCase();
+  const role = normalizeOrgRole(String(req.body?.role || "MEMBER"));
+  if (!actorEmail || !memberEmail || !role) {
+    return res.status(400).json({ success: false, error: "userEmail, memberEmail, and valid role required" });
+  }
+
+  try {
+    const org = await assertCanManageTeam(actorEmail);
+    const user = await prisma.user.upsert({
+      where: { email: memberEmail },
+      update: {},
+      create: { email: memberEmail, name: memberEmail.split("@")[0] || null },
+    });
+
+    const membership = await prisma.membership.upsert({
+      where: { orgId_userId: { orgId: org.id, userId: user.id } },
+      update: { role: role as any },
+      create: { orgId: org.id, userId: user.id, role: role as any },
+      select: {
+        id: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        user: { select: { email: true, name: true, image: true } },
+      } as any,
+    });
+
+    await writeAuditLog({
+      userEmail: actorEmail,
+      action: "team.member.upserted",
+      target: memberEmail,
+      metadata: { memberEmail, role },
+      req,
+    });
+
+    return res.json({ success: true, data: membership });
+  } catch (err: any) {
+    return res.status(err?.statusCode || 500).json({
+      success: false,
+      error: err?.message || "Failed to add team member",
+    });
+  }
+});
+
+router.patch("/team/members/:id", requireAdminKey, async (req, res) => {
+  const actorEmail = String(req.body?.userEmail || "").trim().toLowerCase();
+  const id = String(req.params.id || "").trim();
+  const role = normalizeOrgRole(String(req.body?.role || ""));
+  if (!actorEmail || !id || !role) {
+    return res.status(400).json({ success: false, error: "userEmail, member id, and valid role required" });
+  }
+
+  try {
+    const org = await assertCanManageTeam(actorEmail);
+    const existing = await prisma.membership.findFirst({
+      where: { id, orgId: org.id } as any,
+      include: { user: { select: { email: true } } },
+    } as any);
+    if (!existing) return res.status(404).json({ success: false, error: "member not found" });
+
+    const ownerCount = await prisma.membership.count({ where: { orgId: org.id, role: "OWNER" } as any });
+    if ((existing as any).role === "OWNER" && role !== "OWNER" && ownerCount <= 1) {
+      return res.status(400).json({ success: false, error: "Organization must keep at least one owner" });
+    }
+
+    const updated = await prisma.membership.update({
+      where: { id },
+      data: { role: role as any },
+      select: {
+        id: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        user: { select: { email: true, name: true, image: true } },
+      } as any,
+    });
+
+    await writeAuditLog({
+      userEmail: actorEmail,
+      action: "team.member.role_updated",
+      target: (existing as any).user?.email || id,
+      metadata: { memberEmail: (existing as any).user?.email || null, role },
+      req,
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (err: any) {
+    return res.status(err?.statusCode || 500).json({
+      success: false,
+      error: err?.message || "Failed to update member role",
+    });
+  }
+});
+
+router.delete("/team/members/:id", requireAdminKey, async (req, res) => {
+  const actorEmail = String(req.query.userEmail || req.body?.userEmail || "").trim().toLowerCase();
+  const id = String(req.params.id || "").trim();
+  if (!actorEmail || !id) return res.status(400).json({ success: false, error: "userEmail and member id required" });
+
+  try {
+    const org = await assertCanManageTeam(actorEmail);
+    const existing = await prisma.membership.findFirst({
+      where: { id, orgId: org.id } as any,
+      include: { user: { select: { email: true } } },
+    } as any);
+    if (!existing) return res.status(404).json({ success: false, error: "member not found" });
+    if ((existing as any).user?.email === actorEmail) {
+      return res.status(400).json({ success: false, error: "Owners cannot remove their own membership" });
+    }
+
+    const ownerCount = await prisma.membership.count({ where: { orgId: org.id, role: "OWNER" } as any });
+    if ((existing as any).role === "OWNER" && ownerCount <= 1) {
+      return res.status(400).json({ success: false, error: "Organization must keep at least one owner" });
+    }
+
+    await prisma.membership.delete({ where: { id } });
+    await writeAuditLog({
+      userEmail: actorEmail,
+      action: "team.member.removed",
+      target: (existing as any).user?.email || id,
+      metadata: { memberEmail: (existing as any).user?.email || null, previousRole: (existing as any).role },
+      req,
+    });
+
+    return res.json({ success: true });
+  } catch (err: any) {
+    return res.status(err?.statusCode || 500).json({
+      success: false,
+      error: err?.message || "Failed to remove team member",
+    });
+  }
 });
 
 router.post("/keys", requireAdminKey, async (req, res) => {

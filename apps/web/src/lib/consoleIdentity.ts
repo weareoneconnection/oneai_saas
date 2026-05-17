@@ -10,7 +10,12 @@ export function oneAIBaseURL() {
 }
 
 export function oneAIAdminKey() {
-  return String(process.env.ONEAI_ADMIN_API_KEY || process.env.ONEAI_ADMIN_KEY || "");
+  return String(
+    process.env.ONEAI_ADMIN_API_KEY ||
+      process.env.ONEAI_ADMIN_KEY ||
+      process.env.ADMIN_API_KEY ||
+      ""
+  );
 }
 
 export async function getConsoleEmail() {

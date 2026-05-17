@@ -19,6 +19,36 @@ async function readJsonSafe(res: Response) {
   }
 }
 
+function consoleKeys() {
+  return Array.from(
+    new Set(
+      [
+        process.env.ONEAI_ADMIN_API_KEY || "",
+        process.env.ONEAI_ADMIN_KEY || "",
+        process.env.ONEAI_API_KEY || "",
+      ]
+        .map((key) => key.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+function summarize(records: any[]) {
+  return records.reduce(
+    (acc, row) => {
+      acc.total += 1;
+      if (row.status === "SUCCEEDED") acc.succeeded += 1;
+      if (row.status === "FAILED") acc.failed += 1;
+      if (row.status === "RUNNING") acc.running += 1;
+      if (row.status === "PENDING_APPROVAL" || row.status === "APPROVED") acc.pending += 1;
+      if (row.proofJson) acc.withProof += 1;
+      if (row.resultJson) acc.withResult += 1;
+      return acc;
+    },
+    { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, withProof: 0, withResult: 0, verifiedProof: 0, needsReview: 0 }
+  );
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const scope = searchParams.get("scope") || "customer";
@@ -26,12 +56,14 @@ export async function GET(req: Request) {
     scope === "operator" ? await requireConsoleOperator() : await requireConsoleEmail();
   if (!identity.ok) return NextResponse.json(identity, { status: identity.status });
 
-  const key = oneAIAdminKey();
-  if (!key) {
-    return NextResponse.json(
-      { success: false, error: "ONEAI_ADMIN_API_KEY is missing on web server" },
-      { status: 500 }
-    );
+  const adminKey = oneAIAdminKey();
+  const keys = consoleKeys();
+  if (!keys.length) {
+    return NextResponse.json({
+      success: true,
+      warning: "Configure ONEAI_ADMIN_API_KEY or ONEAI_API_KEY to load execution data.",
+      data: { summary: summarize([]), executions: [] },
+    });
   }
 
   const limit = searchParams.get("limit") || "50";
@@ -44,12 +76,43 @@ export async function GET(req: Request) {
     if (value) params.set(key, value);
   }
 
+  if (!adminKey && scope !== "operator") {
+    let lastStatus = 500;
+    let lastJson: any = null;
+    for (const apiKey of keys) {
+      const upstream = await fetch(`${oneAIBaseURL()}/v1/executions?limit=${encodeURIComponent(limit)}`, {
+        headers: {
+          accept: "application/json",
+          "x-api-key": apiKey,
+        },
+        cache: "no-store",
+      }).catch(() => null);
+      if (!upstream) continue;
+      lastStatus = upstream.status;
+      lastJson = await readJsonSafe(upstream);
+      if (upstream.ok) {
+        const executions = Array.isArray(lastJson?.data) ? lastJson.data : [];
+        return NextResponse.json({
+          success: true,
+          warning: "Using customer API key fallback. Operator proof review requires ONEAI_ADMIN_API_KEY.",
+          data: { summary: summarize(executions), executions },
+        });
+      }
+      if (![401, 403].includes(upstream.status)) break;
+    }
+    return NextResponse.json({
+      success: true,
+      warning: lastJson?.error || "Execution ledger is not configured for this console.",
+      data: { summary: summarize([]), executions: [] },
+    }, { status: 200 });
+  }
+
   const url = `${oneAIBaseURL()}/v1/admin/agent-executions?${params.toString()}`;
 
   const upstream = await fetch(url, {
     headers: {
       accept: "application/json",
-      "x-admin-key": key,
+      "x-admin-key": adminKey,
     },
     cache: "no-store",
   });

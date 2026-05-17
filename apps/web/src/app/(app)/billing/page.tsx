@@ -855,6 +855,34 @@ export default function BillingPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Payment Automation</CardTitle>
+          <CardDescription>
+            Self-serve subscription flow from checkout to portal, webhook sync, invoices, and audit trail.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-5">
+            {[
+              ["Checkout", ENABLE_STRIPE_CHECKOUT && stripeReady, ENABLE_STRIPE_CHECKOUT ? "Customer can start Stripe checkout" : "Hidden in manual sales mode"],
+              ["Webhook", webhookReady, webhookReady ? "Subscription updates can sync" : "Set STRIPE_WEBHOOK_SECRET"],
+              ["Portal", data?.checkout?.portalAvailable, data?.checkout?.portalAvailable ? "Customer portal available" : "Available after Stripe customer exists"],
+              ["Invoices", canPortal, canPortal ? "Invoices via Stripe portal" : "Manual invoice path available"],
+              ["Audit", true, "Billing events are logged"],
+            ].map(([label, ok, desc]) => (
+              <div key={String(label)} className="rounded-lg border border-black/10 bg-black/[0.02] p-4">
+                <div className="text-xs text-black/50">{String(label)}</div>
+                <div className={ok ? "mt-2 text-sm font-bold text-emerald-700" : "mt-2 text-sm font-bold text-amber-800"}>
+                  {ok ? "Ready" : "Pending"}
+                </div>
+                <div className="mt-2 text-xs leading-relaxed text-black/50">{String(desc)}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Enterprise Documents</CardTitle>
           <CardDescription>
             Procurement links for customers that need SLA, DPA, invoices, terms, privacy, and team access controls.
@@ -864,6 +892,7 @@ export default function BillingPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
             {[
               ["Team access", "/team"],
+              ["Contract", "/legal/enterprise-contract"],
               ["SLA", "/legal/sla"],
               ["DPA", "/legal/dpa"],
               ["Invoices", "/legal/invoices"],
