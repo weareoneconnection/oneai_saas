@@ -79,7 +79,7 @@ export const missionOsWorkflowDef: WorkflowDefinition<Ctx> = {
   steps: [
     preparePromptStep({
       task: "mission_os",
-      templateVersion: 2,
+      templateVersion: 1,
       variables: (input) => ({
         goal: input.goal,
         targetAudience: input.targetAudience,
