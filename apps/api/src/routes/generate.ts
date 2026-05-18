@@ -351,7 +351,7 @@ async function assertPlanAllowsUsage(params: {
     );
   }
 
-  if (enforcePlanPolicy && !policy.allowedTiers.includes(tier)) {
+  if (enforcePlanPolicy && !params.isAdmin && !policy.allowedTiers.includes(tier)) {
     throw new Error(`Task ${params.task} requires ${tier} plan`);
   }
 

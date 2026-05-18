@@ -10,6 +10,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "keys:sync": "node scripts/syncConfiguredApiKeys.mjs",
+    "keys:grant-internal": "tsx scripts/grantInternalWorkflowAccess.ts",
     "seed:admin": "tsx scripts/seedAdminKey.ts",
     "launch:check": "node scripts/checkLaunchEnv.mjs",
     "tasks:public": "tsx prisma/seed-public-task-registry.ts"
