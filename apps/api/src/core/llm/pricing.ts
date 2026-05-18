@@ -307,9 +307,13 @@ export function resolveLLMPricing(
 ): ResolvedModelPricing | null {
   if (provider) {
     const profile = findModelProfile(provider, model);
-    if (profile?.inputCostPerToken || profile?.outputCostPerToken) {
-      const inputCostPerToken = profile.inputCostPerToken ?? 0;
-      const outputCostPerToken = profile.outputCostPerToken ?? 0;
+    const hasInputPricing =
+      typeof profile?.inputCostPerToken === "number" && profile.inputCostPerToken >= 0;
+    const hasOutputPricing =
+      typeof profile?.outputCostPerToken === "number" && profile.outputCostPerToken >= 0;
+    if (hasInputPricing || hasOutputPricing) {
+      const inputCostPerToken = hasInputPricing ? profile.inputCostPerToken! : 0;
+      const outputCostPerToken = hasOutputPricing ? profile.outputCostPerToken! : 0;
       return {
         inputCostPerToken,
         outputCostPerToken,

@@ -15,6 +15,7 @@ type CatalogSource = {
   dataPath?: "data" | "models";
   headers?: () => Record<string, string>;
   modelFilter?: (profile: LLMModelProfile) => boolean;
+  timeoutMs?: number;
 };
 
 function hasEnv(name: string) {
@@ -70,7 +71,9 @@ function normalizeModel(provider: string, item: any): LLMModelProfile | null {
       item?.input_token_limit ??
       item?.inputTokenLimit
   );
-  const hasPricing = Number.isFinite(promptPrice) || Number.isFinite(completionPrice);
+  const hasPromptPricing = Number.isFinite(promptPrice) && promptPrice >= 0;
+  const hasCompletionPricing = Number.isFinite(completionPrice) && completionPrice >= 0;
+  const hasPricing = hasPromptPricing || hasCompletionPricing;
 
   return {
     provider,
@@ -81,8 +84,8 @@ function normalizeModel(provider: string, item: any): LLMModelProfile | null {
     ...(Number.isFinite(contextTokens) && contextTokens > 0 ? { contextTokens } : {}),
     ...(hasPricing
       ? {
-          inputCostPerToken: Number.isFinite(promptPrice) ? promptPrice : 0,
-          outputCostPerToken: Number.isFinite(completionPrice) ? completionPrice : 0,
+          inputCostPerToken: hasPromptPricing ? promptPrice : 0,
+          outputCostPerToken: hasCompletionPricing ? completionPrice : 0,
         }
       : {}),
   };
@@ -92,11 +95,25 @@ async function fetchCatalog(source: CatalogSource): Promise<LLMModelProfile[]> {
   const key = process.env[source.keyEnv]?.trim();
   if (!key) return [];
 
-  const res = await fetch(typeof source.url === "function" ? source.url() : source.url, {
-    headers: source.headers?.() || {
-      Authorization: `Bearer ${key}`,
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), source.timeoutMs || 10_000);
+
+  let res: Response;
+  try {
+    res = await fetch(typeof source.url === "function" ? source.url() : source.url, {
+      headers: source.headers?.() || {
+        Authorization: `Bearer ${key}`,
+      },
+      signal: controller.signal,
+    });
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error(`${source.provider} models timed out after ${source.timeoutMs || 10_000}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) throw new Error(`${source.provider} models failed: HTTP ${res.status}`);
 

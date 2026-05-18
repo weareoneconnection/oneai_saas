@@ -86,60 +86,53 @@ async function persistModelProfilesToRegistry() {
   const profiles = listModelProfiles();
   let count = 0;
 
-  for (const profile of profiles) {
-    const provider = String(profile.provider);
-    const model = String(profile.model);
-    const configured = isProviderConfigured(provider);
-    const pricing = enrichPricing(resolveLLMPricing(provider, model));
-    const health: any = getModelHealth(provider, model);
+  for (let index = 0; index < profiles.length; index += 25) {
+    const chunk = profiles.slice(index, index + 25);
+    await Promise.all(
+      chunk.map((profile) => {
+        const provider = String(profile.provider);
+        const model = String(profile.model);
+        const configured = isProviderConfigured(provider);
+        const pricing = enrichPricing(resolveLLMPricing(provider, model));
+        const health: any = getModelHealth(provider, model);
+        const data = {
+          status: "ACTIVE" as const,
+          displayName: `${provider}:${model}`,
+          contextTokens: profile.contextTokens ?? null,
+          supportsStreaming: true,
+          supportsJson: profile.supportsJson ?? false,
+          supportsTools: profile.supportsTools ?? false,
+          configured,
+          available: configured,
+          hasPricing: !!pricing,
+          inputPricePer1mTokens: getPricingPer1M(pricing, "input"),
+          outputPricePer1mTokens: getPricingPer1M(pricing, "output"),
+          healthStatus: health?.ok === true ? ("HEALTHY" as const) : health?.ok === false ? ("DOWN" as const) : ("UNKNOWN" as const),
+          lastHealthCheckAt: health?.testedAt ? new Date(health.testedAt) : null,
+          lastHealthMessage: health?.error ?? null,
+          lastLatencyMs: typeof health?.latencyMs === "number" ? health.latencyMs : null,
+        };
 
-    await prisma.modelRegistry.upsert({
-      where: {
-        provider_model: {
-          provider,
-          model,
-        },
-      },
-      update: {
-        status: "ACTIVE",
-        displayName: `${provider}:${model}`,
-        contextTokens: profile.contextTokens ?? null,
-        supportsStreaming: true,
-        supportsJson: profile.supportsJson ?? false,
-        supportsTools: profile.supportsTools ?? false,
-        configured,
-        available: configured,
-        hasPricing: !!pricing,
-        inputPricePer1mTokens: getPricingPer1M(pricing, "input"),
-        outputPricePer1mTokens: getPricingPer1M(pricing, "output"),
-        healthStatus: health?.ok === true ? "HEALTHY" : health?.ok === false ? "DOWN" : "UNKNOWN",
-        lastHealthCheckAt: health?.testedAt ? new Date(health.testedAt) : null,
-        lastHealthMessage: health?.error ?? null,
-        lastLatencyMs: typeof health?.latencyMs === "number" ? health.latencyMs : null,
-      },
-      create: {
-        provider,
-        model,
-        displayName: `${provider}:${model}`,
-        status: "ACTIVE",
-        contextTokens: profile.contextTokens ?? null,
-        supportsStreaming: true,
-        supportsJson: profile.supportsJson ?? false,
-        supportsTools: profile.supportsTools ?? false,
-        supportsVision: false,
-        configured,
-        available: configured,
-        hasPricing: !!pricing,
-        inputPricePer1mTokens: getPricingPer1M(pricing, "input"),
-        outputPricePer1mTokens: getPricingPer1M(pricing, "output"),
-        healthStatus: health?.ok === true ? "HEALTHY" : health?.ok === false ? "DOWN" : "UNKNOWN",
-        lastHealthCheckAt: health?.testedAt ? new Date(health.testedAt) : null,
-        lastHealthMessage: health?.error ?? null,
-        lastLatencyMs: typeof health?.latencyMs === "number" ? health.latencyMs : null,
-      },
-    });
+        return prisma.modelRegistry.upsert({
+          where: {
+            provider_model: {
+              provider,
+              model,
+            },
+          },
+          update: data,
+          create: {
+            provider,
+            model,
+            ...data,
+            description: null,
+            supportsVision: false,
+          },
+        });
+      })
+    );
 
-    count += 1;
+    count += chunk.length;
   }
 
   return count;

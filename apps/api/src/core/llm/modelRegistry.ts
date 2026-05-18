@@ -551,8 +551,10 @@ export function getLLMRoutingStrategy(): LLMRoutingStrategy {
 function knownCost(profile: LLMModelProfile): number {
   const input = profile.inputCostPerToken;
   const output = profile.outputCostPerToken;
-  if (typeof input !== "number" && typeof output !== "number") return Number.POSITIVE_INFINITY;
-  return (input ?? 0) + (output ?? 0);
+  const hasValidInput = typeof input === "number" && input >= 0;
+  const hasValidOutput = typeof output === "number" && output >= 0;
+  if (!hasValidInput && !hasValidOutput) return Number.POSITIVE_INFINITY;
+  return (hasValidInput ? input : 0) + (hasValidOutput ? output : 0);
 }
 
 function qualityScore(profile: LLMModelProfile): number {
