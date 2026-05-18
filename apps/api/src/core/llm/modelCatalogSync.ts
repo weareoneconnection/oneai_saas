@@ -8,16 +8,38 @@ type SyncResult = {
   errors: Array<{ provider: string; error: string }>;
 };
 
+type CatalogSource = {
+  provider: string;
+  keyEnv: string;
+  url: string | (() => string);
+  dataPath?: "data" | "models";
+  headers?: () => Record<string, string>;
+  modelFilter?: (profile: LLMModelProfile) => boolean;
+};
+
 function hasEnv(name: string) {
   return !!process.env[name]?.trim();
 }
 
 function inferModes(provider: string, model: string): LLMModelProfile["modes"] {
   const id = model.toLowerCase();
-  if (id.includes("nano") || id.includes("mini") || id.includes("flash") || id.includes("small")) {
+  if (
+    id.includes("nano") ||
+    id.includes("mini") ||
+    id.includes("flash") ||
+    id.includes("small") ||
+    id.includes("haiku") ||
+    id.includes("fast")
+  ) {
     return ["cheap", "fast", "auto"];
   }
-  if (id.includes("pro") || id.includes("opus") || id.includes("gpt-5") || id.includes("grok-4")) {
+  if (
+    id.includes("pro") ||
+    id.includes("opus") ||
+    id.includes("large") ||
+    id.includes("gpt-5") ||
+    id.includes("grok-4")
+  ) {
     return ["balanced", "premium", "auto"];
   }
   if (provider === "groq" || provider === "cerebras") return ["fast", "balanced", "auto"];
@@ -25,11 +47,29 @@ function inferModes(provider: string, model: string): LLMModelProfile["modes"] {
 }
 
 function normalizeModel(provider: string, item: any): LLMModelProfile | null {
-  const model = String(item?.id || item?.name || item?.model || "").trim();
+  const rawModel = String(item?.id || item?.name || item?.model || "").trim();
+  const model = rawModel.replace(/^models\//, "");
   if (!model) return null;
 
-  const promptPrice = Number(item?.pricing?.prompt);
-  const completionPrice = Number(item?.pricing?.completion);
+  const promptPrice = Number(
+    item?.pricing?.prompt ??
+      item?.pricing?.input ??
+      item?.input_cost_per_token ??
+      item?.inputCostPerToken
+  );
+  const completionPrice = Number(
+    item?.pricing?.completion ??
+      item?.pricing?.output ??
+      item?.output_cost_per_token ??
+      item?.outputCostPerToken
+  );
+  const contextTokens = Number(
+    item?.context_length ??
+      item?.contextLength ??
+      item?.max_context_length ??
+      item?.input_token_limit ??
+      item?.inputTokenLimit
+  );
   const hasPricing = Number.isFinite(promptPrice) || Number.isFinite(completionPrice);
 
   return {
@@ -38,6 +78,7 @@ function normalizeModel(provider: string, item: any): LLMModelProfile | null {
     modes: inferModes(provider, model),
     supportsJson: true,
     supportsTools: /gpt|claude|gemini|grok|mistral|glm/i.test(model),
+    ...(Number.isFinite(contextTokens) && contextTokens > 0 ? { contextTokens } : {}),
     ...(hasPricing
       ? {
           inputCostPerToken: Number.isFinite(promptPrice) ? promptPrice : 0,
@@ -47,53 +88,91 @@ function normalizeModel(provider: string, item: any): LLMModelProfile | null {
   };
 }
 
-async function fetchOpenAIModels(): Promise<LLMModelProfile[]> {
-  if (!hasEnv("OPENAI_API_KEY")) return [];
+async function fetchCatalog(source: CatalogSource): Promise<LLMModelProfile[]> {
+  const key = process.env[source.keyEnv]?.trim();
+  if (!key) return [];
 
-  const res = await fetch("https://api.openai.com/v1/models", {
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+  const res = await fetch(typeof source.url === "function" ? source.url() : source.url, {
+    headers: source.headers?.() || {
+      Authorization: `Bearer ${key}`,
     },
   });
 
-  if (!res.ok) throw new Error(`OpenAI models failed: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`${source.provider} models failed: HTTP ${res.status}`);
+
   const json = await res.json();
-  return (Array.isArray(json?.data) ? json.data : [])
-    .map((item: any) => normalizeModel("openai", item))
+  const rows = Array.isArray(json?.[source.dataPath || "data"]) ? json[source.dataPath || "data"] : [];
+
+  return rows
+    .map((item: any) => normalizeModel(source.provider, item))
     .filter((x: LLMModelProfile | null): x is LLMModelProfile => !!x)
-    .filter((profile: LLMModelProfile) =>
-      /^(gpt|o\d)/i.test(profile.model)
-    );
+    .filter((profile: LLMModelProfile) => source.modelFilter?.(profile) ?? true);
 }
 
-async function fetchOpenRouterModels(): Promise<LLMModelProfile[]> {
-  if (!hasEnv("OPENROUTER_API_KEY")) return [];
-
-  const res = await fetch("https://openrouter.ai/api/v1/models", {
-    headers: {
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+const catalogSources: CatalogSource[] = [
+  {
+    provider: "openai",
+    keyEnv: "OPENAI_API_KEY",
+    url: "https://api.openai.com/v1/models",
+    modelFilter: (profile) => /^(gpt|o\d)/i.test(profile.model),
+  },
+  {
+    provider: "openrouter",
+    keyEnv: "OPENROUTER_API_KEY",
+    url: "https://openrouter.ai/api/v1/models",
+  },
+  {
+    provider: "anthropic",
+    keyEnv: "ANTHROPIC_API_KEY",
+    url: "https://api.anthropic.com/v1/models",
+    headers: () => ({
+      "x-api-key": process.env.ANTHROPIC_API_KEY || "",
+      "anthropic-version": "2023-06-01",
+    }),
+    modelFilter: (profile) => /^claude/i.test(profile.model),
+  },
+  {
+    provider: "gemini",
+    keyEnv: "GEMINI_API_KEY",
+    url: () => {
+      const url = new URL("https://generativelanguage.googleapis.com/v1beta/models");
+      url.searchParams.set("key", process.env.GEMINI_API_KEY || "");
+      return url.toString();
     },
-  });
-
-  if (!res.ok) throw new Error(`OpenRouter models failed: HTTP ${res.status}`);
-  const json = await res.json();
-  return (Array.isArray(json?.data) ? json.data : [])
-    .map((item: any) => normalizeModel("openrouter", item))
-    .filter((x: LLMModelProfile | null): x is LLMModelProfile => !!x);
-}
+    dataPath: "models",
+    headers: () => ({}),
+    modelFilter: (profile) => /^gemini/i.test(profile.model),
+  },
+  {
+    provider: "mistral",
+    keyEnv: "MISTRAL_API_KEY",
+    url: "https://api.mistral.ai/v1/models",
+    modelFilter: (profile) => /mistral|ministral|codestral/i.test(profile.model),
+  },
+  {
+    provider: "xai",
+    keyEnv: "XAI_API_KEY",
+    url: "https://api.x.ai/v1/models",
+    modelFilter: (profile) => /^grok/i.test(profile.model),
+  },
+  {
+    provider: "deepseek",
+    keyEnv: "DEEPSEEK_API_KEY",
+    url: "https://api.deepseek.com/v1/models",
+    modelFilter: (profile) => /^deepseek/i.test(profile.model),
+  },
+];
 
 export async function syncModelCatalog(): Promise<SyncResult> {
   const errors: SyncResult["errors"] = [];
-  const batches = await Promise.all([
-    fetchOpenAIModels().catch((err) => {
-      errors.push({ provider: "openai", error: String(err?.message || err) });
-      return [];
-    }),
-    fetchOpenRouterModels().catch((err) => {
-      errors.push({ provider: "openrouter", error: String(err?.message || err) });
-      return [];
-    }),
-  ]);
+  const batches = await Promise.all(
+    catalogSources.map((source) =>
+      fetchCatalog(source).catch((err) => {
+        errors.push({ provider: source.provider, error: String(err?.message || err) });
+        return [];
+      })
+    )
+  );
 
   const seen = new Set<string>();
   const profiles = batches

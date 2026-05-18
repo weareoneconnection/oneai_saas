@@ -19,16 +19,32 @@ type ModelRow = {
   available?: boolean;
   hasPricing?: boolean;
   pricing?: {
-    inputCostPer1MTokens: number;
-    outputCostPer1MTokens: number;
-    source: string;
+    inputCostPer1MTokens?: number;
+    outputCostPer1MTokens?: number;
+    inputPricePer1mTokens?: number;
+    outputPricePer1mTokens?: number;
+    source?: string;
+    pricingSource?: string;
+    currency?: string;
+    updatedAt?: string | null;
+    per1MTokens?: {
+      input?: number;
+      output?: number;
+    };
   } | null;
   health?: {
-    ok: boolean;
-    testedAt: string;
+    ok?: boolean;
+    status?: string;
+    testedAt?: string;
     latencyMs?: number;
     error?: string;
     responseModel?: string;
+    runtime?: {
+      ok?: boolean;
+      latencyMs?: number;
+      testedAt?: string;
+      error?: string;
+    };
   } | null;
 };
 
@@ -74,6 +90,18 @@ function fmtPrice(n?: number | null) {
     currency: "USD",
     maximumFractionDigits: 4,
   }).format(n);
+}
+
+function isHealthy(row: ModelRow) {
+  return row.health?.ok === true || row.health?.runtime?.ok === true || row.health?.status === "HEALTHY";
+}
+
+function pricingInputPer1M(row: ModelRow) {
+  return row.pricing?.inputCostPer1MTokens ?? row.pricing?.inputPricePer1mTokens ?? row.pricing?.per1MTokens?.input ?? null;
+}
+
+function pricingOutputPer1M(row: ModelRow) {
+  return row.pricing?.outputCostPer1MTokens ?? row.pricing?.outputPricePer1mTokens ?? row.pricing?.per1MTokens?.output ?? null;
 }
 
 function extractPayload(json: ModelsResponse) {
@@ -216,7 +244,9 @@ export default function ModelsPage() {
     return models.filter((row) => {
       if (providerFilter !== "all" && row.provider !== providerFilter) return false;
       if (statusFilter === "configured" && !row.configured) return false;
+      if (statusFilter === "available" && !row.available) return false;
       if (statusFilter === "pricing" && !row.hasPricing) return false;
+      if (statusFilter === "healthy" && !isHealthy(row)) return false;
       if (statusFilter === "tools" && !row.supportsTools) return false;
       if (q && !`${row.provider}:${row.model}`.toLowerCase().includes(q)) return false;
       return true;
@@ -225,7 +255,8 @@ export default function ModelsPage() {
 
   const configuredModelCount = models.filter((m) => m.configured).length;
   const pricedModelCount = models.filter((m) => m.hasPricing).length;
-  const testedOkCount = models.filter((m) => m.health?.ok).length;
+  const availableModelCount = models.filter((m) => m.available).length;
+  const testedOkCount = models.filter((m) => isHealthy(m)).length;
   const estimateOptions = models.filter((row) => row.hasPricing).slice(0, 120);
   const c = {
     infrastructure: isZh ? "基础设施" : "Infrastructure",
@@ -242,6 +273,7 @@ export default function ModelsPage() {
     configuredProviders: isZh ? "已配置 Provider" : "Configured providers",
     callableModels: isZh ? "可调用模型" : "Callable models",
     pricedTested: isZh ? "有价格 / 已检测" : "Priced / tested",
+    availableModels: isZh ? "可用模型" : "Available models",
     estimator: isZh ? "成本估算器" : "Cost estimator",
     estimatorDesc: isZh ? "在生产流量发送前预估模型成本。" : "Estimate model cost before sending production traffic.",
     estimated: isZh ? "预估：" : "Estimated: ",
@@ -254,7 +286,9 @@ export default function ModelsPage() {
     allProviders: isZh ? "全部 Provider" : "All providers",
     allStatus: isZh ? "全部状态" : "All status",
     configuredOnly: isZh ? "仅已配置" : "Configured only",
+    availableOnly: isZh ? "仅可用" : "Available only",
     pricingCovered: isZh ? "有价格覆盖" : "Pricing covered",
+    healthyOnly: isZh ? "健康检测通过" : "Healthy only",
     toolSupport: isZh ? "支持工具" : "Tool support",
     catalogSync: isZh ? "目录同步" : "Catalog sync",
     notSynced: isZh ? "未同步" : "not synced",
@@ -306,6 +340,7 @@ export default function ModelsPage() {
         <div className="rounded-lg border border-black/10 p-4">
           <div className="text-xs text-black/50">{c.callableModels}</div>
           <div className="mt-2 text-lg font-semibold">{configuredModelCount}</div>
+          <div className="mt-1 text-xs text-black/40">{c.availableModels}: {availableModelCount}</div>
         </div>
         <div className="rounded-lg border border-black/10 p-4">
           <div className="text-xs text-black/50">{c.pricedTested}</div>
@@ -354,7 +389,9 @@ export default function ModelsPage() {
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">{c.allStatus}</option>
             <option value="configured">{c.configuredOnly}</option>
+            <option value="available">{c.availableOnly}</option>
             <option value="pricing">{c.pricingCovered}</option>
+            <option value="healthy">{c.healthyOnly}</option>
             <option value="tools">{c.toolSupport}</option>
           </Select>
         </div>
@@ -387,20 +424,20 @@ export default function ModelsPage() {
                   type="button"
                   onClick={() => testModel(row)}
                   disabled={!row.configured || testingId === `${row.provider}:${row.model}`}
-                  title={row.health?.error || (row.health?.testedAt ? `Last tested ${new Date(row.health.testedAt).toLocaleString()}` : "Run a lightweight health check")}
-                  className={`rounded-full border px-2 py-0.5 text-xs disabled:cursor-not-allowed ${pillClass(row.configured && row.health?.ok !== false)}`}
+                  title={row.health?.error || row.health?.runtime?.error || (row.health?.testedAt ? `Last tested ${new Date(row.health.testedAt).toLocaleString()}` : "Run a lightweight health check")}
+                  className={`rounded-full border px-2 py-0.5 text-xs disabled:cursor-not-allowed ${pillClass(row.configured && row.health?.ok !== false && row.health?.runtime?.ok !== false)}`}
                 >
-                  {testingId === `${row.provider}:${row.model}` ? c.test : row.health?.ok ? c.live : row.configured ? c.ready : c.noKey}
+                  {testingId === `${row.provider}:${row.model}` ? c.test : isHealthy(row) ? c.live : row.available ? c.ready : c.noKey}
                 </button>
-                {row.health?.latencyMs ? <div className="mt-1 text-xs text-black/35">{row.health.latencyMs}ms</div> : null}
+                {row.health?.latencyMs || row.health?.runtime?.latencyMs ? <div className="mt-1 text-xs text-black/35">{row.health.latencyMs || row.health.runtime?.latencyMs}ms</div> : null}
               </div>
               <div className="col-span-1 text-right">{yn(row.supportsJson)}</div>
               <div className="col-span-1 text-right">{yn(row.supportsTools)}</div>
               <div className="col-span-1 text-right">
                 {row.pricing ? (
-                  <div title={`source: ${row.pricing.source}`} className="text-xs text-black/70">
-                    <div>{fmtPrice(row.pricing.inputCostPer1MTokens)}</div>
-                    <div className="text-black/35">/ {fmtPrice(row.pricing.outputCostPer1MTokens)}</div>
+                  <div title={`source: ${row.pricing.pricingSource || row.pricing.source || "registry"}${row.pricing.updatedAt ? ` · ${row.pricing.updatedAt}` : ""}`} className="text-xs text-black/70">
+                    <div>{fmtPrice(pricingInputPer1M(row))}</div>
+                    <div className="text-black/35">/ {fmtPrice(pricingOutputPer1M(row))}</div>
                   </div>
                 ) : (
                   yn(row.hasPricing)

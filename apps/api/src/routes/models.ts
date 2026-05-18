@@ -22,6 +22,129 @@ import { prisma } from "../lib/prisma.js";
 
 const router = Router();
 
+function enrichPricing(
+  pricing: any,
+  params: {
+    source?: "database" | "registry" | "built_in";
+    updatedAt?: string | null;
+  } = {}
+) {
+  if (!pricing) return null;
+
+  const inputCostPerToken =
+    Number(pricing.inputCostPerToken) ||
+    Number(pricing.inputPricePer1mTokens) / 1_000_000 ||
+    Number(pricing.inputCostPer1MTokens) / 1_000_000 ||
+    0;
+  const outputCostPerToken =
+    Number(pricing.outputCostPerToken) ||
+    Number(pricing.outputPricePer1mTokens) / 1_000_000 ||
+    Number(pricing.outputCostPer1MTokens) / 1_000_000 ||
+    0;
+  const inputCostPer1MTokens =
+    Number(pricing.inputCostPer1MTokens) ||
+    Number(pricing.inputPricePer1mTokens) ||
+    inputCostPerToken * 1_000_000;
+  const outputCostPer1MTokens =
+    Number(pricing.outputCostPer1MTokens) ||
+    Number(pricing.outputPricePer1mTokens) ||
+    outputCostPerToken * 1_000_000;
+  const pricingSource = params.source || pricing.source || "registry";
+
+  return {
+    ...pricing,
+    inputCostPerToken,
+    outputCostPerToken,
+    inputCostPer1MTokens,
+    outputCostPer1MTokens,
+    inputPricePer1mTokens: inputCostPer1MTokens,
+    outputPricePer1mTokens: outputCostPer1MTokens,
+    currency: "USD",
+    source: pricingSource,
+    pricingSource,
+    updatedAt: params.updatedAt || pricing.updatedAt || null,
+    per1MTokens: {
+      input: inputCostPer1MTokens,
+      output: outputCostPer1MTokens,
+    },
+  };
+}
+
+function getPricingPer1M(pricing: any, direction: "input" | "output") {
+  if (!pricing) return null;
+
+  const value =
+    direction === "input"
+      ? pricing.inputCostPer1MTokens ?? pricing.inputPricePer1mTokens ?? pricing.per1MTokens?.input
+      : pricing.outputCostPer1MTokens ?? pricing.outputPricePer1mTokens ?? pricing.per1MTokens?.output;
+
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+async function persistModelProfilesToRegistry() {
+  const profiles = listModelProfiles();
+  let count = 0;
+
+  for (const profile of profiles) {
+    const provider = String(profile.provider);
+    const model = String(profile.model);
+    const configured = isProviderConfigured(provider);
+    const pricing = enrichPricing(resolveLLMPricing(provider, model));
+    const health: any = getModelHealth(provider, model);
+
+    await prisma.modelRegistry.upsert({
+      where: {
+        provider_model: {
+          provider,
+          model,
+        },
+      },
+      update: {
+        status: "ACTIVE",
+        displayName: `${provider}:${model}`,
+        contextTokens: profile.contextTokens ?? null,
+        supportsStreaming: true,
+        supportsJson: profile.supportsJson ?? false,
+        supportsTools: profile.supportsTools ?? false,
+        configured,
+        available: configured,
+        hasPricing: !!pricing,
+        inputPricePer1mTokens: getPricingPer1M(pricing, "input"),
+        outputPricePer1mTokens: getPricingPer1M(pricing, "output"),
+        healthStatus: health?.ok === true ? "HEALTHY" : health?.ok === false ? "DOWN" : "UNKNOWN",
+        lastHealthCheckAt: health?.testedAt ? new Date(health.testedAt) : null,
+        lastHealthMessage: health?.error ?? null,
+        lastLatencyMs: typeof health?.latencyMs === "number" ? health.latencyMs : null,
+      },
+      create: {
+        provider,
+        model,
+        displayName: `${provider}:${model}`,
+        status: "ACTIVE",
+        contextTokens: profile.contextTokens ?? null,
+        supportsStreaming: true,
+        supportsJson: profile.supportsJson ?? false,
+        supportsTools: profile.supportsTools ?? false,
+        supportsVision: false,
+        configured,
+        available: configured,
+        hasPricing: !!pricing,
+        inputPricePer1mTokens: getPricingPer1M(pricing, "input"),
+        outputPricePer1mTokens: getPricingPer1M(pricing, "output"),
+        healthStatus: health?.ok === true ? "HEALTHY" : health?.ok === false ? "DOWN" : "UNKNOWN",
+        lastHealthCheckAt: health?.testedAt ? new Date(health.testedAt) : null,
+        lastHealthMessage: health?.error ?? null,
+        lastLatencyMs: typeof health?.latencyMs === "number" ? health.latencyMs : null,
+      },
+    });
+
+    count += 1;
+  }
+
+  return count;
+}
+
 const healthSchema = z.object({
   provider: z.string().min(1),
   model: z.string().min(1),
@@ -71,13 +194,17 @@ router.get("/", async (_req, res) => {
         data: registryModels.map((item) => {
           const provider = String(item.provider);
           const configured = item.configured || isProviderConfigured(provider);
-          const pricing =
+          const rawPricing =
             item.hasPricing
               ? {
                   inputPricePer1mTokens: item.inputPricePer1mTokens,
                   outputPricePer1mTokens: item.outputPricePer1mTokens,
                 }
               : resolveLLMPricing(provider, item.model);
+          const pricing = enrichPricing(rawPricing, {
+            source: item.hasPricing ? "database" : undefined,
+            updatedAt: item.updatedAt.toISOString(),
+          });
 
           return {
             id: `${item.provider}:${item.model}`,
@@ -101,7 +228,7 @@ router.get("/", async (_req, res) => {
 
             configured,
             available: item.available && configured,
-            hasPricing: item.hasPricing,
+            hasPricing: item.hasPricing || !!pricing,
             pricing,
 
             status: item.status,
@@ -130,7 +257,7 @@ router.get("/", async (_req, res) => {
     },
     data: listModelProfiles().map((profile) => {
       const provider = String(profile.provider);
-      const pricing = resolveLLMPricing(provider, profile.model);
+      const pricing = enrichPricing(resolveLLMPricing(provider, profile.model));
 
       return {
         id: `${profile.provider}:${profile.model}`,
@@ -145,7 +272,7 @@ router.get("/", async (_req, res) => {
         supportsTools: profile.supportsTools ?? false,
         configured: isProviderConfigured(provider),
         available: isProviderConfigured(provider),
-        hasPricing: hasLLMPricing(provider, profile.model),
+        hasPricing: hasLLMPricing(provider, profile.model) || !!pricing,
         pricing,
         health: getModelHealth(provider, profile.model),
       };
@@ -164,7 +291,21 @@ router.post("/sync", async (req, res) => {
   }
 
   const result = await syncModelCatalog();
-  return res.json({ success: true, data: result });
+  let registryCount: number | null = null;
+
+  try {
+    registryCount = await persistModelProfilesToRegistry();
+  } catch (error) {
+    console.error("[models] Failed to persist synced model catalog:", error);
+  }
+
+  return res.json({
+    success: true,
+    data: {
+      ...result,
+      registryCount,
+    },
+  });
 });
 
 router.get("/infrastructure", (_req, res) => {
@@ -333,7 +474,7 @@ router.post("/route/preview", (req, res) => {
         configured: isProviderConfigured(provider),
         available: isProviderConfigured(provider),
         hasPricing: hasLLMPricing(provider, profile.model),
-        pricing: resolveLLMPricing(provider, profile.model),
+        pricing: enrichPricing(resolveLLMPricing(provider, profile.model)),
         health: getModelHealth(provider, profile.model),
       };
     });
@@ -369,7 +510,7 @@ router.post("/estimate", (req, res) => {
     });
   }
 
-  const pricing = resolveLLMPricing(parsed.data.provider, parsed.data.model);
+  const pricing = enrichPricing(resolveLLMPricing(parsed.data.provider, parsed.data.model));
   const estimatedCostUsd = estimateLLMCostUSD({
     provider: parsed.data.provider,
     model: parsed.data.model,
