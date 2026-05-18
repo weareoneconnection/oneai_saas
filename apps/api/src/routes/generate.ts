@@ -673,17 +673,24 @@ router.post("/", async (req, res) => {
       return res.status(classified.statusCode).json(responseBody);
     }
 
+    const latencyMs = Date.now() - startTime;
+    const estimatedCostUsd = normalizeEstimatedCostUsd(result);
+    const usageModel = result?.usage?.model ?? result?.usageTotal?.model ?? "unknown";
+    const usageProvider = getProvider(result);
+    const usageSummary = result?.usage || result?.usageTotal || null;
+
     console.log("🔥 AFTER runTask", {
       type: parsed.type,
       success: result?.success,
       attempts: result?.attempts,
       hasError: !!result?.error,
+      provider: usageProvider,
+      model: usageModel,
+      promptTokens: Number(usageSummary?.promptTokens ?? 0),
+      completionTokens: Number(usageSummary?.completionTokens ?? 0),
+      totalTokens: Number(usageSummary?.totalTokens ?? 0),
+      estimatedCostUsd,
     });
-
-    const latencyMs = Date.now() - startTime;
-    const estimatedCostUsd = normalizeEstimatedCostUsd(result);
-    const usageModel = result?.usage?.model ?? result?.usageTotal?.model ?? "unknown";
-    const usageProvider = getProvider(result);
 
     if (!result?.success) {
       const classified = classifyError(result?.error);
