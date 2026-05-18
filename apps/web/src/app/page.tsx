@@ -53,6 +53,8 @@ const navItems = [
   ["Pricing", "/pricing"],
 ];
 
+const wideContainer = "mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-8 2xl:px-10";
+
 const heroStats = [
   ["4", "API surfaces", "Generate + Chat + Messages + Agent OS"],
   ["480+", "model catalog target", "Provider choice without product rewrites"],
@@ -218,7 +220,7 @@ function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#030712]/82 backdrop-blur-2xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <div className={`${wideContainer} flex items-center justify-between gap-4 py-4`}>
         <Link href="/" className="group flex min-w-0 items-center gap-3">
           <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-white/[0.06] text-sm font-black text-white shadow-2xl shadow-emerald-500/10">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(52,211,153,0.5),transparent_38%),radial-gradient(circle_at_80%_80%,rgba(34,211,238,0.32),transparent_42%)]" />
@@ -598,7 +600,7 @@ export default function HomePage() {
   const { isZh } = useI18n();
   const c = {
     badges: isZh ? ["AI 网关", "Task Intelligence", "商业控制平面"] : ["AI gateway", "Task intelligence", "Commercial control plane"],
-    heroTitle: isZh ? "面向商业 AI 产品的操作层。" : "The operating layer for commercial AI products.",
+    heroTitle: isZh ? "把模型网关、Task Intelligence 和 Agent OS 变成可运营的商业 AI 系统。" : "The full-stack operating layer for model gateways, Task Intelligence, and Agent OS.",
     heroDesc: isZh
       ? "OneAI 帮助 SaaS 团队把原始模型调用升级为可售卖、可治理、可计量的 AI 功能：模型路由、结构化输出、Agent OS handoff 基础设施、API keys、用量可见性、成本控制和商业运营能力。"
       : "OneAI helps SaaS teams turn raw model access into paid, governed, measurable AI features with model routing, structured outputs, Agent OS handoff infrastructure, API keys, usage visibility, cost controls, and billing-ready operations.",
@@ -606,8 +608,8 @@ export default function HomePage() {
       ? "OneAI 是模型路由、Task Intelligence 和 Agent OS handoff 的智能协调大脑。OneClaw、bot、外部 agent 或人工操作员负责执行。"
       : "OneAI is the intelligent coordination brain for model routing, Task Intelligence, and Agent OS handoff. OneClaw, bots, external agents, or human operators handle execution.",
     heroLine: isZh
-      ? "从“能调用模型”升级为“能销售、计量、治理和定制 AI 能力”的商业基础设施。"
-      : "From model access to commercial AI infrastructure that can sell, measure, govern, and customize intelligence.",
+      ? "从“能调用模型”升级为“能销售、计量、治理、审计和定制 AI 能力”的商业基础设施。"
+      : "From model access to commercial AI infrastructure that can sell, measure, govern, audit, and customize intelligence.",
     createKey: isZh ? "创建 API Key" : "Create API Key",
     quickstart: isZh ? "阅读快速开始" : "Read Quickstart",
     taskIntelligence: "Task Intelligence",
@@ -772,25 +774,25 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_20%,rgba(16,185,129,0.22),transparent_30%),radial-gradient(circle_at_84%_16%,rgba(34,211,238,0.14),transparent_28%),radial-gradient(circle_at_55%_92%,rgba(59,130,246,0.10),transparent_34%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:64px_64px] opacity-25" />
 
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 sm:py-16 md:py-24 lg:grid-cols-[0.93fr_1.07fr] lg:items-center">
+        <div className={`${wideContainer} relative grid gap-10 py-14 sm:py-16 md:py-24 lg:grid-cols-[0.82fr_1.18fr] xl:grid-cols-[0.76fr_1.24fr] lg:items-center`}>
           <div>
             <div className="flex flex-wrap gap-2">
               {c.badges.map((badge) => <Badge key={badge}>{badge}</Badge>)}
             </div>
 
-            <h1 className="mt-7 max-w-5xl text-4xl font-black leading-[1.02] tracking-tight text-white sm:text-5xl md:text-7xl md:leading-[0.96]">
+            <h1 className="mt-7 max-w-6xl text-4xl font-black leading-[1.02] tracking-tight text-white sm:text-5xl md:text-7xl md:leading-[0.96] xl:text-[5.35rem]">
               {c.heroTitle}
             </h1>
 
-            <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/62 sm:text-lg md:text-xl">
+            <p className="mt-6 max-w-3xl text-base leading-relaxed text-white/62 sm:text-lg md:text-xl">
               {c.heroDesc}
             </p>
 
-            <p className="mt-4 max-w-2xl text-sm font-semibold leading-relaxed text-white/52 sm:text-base">
+            <p className="mt-4 max-w-3xl text-sm font-semibold leading-relaxed text-white/52 sm:text-base">
               {c.heroBrain}
             </p>
 
-            <p className="mt-4 max-w-2xl text-sm font-bold leading-relaxed text-emerald-100/80 sm:text-base">
+            <p className="mt-4 max-w-3xl text-sm font-bold leading-relaxed text-emerald-100/80 sm:text-base">
               {c.heroLine}
             </p>
 
@@ -843,7 +845,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-b border-white/10">
-        <div className="mx-auto grid max-w-7xl gap-3 px-4 py-5 sm:px-6 sm:grid-cols-2 md:grid-cols-4">
+        <div className={`${wideContainer} grid gap-3 py-5 sm:grid-cols-2 md:grid-cols-4`}>
           {localizedHeroStats.map(([value, label, desc]) => (
             <StatCard key={label} value={value} label={label} desc={desc} />
           ))}
@@ -852,7 +854,7 @@ export default function HomePage() {
 
       <DynamicSystemMap />
 
-      <section id="platform" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-24">
+      <section id="platform" className={`${wideContainer} py-16 md:py-24`}>
         <SectionTitle
           eyebrow={c.platformEyebrow}
           title={c.platformTitle}
@@ -867,7 +869,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-y border-white/10 bg-white/[0.03]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+        <div className={`${wideContainer} grid gap-10 py-16 md:py-20 lg:grid-cols-[0.78fr_1.22fr] lg:items-start`}>
           <div>
             <SectionTitle
               eyebrow={c.dxEyebrow}
@@ -909,7 +911,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-b border-white/10">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20">
+        <div className={`${wideContainer} py-16 md:py-20`}>
           <div className="grid gap-10 lg:grid-cols-[0.86fr_1.14fr] lg:items-start">
             <div>
               <SectionTitle
@@ -970,7 +972,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="tasks" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-24">
+      <section id="tasks" className={`${wideContainer} py-16 md:py-24`}>
         <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr]">
           <div>
             <SectionTitle
@@ -1004,7 +1006,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-y border-white/10 bg-white/[0.03]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className={`${wideContainer} grid gap-10 py-16 md:py-20 lg:grid-cols-[0.86fr_1.14fr]`}>
           <div>
             <SectionTitle
               eyebrow={c.modelEyebrow}
@@ -1029,7 +1031,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-24">
+      <section className={`${wideContainer} py-16 md:py-24`}>
         <SectionTitle
           center
           eyebrow={c.whyEyebrow}
@@ -1057,7 +1059,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-y border-white/10 bg-white/[0.03]">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20">
+        <div className={`${wideContainer} py-16 md:py-20`}>
           <div className="grid gap-10 lg:grid-cols-[0.86fr_1.14fr] lg:items-start">
             <div>
               <SectionTitle
@@ -1107,7 +1109,7 @@ export default function HomePage() {
       </section>
 
       <section className="border-y border-white/10 bg-white/[0.03]">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20">
+        <div className={`${wideContainer} py-16 md:py-20`}>
           <SectionTitle
             center
             eyebrow={c.launchEyebrow}
@@ -1130,7 +1132,7 @@ export default function HomePage() {
       </section>
 
       <section id="commercial" className="border-y border-white/10 bg-black">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[0.86fr_1.14fr] lg:items-start">
+        <div className={`${wideContainer} grid gap-10 py-16 md:py-20 lg:grid-cols-[0.82fr_1.18fr] lg:items-start`}>
           <div>
             <SectionTitle
               eyebrow={c.commercialEyebrow}
@@ -1172,7 +1174,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-24">
+      <section className={`${wideContainer} py-16 md:py-24`}>
         <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
           <SectionTitle
             eyebrow={c.faqEyebrow}
@@ -1192,7 +1194,7 @@ export default function HomePage() {
       </section>
 
       <section className="px-4 pb-16 sm:px-6 md:pb-20">
-        <div className="mx-auto max-w-7xl rounded-[2rem] border border-emerald-300/20 bg-gradient-to-br from-emerald-300/15 via-white/[0.06] to-cyan-300/10 p-6 shadow-2xl shadow-emerald-950/40 backdrop-blur-xl sm:p-8 md:p-12">
+        <div className="mx-auto w-full max-w-[1760px] rounded-[2rem] border border-emerald-300/20 bg-gradient-to-br from-emerald-300/15 via-white/[0.06] to-cyan-300/10 p-6 shadow-2xl shadow-emerald-950/40 backdrop-blur-xl sm:p-8 md:p-12">
           <div className="grid gap-8 lg:grid-cols-[1fr_0.78fr] lg:items-center">
             <div>
               <div className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200/75">

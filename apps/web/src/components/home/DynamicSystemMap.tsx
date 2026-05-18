@@ -379,22 +379,22 @@ export function DynamicSystemMap() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_15%,rgba(16,185,129,0.18),transparent_28%),radial-gradient(circle_at_82%_35%,rgba(34,211,238,0.12),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(99,102,241,0.12),transparent_35%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:64px_64px] opacity-20" />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 md:py-24">
-        <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
+      <div className="relative mx-auto w-full max-w-[1760px] px-4 py-20 sm:px-6 lg:px-8 2xl:px-10 md:py-24">
+        <div className="grid gap-10 lg:grid-cols-[0.74fr_1.26fr] lg:items-center">
           <div>
             <div className="inline-flex rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-emerald-200">
               {copy.eyebrow}
             </div>
 
-            <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight tracking-tight text-white md:text-6xl">
+            <h2 className="mt-5 max-w-4xl text-4xl font-black leading-tight tracking-tight text-white md:text-6xl">
               {copy.title}
             </h2>
 
-            <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/58 md:text-lg">
+            <p className="mt-5 max-w-3xl text-base leading-relaxed text-white/58 md:text-lg">
               {copy.desc}
             </p>
 
-            <p className="mt-4 max-w-2xl text-sm font-bold leading-relaxed text-emerald-100/75 md:text-base">
+            <p className="mt-4 max-w-3xl text-sm font-bold leading-relaxed text-emerald-100/75 md:text-base">
               {copy.zhLine}
             </p>
 

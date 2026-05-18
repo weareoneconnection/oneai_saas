@@ -34,7 +34,7 @@ export function DocShell({
 }) {
   return (
     <main className="bg-white text-black">
-      <div className="mx-auto max-w-6xl px-6">
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <header className="flex items-center justify-between py-6">
           <Link href="/" className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 bg-white text-xs font-bold">

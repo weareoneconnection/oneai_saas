@@ -99,7 +99,7 @@ export default function SecurityPage() {
   return (
     <main className="bg-white text-black">
       <header className="border-b border-black/10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
+        <div className="mx-auto flex w-full max-w-[1760px] items-center justify-between px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
           <Link href="/" className="text-sm font-bold">
             OneAI API
           </Link>
@@ -121,7 +121,7 @@ export default function SecurityPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-20">
+      <section className="mx-auto w-full max-w-[1760px] px-4 py-14 sm:px-6 lg:px-8 2xl:px-10 md:py-20">
         <div className="max-w-2xl">
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
             {isZh ? "信任中心" : "Trust Center"}

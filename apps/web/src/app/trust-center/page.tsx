@@ -114,7 +114,7 @@ export default function TrustCenterPage() {
   return (
     <main className="bg-white text-black">
       <header className="border-b border-black/10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
+        <div className="mx-auto flex w-full max-w-[1760px] items-center justify-between px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
           <Link href="/" className="text-sm font-bold">OneAI API</Link>
           <div className="flex items-center gap-4 text-sm font-medium">
             <Link href="/docs" className="text-black/60 hover:text-black">{isZh ? "文档" : "Docs"}</Link>
@@ -125,7 +125,7 @@ export default function TrustCenterPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-20">
+      <section className="mx-auto w-full max-w-[1760px] px-4 py-14 sm:px-6 lg:px-8 2xl:px-10 md:py-20">
         <div className="max-w-3xl">
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">{isZh ? "信任中心" : "Trust Center"}</div>
           <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">

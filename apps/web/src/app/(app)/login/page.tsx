@@ -80,7 +80,7 @@ function LoginPageContent() {
   return (
     <div className="min-h-dvh bg-white text-black">
       <header className="border-b border-black/10">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-14 w-full max-w-[1760px] items-center justify-between px-4 sm:px-6 lg:px-8 2xl:px-10">
           <Link href="/" className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 text-sm font-bold">
               OA
@@ -106,7 +106,7 @@ function LoginPageContent() {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1fr_420px] md:py-20">
+      <main className="mx-auto grid w-full max-w-[1760px] gap-10 px-4 py-12 sm:px-6 lg:px-8 2xl:px-10 md:grid-cols-[1fr_460px] xl:grid-cols-[1fr_520px] md:py-20">
         <section>
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
             Commercial API operations · 商用 API 控制台

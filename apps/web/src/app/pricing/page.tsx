@@ -16,7 +16,7 @@ function Header() {
 
   return (
     <header className="border-b border-black/10">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
+      <div className="mx-auto flex w-full max-w-[1760px] items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 2xl:px-10">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-black/10 text-sm font-bold">
             OA
@@ -122,7 +122,7 @@ export default function PricingPage() {
     <main className="bg-white text-black">
       <Header />
 
-      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 md:py-20">
+      <section className="mx-auto w-full max-w-[1760px] px-4 py-14 sm:px-6 lg:px-8 2xl:px-10 md:py-20">
         <div className="max-w-3xl">
           <div className="text-xs font-bold uppercase tracking-wide text-black/45">
             {c("Commercial API pricing", "商用 API 价格")}

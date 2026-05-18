@@ -86,7 +86,7 @@ function Header() {
   const { isZh } = useI18n();
   return (
     <header className="border-b border-white/10 bg-[#030712]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full max-w-[1760px] items-center justify-between gap-3 px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-sm font-black text-white">
             OA
@@ -173,7 +173,7 @@ export default function UseCasesPage() {
       <Header />
 
       <section className="border-b border-white/10">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-24">
+        <div className="mx-auto w-full max-w-[1760px] px-4 py-16 sm:px-6 lg:px-8 2xl:px-10 md:py-24">
           <div className="max-w-4xl">
             <div className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300/70">
               {isZh ? "使用场景" : "Use cases"}
@@ -215,7 +215,7 @@ export default function UseCasesPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20">
+      <section className="mx-auto w-full max-w-[1760px] px-4 py-16 sm:px-6 lg:px-8 2xl:px-10 md:py-20">
         <div className="space-y-6">
           {localizedUseCases.map((item, index) => (
             <div key={item.title} className="rounded-[1.7rem] border border-white/10 bg-white/[0.055] p-5 shadow-2xl shadow-black/20 md:p-6">
@@ -282,7 +282,7 @@ export default function UseCasesPage() {
       </section>
 
       <section className="border-t border-white/10 px-4 py-16 sm:px-6 md:py-20">
-        <div className="mx-auto max-w-7xl rounded-[2rem] border border-emerald-300/20 bg-emerald-300/10 p-8 md:p-12">
+        <div className="mx-auto w-full max-w-[1760px] rounded-[2rem] border border-emerald-300/20 bg-emerald-300/10 p-8 md:p-12">
           <div className="grid gap-8 lg:grid-cols-[1fr_0.7fr] lg:items-center">
             <div>
               <h2 className="text-3xl font-black tracking-tight md:text-5xl">{isZh ? "有未列出的工作流？" : "Have a workflow that is not listed?"}</h2>

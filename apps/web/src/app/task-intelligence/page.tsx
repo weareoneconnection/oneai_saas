@@ -64,7 +64,7 @@ function Header() {
   const { isZh } = useI18n();
   return (
     <header className="border-b border-white/10 bg-[#030712]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex w-full max-w-[1760px] items-center justify-between gap-3 px-4 py-5 sm:px-6 lg:px-8 2xl:px-10">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-sm font-black text-white">
             OA
@@ -123,7 +123,7 @@ export default function TaskIntelligencePage() {
       <Header />
 
       <section className="border-b border-white/10">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
+        <div className="mx-auto grid w-full max-w-[1760px] gap-10 px-4 py-16 sm:px-6 lg:px-8 2xl:px-10 md:py-24 lg:grid-cols-[0.78fr_1.22fr] lg:items-center">
           <div>
             <div className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300/70">
               OneAI Task Intelligence
@@ -175,7 +175,7 @@ export default function TaskIntelligencePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20">
+      <section className="mx-auto w-full max-w-[1760px] px-4 py-16 sm:px-6 lg:px-8 2xl:px-10 md:py-20">
         <div className="max-w-3xl">
           <div className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300/70">{isZh ? "公开 Tasks" : "Public tasks"}</div>
           <h2 className="mt-4 text-3xl font-black tracking-tight md:text-5xl">{isZh ? "客户能理解、测试和购买的 tasks。" : "Tasks customers can understand, test, and buy."}</h2>
@@ -203,7 +203,7 @@ export default function TaskIntelligencePage() {
       </section>
 
       <section className="border-y border-white/10 bg-white/[0.03]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="mx-auto grid w-full max-w-[1760px] gap-10 px-4 py-16 sm:px-6 lg:px-8 2xl:px-10 md:py-20 lg:grid-cols-[0.78fr_1.22fr]">
           <div>
             <div className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300/70">{isZh ? "使用场景" : "Use cases"}</div>
             <h2 className="mt-4 text-3xl font-black tracking-tight md:text-5xl">{isZh ? "卖结果，不是卖原始 tokens。" : "Sell outcomes, not raw tokens."}</h2>
@@ -226,7 +226,7 @@ export default function TaskIntelligencePage() {
       </section>
 
       <section className="px-4 py-16 sm:px-6 md:py-20">
-        <div className="mx-auto max-w-7xl rounded-[2rem] border border-emerald-300/20 bg-emerald-300/10 p-8 md:p-12">
+        <div className="mx-auto w-full max-w-[1760px] rounded-[2rem] border border-emerald-300/20 bg-emerald-300/10 p-8 md:p-12">
           <div className="grid gap-8 lg:grid-cols-[1fr_0.68fr] lg:items-center">
             <div>
               <h2 className="text-3xl font-black tracking-tight md:text-5xl">{isZh ? "需要定制智能工作流？" : "Need a custom intelligence workflow?"}</h2>
