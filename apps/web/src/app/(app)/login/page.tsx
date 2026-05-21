@@ -284,6 +284,22 @@ function LoginPageContent() {
             Keep API keys server-side. The console is for operators and
             customers who manage production access.
           </div>
+
+          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+            <div className="text-sm font-bold text-emerald-950">
+              Promote OneAI · Earn revenue share
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-emerald-900/75">
+              Invite builders, teams, or companies to use OneAI. Qualified partners
+              can earn a share when referred customers upgrade or buy custom Task Intelligence.
+            </p>
+            <Link
+              href="/partners"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-black px-4 py-2 text-sm font-bold text-white hover:bg-neutral-900"
+            >
+              Become a partner · 成为推广伙伴
+            </Link>
+          </div>
         </aside>
       </main>
     </div>

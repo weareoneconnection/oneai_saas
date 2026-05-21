@@ -1,6 +1,7 @@
 import React from "react";
 import AppLayout from "@/components/app-shell/AppLayout";
 import SessionProvider from "@/components/auth/SessionProvider";
+import ReferralClaim from "@/components/referrals/ReferralClaim";
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth"; // ⬅️ 你项目里 authOptions 的真实路径
@@ -19,6 +20,7 @@ export default async function AppGroupLayout({
 
   return (
     <SessionProvider session={session}>
+      <ReferralClaim />
       <AppLayout>{children}</AppLayout>
     </SessionProvider>
   );

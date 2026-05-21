@@ -22,6 +22,13 @@ type Customer = {
   lastRequestAt?: string | null;
   billing?: { plan?: string; status?: string } | null;
   executions?: { total: number; succeeded: number; failed: number; running: number; pending: number };
+  referral?: {
+    refCode: string;
+    status?: string | null;
+    leadStage?: string | null;
+    signedInAt?: string | null;
+    estimatedCommissionUsd?: number | null;
+  } | null;
 };
 
 type Payload = {
@@ -75,6 +82,7 @@ function toTime(v?: string | null) {
 function scoreLead(row: Customer) {
   let score = 0;
   if (row.latestLoginAt) score += 10;
+  if (row.referral?.refCode) score += 15;
   if ((row.activeKeyCount || 0) > 0) score += 20;
   if ((row.requestCount || 0) > 0) score += 25;
   if ((row.requestCount || 0) >= 5) score += 15;
@@ -191,13 +199,14 @@ export default function SalesLeadsPage() {
     const activated = leads.filter((row) => ["Activated", "Cost active"].includes(row.stage)).length;
     const paid = leads.filter((row) => row.stage === "Customer").length;
     const contacted = leads.filter((row) => ["contacted", "qualified", "converted"].includes(row.leadNote.status)).length;
+    const partnerSourced = leads.filter((row) => !!row.referral?.refCode).length;
     const followUpsDue = leads.filter((row) => {
       if (!row.leadNote.nextFollowUp) return false;
       const due = new Date(row.leadNote.nextFollowUp).getTime();
       return Number.isFinite(due) && due <= Date.now();
     }).length;
     const totalPotentialCost = leads.reduce((sum, row) => sum + Number(row.costUsd || 0), 0);
-    return { hot, activated, paid, contacted, followUpsDue, totalPotentialCost };
+    return { hot, activated, paid, contacted, partnerSourced, followUpsDue, totalPotentialCost };
   }, [leads]);
   const localizedStatusOptions = isZh
     ? [
@@ -221,6 +230,7 @@ export default function SalesLeadsPage() {
     activatedLeads: isZh ? "已激活线索" : "Activated leads",
     paidTrial: isZh ? "付费 / 试用" : "Paid / trial",
     observedCost: isZh ? "已观测模型成本" : "Observed model cost",
+    partnerSourced: isZh ? "推广来源" : "Partner sourced",
     contacted: isZh ? "已联系 / 已合格" : "Contacted / qualified",
     followups: isZh ? "到期跟进" : "Follow-ups due",
     prioritization: isZh ? "线索优先级" : "Lead Prioritization",
@@ -280,10 +290,14 @@ export default function SalesLeadsPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-3">
         <div className="rounded-lg border border-black/10 bg-white/60 p-4">
           <div className="text-xs text-black/45">{c.contacted}</div>
           <div className="mt-2 text-2xl font-bold">{fmtNum(summary.contacted)}</div>
+        </div>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <div className="text-xs text-emerald-900/70">{c.partnerSourced}</div>
+          <div className="mt-2 text-2xl font-bold text-emerald-950">{fmtNum(summary.partnerSourced)}</div>
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
           <div className="text-xs text-amber-800/70">{c.followups}</div>
@@ -315,7 +329,9 @@ export default function SalesLeadsPage() {
                   <div key={row.email} className="grid grid-cols-12 gap-2 border-t border-black/10 px-3 py-3 text-sm">
                     <div className="col-span-2 min-w-0">
                       <div className="truncate font-semibold text-black">{row.email}</div>
-                      <div className="truncate text-xs text-black/40">org: {row.orgId || "-"}</div>
+                      <div className="truncate text-xs text-black/40">
+                        {row.referral?.refCode ? `ref: ${row.referral.refCode}` : `org: ${row.orgId || "-"}`}
+                      </div>
                     </div>
                     <div className="col-span-1 text-right font-bold text-black">{row.score}</div>
                     <div className="col-span-1 text-black/70">{localizeStage(row.stage, isZh)}</div>

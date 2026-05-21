@@ -432,6 +432,50 @@ model AuditLog {
 
 /**
  * =========================
+ * Partner referrals
+ * Tracks lightweight attribution before automated commission settlement.
+ * Payment and payout remain manual until commercial terms are confirmed.
+ * =========================
+ */
+
+model PartnerReferral {
+  id       String @id @default(cuid())
+
+  refCode  String
+
+  referredEmail String?
+  orgId          String?
+
+  status         String @default("captured")
+  leadStage      String @default("signed_in")
+
+  sourcePath     String?
+  landingPath    String?
+
+  firstSeenAt    DateTime @default(now())
+  signedInAt     DateTime?
+  convertedAt    DateTime?
+
+  plan           String?
+  revenueSharePct Float?
+  estimatedCommissionUsd Float @default(0)
+  settledCommissionUsd   Float @default(0)
+
+  metadata       Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([refCode, referredEmail])
+  @@index([refCode])
+  @@index([referredEmail])
+  @@index([orgId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/**
+ * =========================
  * Agent OS Execution Records
  * OneAI stores contracts, approvals, proof, and executor results.
  * Execution itself remains outside OneAI.

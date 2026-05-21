@@ -37,6 +37,14 @@ function normalizeOrgRole(raw: string) {
   return "";
 }
 
+function normalizeRefCode(raw: string) {
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 80);
+}
+
 function clientMeta(req: any) {
   return {
     ip: String(req.ip || req.headers?.["x-forwarded-for"] || "").slice(0, 120) || null,
@@ -579,6 +587,105 @@ router.post("/audit/event", requireAdminKey, async (req, res) => {
   return res.json({ success: true });
 });
 
+router.post("/referrals/claim", requireAdminKey, async (req, res) => {
+  const userEmail = String(req.body?.userEmail || "").trim().toLowerCase();
+  const refCode = normalizeRefCode(String(req.body?.refCode || ""));
+  const sourcePath = req.body?.sourcePath ? String(req.body.sourcePath).slice(0, 500) : null;
+  const landingPath = req.body?.landingPath ? String(req.body.landingPath).slice(0, 500) : null;
+  const metadata = req.body?.metadata && typeof req.body.metadata === "object" ? req.body.metadata : {};
+
+  if (!userEmail) return res.status(400).json({ success: false, error: "userEmail required" });
+  if (!refCode) return res.status(400).json({ success: false, error: "refCode required" });
+
+  const org = await getOrCreateOrgForUserEmail(userEmail);
+
+  const referral = await (prisma as any).partnerReferral.upsert({
+    where: {
+      refCode_referredEmail: {
+        refCode,
+        referredEmail: userEmail,
+      },
+    },
+    update: {
+      orgId: org.id,
+      status: "signed_in",
+      leadStage: "signed_in",
+      signedInAt: new Date(),
+      ...(sourcePath ? { sourcePath } : {}),
+      ...(landingPath ? { landingPath } : {}),
+      metadata: {
+        ...(metadata || {}),
+        claimedBy: "web_console",
+      },
+    },
+    create: {
+      refCode,
+      referredEmail: userEmail,
+      orgId: org.id,
+      status: "signed_in",
+      leadStage: "signed_in",
+      sourcePath,
+      landingPath,
+      signedInAt: new Date(),
+      revenueSharePct: null,
+      metadata: {
+        ...(metadata || {}),
+        claimedBy: "web_console",
+      },
+    },
+  });
+
+  await writeAuditLog({
+    userEmail,
+    action: "partner.referral.claimed",
+    target: refCode,
+    metadata: {
+      refCode,
+      referralId: referral.id,
+      sourcePath,
+      landingPath,
+    },
+    req,
+  });
+
+  return res.json({ success: true, data: referral });
+});
+
+router.get("/referrals", requireAdminKey, async (req, res) => {
+  const refCode = normalizeRefCode(String(req.query.refCode || ""));
+  const userEmail = String(req.query.userEmail || "").trim().toLowerCase();
+  const limit = Math.min(Number(req.query.limit || 200), 500);
+
+  const rows = await (prisma as any).partnerReferral.findMany({
+    where: {
+      ...(refCode ? { refCode } : {}),
+      ...(userEmail ? { referredEmail: userEmail } : {}),
+    },
+    orderBy: { updatedAt: "desc" },
+    take: limit,
+  });
+
+  return res.json({
+    success: true,
+    data: {
+      referrals: rows,
+      summary: {
+        total: rows.length,
+        signedIn: rows.filter((row: any) => row.status === "signed_in").length,
+        converted: rows.filter((row: any) => row.status === "converted").length,
+        estimatedCommissionUsd: rows.reduce(
+          (sum: number, row: any) => sum + Number(row.estimatedCommissionUsd || 0),
+          0
+        ),
+        settledCommissionUsd: rows.reduce(
+          (sum: number, row: any) => sum + Number(row.settledCommissionUsd || 0),
+          0
+        ),
+      },
+    },
+  });
+});
+
 router.get("/customers", requireAdminKey, async (_req, res) => {
   const [
     keys,
@@ -591,6 +698,7 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
     recentFailures,
     executionByOrg,
     recentExecutions,
+    referralRows,
   ] = await Promise.all([
     prisma.apiKey.findMany({
       orderBy: { createdAt: "desc" },
@@ -716,6 +824,10 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
         },
       } as any,
     }).catch(() => []),
+    (prisma as any).partnerReferral.findMany({
+      orderBy: { updatedAt: "desc" },
+      take: 500,
+    }).catch(() => []),
   ]);
 
   const usageByKey = new Map(
@@ -783,6 +895,29 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       },
     ])
   );
+  const referralByEmail = new Map<string, any>();
+  for (const referral of referralRows as any[]) {
+    const email = String(referral.referredEmail || "").toLowerCase();
+    if (!email) continue;
+    if (!referralByEmail.has(email)) {
+      referralByEmail.set(email, {
+        id: referral.id,
+        refCode: referral.refCode,
+        status: referral.status,
+        leadStage: referral.leadStage,
+        sourcePath: referral.sourcePath,
+        landingPath: referral.landingPath,
+        firstSeenAt: referral.firstSeenAt,
+        signedInAt: referral.signedInAt,
+        convertedAt: referral.convertedAt,
+        plan: referral.plan,
+        revenueSharePct: referral.revenueSharePct,
+        estimatedCommissionUsd: referral.estimatedCommissionUsd,
+        settledCommissionUsd: referral.settledCommissionUsd,
+        updatedAt: referral.updatedAt,
+      });
+    }
+  }
   const membersByOrg = new Map<string, any[]>();
   for (const membership of membershipRows as any[]) {
     const list = membersByOrg.get(membership.orgId) || [];
@@ -818,6 +953,7 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       members: [],
       keys: [],
       executions: { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, lastUpdatedAt: null },
+      referral: referralByEmail.get(email) || null,
     };
     const usage = usageByKey.get(key.id) || { requests: 0, tokens: 0, costUsd: 0, lastRequestAt: null };
     current.keyCount += 1;
@@ -853,6 +989,7 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
     current.billing = billingByOrg.get(key.orgId) || current.billing || { plan: "free", status: "inactive" };
     current.members = membersByOrg.get(key.orgId) || current.members || [];
     current.executions = executionByOrgMap.get(key.orgId) || current.executions;
+    current.referral = current.referral || referralByEmail.get(email) || null;
     customers.set(email, current);
   }
 
@@ -880,6 +1017,7 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
       executions: audit.orgId
         ? executionByOrgMap.get(audit.orgId) || { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, lastUpdatedAt: null }
         : { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, lastUpdatedAt: null },
+      referral: referralByEmail.get(email) || null,
     };
     if (audit.action === "console.sign_in") {
       current.latestLoginAt =
@@ -902,6 +1040,40 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
     customers.set(email, current);
   }
 
+  for (const referral of referralRows as any[]) {
+    const email = String(referral.referredEmail || "").toLowerCase();
+    if (!email) continue;
+    const current = customers.get(email) || {
+      email,
+      orgId: referral.orgId || null,
+      keyCount: 0,
+      activeKeyCount: 0,
+      revokedKeyCount: 0,
+      latestKeyCreatedAt: null,
+      latestKeyUsedAt: null,
+      latestLoginAt: referral.signedInAt || null,
+      requestCount: 0,
+      failedRequestCount: 0,
+      totalTokens: 0,
+      costUsd: 0,
+      lastRequestAt: null,
+      lastFailedRequestAt: null,
+      billing: referral.orgId ? billingByOrg.get(referral.orgId) || { plan: "free", status: "inactive" } : null,
+      members: referral.orgId ? membersByOrg.get(referral.orgId) || [] : [],
+      keys: [],
+      executions: referral.orgId
+        ? executionByOrgMap.get(referral.orgId) || { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, lastUpdatedAt: null }
+        : { total: 0, succeeded: 0, failed: 0, running: 0, pending: 0, lastUpdatedAt: null },
+      referral: referralByEmail.get(email) || null,
+    };
+    current.latestLoginAt =
+      referral.signedInAt && (!current.latestLoginAt || referral.signedInAt > current.latestLoginAt)
+        ? referral.signedInAt
+        : current.latestLoginAt;
+    current.referral = current.referral || referralByEmail.get(email) || null;
+    customers.set(email, current);
+  }
+
   const recentEvents = (audits as any[]).map((audit) => ({
     id: audit.id,
     action: audit.action,
@@ -909,6 +1081,19 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
     userEmail: audit.metadata?.userEmail || null,
     createdAt: audit.createdAt,
     metadata: audit.metadata,
+  }));
+  const recentReferrals = (referralRows as any[]).slice(0, 50).map((referral) => ({
+    id: referral.id,
+    refCode: referral.refCode,
+    referredEmail: referral.referredEmail,
+    orgId: referral.orgId,
+    status: referral.status,
+    leadStage: referral.leadStage,
+    signedInAt: referral.signedInAt,
+    convertedAt: referral.convertedAt,
+    estimatedCommissionUsd: referral.estimatedCommissionUsd,
+    settledCommissionUsd: referral.settledCommissionUsd,
+    updatedAt: referral.updatedAt,
   }));
   const recentFailedRequests = (recentFailures as any[]).map((request) => ({
     id: request.requestId || request.id,
@@ -940,6 +1125,7 @@ router.get("/customers", requireAdminKey, async (_req, res) => {
         return bt - at;
       }),
       recentEvents,
+      recentReferrals,
       recentFailedRequests,
       recentExecutions,
     },
