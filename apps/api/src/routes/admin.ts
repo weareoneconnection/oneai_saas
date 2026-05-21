@@ -45,6 +45,14 @@ function normalizeRefCode(raw: string) {
     .slice(0, 80);
 }
 
+function defaultRevenueSharePct(plan: string) {
+  const value = String(plan || "").toLowerCase();
+  if (value === "pro") return 20;
+  if (value === "team") return 15;
+  if (value === "enterprise") return 10;
+  return 15;
+}
+
 function clientMeta(req: any) {
   return {
     ip: String(req.ip || req.headers?.["x-forwarded-for"] || "").slice(0, 120) || null,
@@ -684,6 +692,60 @@ router.get("/referrals", requireAdminKey, async (req, res) => {
       },
     },
   });
+});
+
+router.post("/referrals/:id/convert", requireAdminKey, async (req, res) => {
+  const id = String(req.params.id || "").trim();
+  const plan = String(req.body?.plan || "team").trim().toLowerCase().slice(0, 80);
+  const revenueUsd = Math.max(0, Number(req.body?.revenueUsd || 0));
+  const requestedShare = Number(req.body?.revenueSharePct);
+  const revenueSharePct =
+    Number.isFinite(requestedShare) && requestedShare >= 0 && requestedShare <= 100
+      ? requestedShare
+      : defaultRevenueSharePct(plan);
+  const estimatedCommissionUsd = revenueUsd > 0 ? (revenueUsd * revenueSharePct) / 100 : 0;
+  const metadata = req.body?.metadata && typeof req.body.metadata === "object" ? req.body.metadata : {};
+
+  if (!id) return res.status(400).json({ success: false, error: "id required" });
+
+  const existing = await (prisma as any).partnerReferral.findUnique({ where: { id } });
+  if (!existing) return res.status(404).json({ success: false, error: "referral not found" });
+
+  const referral = await (prisma as any).partnerReferral.update({
+    where: { id },
+    data: {
+      status: "converted",
+      leadStage: "converted",
+      convertedAt: new Date(),
+      plan,
+      revenueSharePct,
+      estimatedCommissionUsd,
+      metadata: {
+        ...(existing.metadata || {}),
+        ...(metadata || {}),
+        conversionRevenueUsd: revenueUsd,
+        conversionRecordedAt: new Date().toISOString(),
+      },
+    },
+  });
+
+  await writeAuditLog({
+    userEmail: referral.referredEmail || "",
+    action: "partner.referral.converted",
+    target: referral.refCode,
+    metadata: {
+      referralId: referral.id,
+      refCode: referral.refCode,
+      referredEmail: referral.referredEmail,
+      plan,
+      revenueUsd,
+      revenueSharePct,
+      estimatedCommissionUsd,
+    },
+    req,
+  });
+
+  return res.json({ success: true, data: referral });
 });
 
 router.get("/customers", requireAdminKey, async (_req, res) => {

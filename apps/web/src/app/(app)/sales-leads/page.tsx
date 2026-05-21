@@ -23,11 +23,16 @@ type Customer = {
   billing?: { plan?: string; status?: string } | null;
   executions?: { total: number; succeeded: number; failed: number; running: number; pending: number };
   referral?: {
+    id?: string;
     refCode: string;
     status?: string | null;
     leadStage?: string | null;
     signedInAt?: string | null;
+    convertedAt?: string | null;
+    plan?: string | null;
+    revenueSharePct?: number | null;
     estimatedCommissionUsd?: number | null;
+    settledCommissionUsd?: number | null;
   } | null;
 };
 
@@ -71,6 +76,27 @@ function fmtUsd(n?: number | null) {
 function fmtTime(v?: string | null) {
   if (!v) return "-";
   return new Date(v).toLocaleString();
+}
+
+function suggestedPlan(row: Customer) {
+  const plan = String(row.billing?.plan || "").toLowerCase();
+  if (["pro", "team", "enterprise"].includes(plan)) return plan;
+  if ((row.costUsd || 0) > 0 || (row.requestCount || 0) >= 10) return "team";
+  return "pro";
+}
+
+function suggestedRevenueUsd(plan: string) {
+  if (plan === "pro") return 29;
+  if (plan === "team") return 99;
+  if (plan === "enterprise") return 1000;
+  return 99;
+}
+
+function suggestedSharePct(plan: string) {
+  if (plan === "pro") return 20;
+  if (plan === "team") return 15;
+  if (plan === "enterprise") return 10;
+  return 15;
 }
 
 function toTime(v?: string | null) {
@@ -139,6 +165,7 @@ export default function SalesLeadsPage() {
   const [rows, setRows] = useState<Customer[]>([]);
   const [notes, setNotes] = useState<Record<string, LeadNote>>({});
   const [loading, setLoading] = useState(false);
+  const [convertingId, setConvertingId] = useState("");
   const [err, setErr] = useState("");
 
   function updateNote(email: string, patch: Partial<LeadNote>) {
@@ -172,6 +199,33 @@ export default function SalesLeadsPage() {
     }
   }
 
+  async function markConverted(row: Customer) {
+    if (!row.referral?.id) return;
+    const plan = suggestedPlan(row);
+    setConvertingId(row.referral.id);
+    setErr("");
+    try {
+      const res = await fetch("/api/referrals/convert", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          id: row.referral.id,
+          plan,
+          revenueUsd: suggestedRevenueUsd(plan),
+          revenueSharePct: suggestedSharePct(plan),
+        }),
+        cache: "no-store",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) throw new Error(json.error || "Failed to convert referral");
+      await load();
+    } catch (error: any) {
+      setErr(error?.message || "Failed to convert referral");
+    } finally {
+      setConvertingId("");
+    }
+  }
+
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(LEAD_NOTES_KEY);
@@ -200,13 +254,18 @@ export default function SalesLeadsPage() {
     const paid = leads.filter((row) => row.stage === "Customer").length;
     const contacted = leads.filter((row) => ["contacted", "qualified", "converted"].includes(row.leadNote.status)).length;
     const partnerSourced = leads.filter((row) => !!row.referral?.refCode).length;
+    const partnerConverted = leads.filter((row) => row.referral?.status === "converted").length;
     const followUpsDue = leads.filter((row) => {
       if (!row.leadNote.nextFollowUp) return false;
       const due = new Date(row.leadNote.nextFollowUp).getTime();
       return Number.isFinite(due) && due <= Date.now();
     }).length;
     const totalPotentialCost = leads.reduce((sum, row) => sum + Number(row.costUsd || 0), 0);
-    return { hot, activated, paid, contacted, partnerSourced, followUpsDue, totalPotentialCost };
+    const estimatedCommission = leads.reduce(
+      (sum, row) => sum + Number(row.referral?.estimatedCommissionUsd || 0),
+      0
+    );
+    return { hot, activated, paid, contacted, partnerSourced, partnerConverted, followUpsDue, totalPotentialCost, estimatedCommission };
   }, [leads]);
   const localizedStatusOptions = isZh
     ? [
@@ -231,6 +290,8 @@ export default function SalesLeadsPage() {
     paidTrial: isZh ? "付费 / 试用" : "Paid / trial",
     observedCost: isZh ? "已观测模型成本" : "Observed model cost",
     partnerSourced: isZh ? "推广来源" : "Partner sourced",
+    partnerConverted: isZh ? "推广成交" : "Partner converted",
+    estimatedCommission: isZh ? "预计分佣" : "Estimated commission",
     contacted: isZh ? "已联系 / 已合格" : "Contacted / qualified",
     followups: isZh ? "到期跟进" : "Follow-ups due",
     prioritization: isZh ? "线索优先级" : "Lead Prioritization",
@@ -290,7 +351,7 @@ export default function SalesLeadsPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-4">
         <div className="rounded-lg border border-black/10 bg-white/60 p-4">
           <div className="text-xs text-black/45">{c.contacted}</div>
           <div className="mt-2 text-2xl font-bold">{fmtNum(summary.contacted)}</div>
@@ -298,6 +359,14 @@ export default function SalesLeadsPage() {
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <div className="text-xs text-emerald-900/70">{c.partnerSourced}</div>
           <div className="mt-2 text-2xl font-bold text-emerald-950">{fmtNum(summary.partnerSourced)}</div>
+        </div>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <div className="text-xs text-emerald-900/70">{c.partnerConverted}</div>
+          <div className="mt-2 text-2xl font-bold text-emerald-950">{fmtNum(summary.partnerConverted)}</div>
+        </div>
+        <div className="rounded-lg border border-black/10 bg-white/60 p-4">
+          <div className="text-xs text-black/45">{c.estimatedCommission}</div>
+          <div className="mt-2 text-2xl font-bold">{fmtUsd(summary.estimatedCommission)}</div>
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
           <div className="text-xs text-amber-800/70">{c.followups}</div>
@@ -312,7 +381,7 @@ export default function SalesLeadsPage() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto rounded-lg border border-black/10">
-            <div className="min-w-[1040px]">
+            <div className="min-w-[1220px]">
               <div className="grid grid-cols-12 bg-black/5 px-3 py-2 text-xs font-semibold text-black/55">
                 <div className="col-span-2">{c.lead}</div>
                 <div className="col-span-1 text-right">{c.score}</div>
@@ -320,9 +389,9 @@ export default function SalesLeadsPage() {
                 <div className="col-span-1 text-right">{c.keys}</div>
                 <div className="col-span-1 text-right">{c.requests}</div>
                 <div className="col-span-1 text-right">{c.cost}</div>
-                <div className="col-span-2">{c.salesStatus}</div>
+                <div className="col-span-2">Partner / Ref</div>
+                <div className="col-span-1">{c.estimatedCommission}</div>
                 <div className="col-span-2">{c.noteFollow}</div>
-                <div className="col-span-1">{c.signal}</div>
               </div>
               {leads.length ? (
                 leads.map((row) => (
@@ -339,6 +408,37 @@ export default function SalesLeadsPage() {
                     <div className="col-span-1 text-right text-black/70">{fmtNum(row.requestCount)}</div>
                     <div className="col-span-1 text-right font-semibold text-black">{fmtUsd(row.costUsd)}</div>
                     <div className="col-span-2">
+                      {row.referral?.refCode ? (
+                        <div className="space-y-2">
+                          <div className="inline-flex max-w-full rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-950">
+                            <span className="truncate">{row.referral.refCode}</span>
+                          </div>
+                          <div className="text-xs text-black/50">
+                            {row.referral.status || "signed_in"} · {row.referral.plan || suggestedPlan(row)}
+                          </div>
+                          {row.referral.status !== "converted" ? (
+                            <button
+                              onClick={() => markConverted(row)}
+                              disabled={convertingId === row.referral?.id}
+                              className="rounded-lg bg-black px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                            >
+                              {convertingId === row.referral?.id
+                                ? isZh ? "记录中..." : "Recording..."
+                                : isZh ? "标记成交" : "Mark converted"}
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-black/40">-</div>
+                      )}
+                    </div>
+                    <div className="col-span-1 text-xs text-black/60">
+                      <div className="font-bold text-black">{fmtUsd(row.referral?.estimatedCommissionUsd || 0)}</div>
+                      {row.referral?.revenueSharePct ? (
+                        <div>{row.referral.revenueSharePct}%</div>
+                      ) : null}
+                    </div>
+                    <div className="col-span-2 space-y-2">
                       <select
                         value={row.leadNote.status}
                         onChange={(e) => updateNote(row.email, { status: e.target.value as LeadStatus })}
@@ -350,9 +450,6 @@ export default function SalesLeadsPage() {
                           </option>
                         ))}
                       </select>
-                      <div className="mt-2 text-xs text-black/50">{row.action}</div>
-                    </div>
-                    <div className="col-span-2 space-y-2">
                       <input
                         value={row.leadNote.note}
                         onChange={(e) => updateNote(row.email, { note: e.target.value })}
@@ -365,9 +462,6 @@ export default function SalesLeadsPage() {
                         onChange={(e) => updateNote(row.email, { nextFollowUp: e.target.value })}
                         className="h-9 w-full rounded-lg border border-black/10 bg-white px-2 text-xs text-black outline-none focus:border-black/30"
                       />
-                    </div>
-                    <div className="col-span-1 text-xs text-black/45">
-                      {fmtTime(row.lastRequestAt || row.latestKeyUsedAt || row.latestKeyCreatedAt || row.latestLoginAt)}
                     </div>
                   </div>
                 ))

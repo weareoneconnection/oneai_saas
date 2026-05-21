@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { LanguageToggle } from "@/components/i18n/LanguageToggle";
 import { useI18n } from "@/lib/i18n";
@@ -9,6 +10,15 @@ const CONTACT_HREF =
   `mailto:${CONTACT_EMAIL}?subject=OneAI%20Partner%20Network`;
 const TELEGRAM_HREF = "https://t.me/waocfounder";
 const X_HREF = "https://x.com/waoconnectone?s=21";
+const DEFAULT_REF = "waocfounder";
+
+function normalizeRef(raw: string) {
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 80);
+}
 
 function Header() {
   const { isZh } = useI18n();
@@ -93,7 +103,17 @@ function Tier({
 
 export default function PartnersPage() {
   const { isZh } = useI18n();
+  const [refCode, setRefCode] = React.useState(DEFAULT_REF);
+  const [copied, setCopied] = React.useState(false);
   const c = (en: string, zh: string) => (isZh ? zh : en);
+  const normalizedRef = normalizeRef(refCode) || DEFAULT_REF;
+  const referralLink = `https://oneai-saas-web-production.up.railway.app/?ref=${normalizedRef}`;
+
+  async function copyReferralLink() {
+    await navigator.clipboard.writeText(referralLink).catch(() => null);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  }
 
   const audience = [
     c("AI builders with founder or developer audiences", "拥有创始人或开发者受众的 AI 创作者"),
@@ -197,6 +217,38 @@ export default function PartnersPage() {
                 "在 OneAI 从人工合作伙伴追踪升级到自动归因之前，最终条款会按推荐质量和客户类型逐单确认。"
               )}
             </p>
+
+            <div className="mt-6 rounded-3xl border border-white/10 bg-black/30 p-5">
+              <div className="text-sm font-black text-white">
+                {c("Your referral link", "你的推广链接")}
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-white/45">
+                {c(
+                  "Use your partner code in articles, communities, direct intros, and launch posts. When a referred user signs in, OneAI records the attribution.",
+                  "把你的推广代码放到文章、社区、直接介绍和发布内容里。被推荐用户登录后，OneAI 会记录归因。"
+                )}
+              </p>
+              <label className="mt-4 block">
+                <div className="mb-2 text-xs font-bold uppercase tracking-wide text-white/40">
+                  {c("Partner code", "推广代码")}
+                </div>
+                <input
+                  value={refCode}
+                  onChange={(event) => setRefCode(event.target.value)}
+                  className="h-11 w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-emerald-300/50"
+                  placeholder={DEFAULT_REF}
+                />
+              </label>
+              <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-xs font-semibold leading-relaxed text-emerald-100">
+                {referralLink}
+              </div>
+              <button
+                onClick={copyReferralLink}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-black text-black hover:bg-emerald-100"
+              >
+                {copied ? c("Copied", "已复制") : c("Copy referral link", "复制推广链接")}
+              </button>
+            </div>
           </div>
         </div>
       </section>
