@@ -96,9 +96,11 @@ const plans = [
     features: [
       "Top up from ¥50 / $10",
       "Credits never expire",
-      "Claude Sonnet · Opus · Haiku",
+      "Claude Sonnet 4.6 — ¥19 / 1M in · ¥92 / 1M out",
+      "Claude Opus 4.8 — ¥43 / 1M in · ¥215 / 1M out",
+      "Claude Haiku 4.5 — ¥9 / 1M in · ¥43 / 1M out",
+      "GPT-5 · Gemini 2.5 Pro · DeepSeek · Grok 4",
       "120 RPM",
-      "All routing modes",
     ],
   },
   {
@@ -391,9 +393,11 @@ export default function BillingPage() {
         features: [
           c("Top up from ¥50 / $10", "最低充值 ¥50 / $10"),
           c("Credits never expire", "额度永不过期"),
-          c("Claude Sonnet · Opus · Haiku", "支持全系列 Claude 模型"),
+          c("Claude Sonnet 4.6 — ¥19 / 1M input · ¥92 / 1M output", "Claude Sonnet 4.6 — ¥19/百万输入 · ¥92/百万输出"),
+          c("Claude Opus 4.8 — ¥43 / 1M input · ¥215 / 1M output", "Claude Opus 4.8 — ¥43/百万输入 · ¥215/百万输出"),
+          c("Claude Haiku 4.5 — ¥9 / 1M input · ¥43 / 1M output", "Claude Haiku 4.5 — ¥9/百万输入 · ¥43/百万输出"),
+          c("GPT-5 · Gemini 2.5 Pro · DeepSeek · Grok 4 also supported", "同时支持 GPT-5 · Gemini 2.5 Pro · DeepSeek · Grok 4"),
           "120 RPM",
-          c("All routing modes", "全部路由模式"),
         ],
       };
     }
