@@ -54,9 +54,10 @@ export default function PricingPage() {
     {
       name: c("Trial", "试用"),
       price: c("Free", "免费"),
-      desc: c("Test the API before topping up.", "充值前先体验 API 能力。"),
+      desc: c("Sign up and get $1 free credit instantly. No card required.", "注册即送 $1 免费额度，无需绑卡。"),
       features: [
-        c("$10 free credit included", "赠送 $10 免费额度"),
+        c("$1 free credit on signup", "注册即送 $1 额度"),
+        c("~30 conversations included", "约 30 次对话体验"),
         c("1,000 requests / month", "每月最多 1,000 次请求"),
         "30 RPM",
         c("cheap + balanced modes", "cheap + balanced 模式"),
@@ -162,7 +163,7 @@ export default function PricingPage() {
                 ))}
               </div>
               <Link
-                href={plan.name === "Free" ? "/keys" : CONTACT_SALES_HREF}
+                href={plan.name === c("Trial", "试用") ? "/keys" : CONTACT_SALES_HREF}
                 className={[
                   "mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg text-sm font-semibold transition",
                   plan.name === "Pro"
@@ -170,7 +171,7 @@ export default function PricingPage() {
                     : "bg-black text-white hover:bg-neutral-900",
                 ].join(" ")}
               >
-                {plan.name === "Free" ? c("Start free", "免费开始") : c("Contact sales", "联系开通")}
+                {plan.name === c("Trial", "试用") ? c("Start free", "免费开始") : c("Contact sales", "联系开通")}
               </Link>
             </div>
           ))}

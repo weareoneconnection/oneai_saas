@@ -80,69 +80,70 @@ const CONTACT_X_HREF = "https://x.com/waoconnectone?s=21";
 const plans = [
   {
     key: "free",
-    name: "Free",
-    price: "$0",
-    desc: "Validate the API, generate test outputs, and inspect usage.",
+    name: "Trial",
+    price: "Free",
+    desc: "Sign up and get $1 free credit instantly. No card required.",
     cta: "Current free access",
-    features: ["Developer API key", "Basic task access", "Usage dashboard"],
+    features: ["$1 free credit on signup", "~30 conversations included", "1,000 requests / month", "30 RPM"],
   },
   {
     key: "pro",
-    name: "Pro",
-    price: "$29/mo",
-    desc: "For builders shipping production workflows on top of OneAI.",
-    cta: "Upgrade to Pro",
+    name: "Pay-as-you-go",
+    price: "Top up anytime",
+    desc: "Prepay credits, pay only for what you use. No monthly fee.",
+    cta: "Top up now",
     env: "NEXT_PUBLIC_STRIPE_PRICE_PRO",
     features: [
-      "Higher request limits",
-      "Cost-aware model routing",
-      "Request IDs and idempotency",
-      "Customer usage analytics",
+      "Top up from ¥50 / $10",
+      "Credits never expire",
+      "Claude Sonnet · Opus · Haiku",
+      "120 RPM",
+      "All routing modes",
     ],
   },
   {
     key: "team",
     name: "Team",
-    price: "$99/mo",
-    desc: "For teams that need shared usage, stronger limits, and billing ops.",
-    cta: "Upgrade to Team",
+    price: "Top up + priority",
+    desc: "Higher limits, debug traces, model controls, and priority support.",
+    cta: "Contact to activate",
     env: "NEXT_PUBLIC_STRIPE_PRICE_TEAM",
     features: [
-      "Shared organization billing",
-      "API key governance",
-      "Provider/model policy",
-      "Agent OS preview and handoff contracts",
-      "Priority commercial support",
+      "600 RPM",
+      "Debug trace + model registry",
+      "Explicit model selection",
+      "Agent OS preview",
+      "Priority onboarding support",
     ],
   },
   {
     key: "enterprise",
     name: "Enterprise",
     price: "Custom",
-    desc: "For production customers that need custom policy, provider controls, and support.",
+    desc: "Custom limits, private provider policy, dedicated support.",
     cta: "Contact sales",
     features: [
-      "Custom request and cost limits",
-      "Custom provider/model policy",
-      "Private model configuration",
+      "Custom RPM & volume",
+      "Dedicated provider policy",
+      "Custom models & health checks",
       "Private Agent OS handoff protocol",
-      "Launch support and operational review",
+      "SLA + dedicated support",
     ],
   },
 ] as const;
 
 const planMatrix = [
-  ["Monthly requests", "1,000", "50,000", "250,000", "Custom"],
-  ["Monthly model-cost guard", "$10", "$500", "$2,500", "Custom"],
+  ["Billing model", "Free credit", "Prepaid credit", "Prepaid credit", "Custom"],
+  ["Minimum top-up", "—", "¥50 / $10", "¥50 / $10", "Custom"],
+  ["Credit expiry", "30 days", "Never", "Never", "Custom"],
+  ["Monthly request cap", "1,000", "Unlimited", "Unlimited", "Custom"],
   ["Rate limit", "30 RPM", "120 RPM", "600 RPM", "Custom"],
-  ["Max cost/request", "$0.05", "$1", "$5", "Custom"],
-  ["Routing modes", "cheap, balanced", "cheap, balanced, fast, auto", "all modes", "all modes"],
+  ["Routing modes", "cheap, balanced", "all modes", "all modes", "all modes"],
   ["Debug trace", "locked", "locked", "enabled", "enabled"],
   ["Explicit model selection", "locked", "locked", "enabled", "enabled"],
   ["Model registry", "locked", "locked", "enabled", "enabled"],
   ["Agent OS preview", "locked", "locked", "enabled", "enabled"],
   ["Handoff contracts", "locked", "locked", "preview", "custom"],
-  ["Context preview", "locked", "locked", "enabled", "custom"],
   ["Private executor policy", "locked", "locked", "locked", "enabled"],
 ];
 
@@ -289,6 +290,18 @@ function PlanCard({
           >
             {busy === plan.key ? "Redirecting..." : plan.cta}
           </Button>
+        ) : plan.key === "free" ? (
+          <Link
+            href="/keys"
+            className={[
+              "inline-flex h-10 w-full items-center justify-center rounded-lg text-sm font-semibold transition",
+              isCurrent
+                ? "border border-white/20 bg-white text-black hover:bg-white/90"
+                : "border border-black/15 bg-black text-white hover:bg-neutral-900",
+            ].join(" ")}
+          >
+            {isCurrent ? "Go to API Keys" : "Start free"}
+          </Link>
         ) : canBuy || isEnterprise ? (
           <Link
             href={CONTACT_SALES_HREF}
@@ -356,49 +369,61 @@ export default function BillingPage() {
     if (item.key === "free") {
       return {
         ...item,
-        desc: c("Validate the API, generate test outputs, and inspect usage.", "验证 API、生成测试输出并查看用量。"),
+        name: c("Trial", "试用"),
+        price: c("Free", "免费"),
+        desc: c("Sign up and get $1 free credit instantly. No card required.", "注册即送 $1 免费额度，无需绑卡。"),
         cta: c("Current free access", "当前免费权限"),
-        features: [c("Developer API key", "开发者 API key"), c("Basic task access", "基础 task 权限"), c("Usage dashboard", "用量看板")],
+        features: [
+          c("$1 free credit on signup", "注册即送 $1 额度"),
+          c("~30 conversations included", "约 30 次对话体验"),
+          c("1,000 requests / month", "每月 1,000 次请求"),
+          "30 RPM",
+        ],
       };
     }
     if (item.key === "pro") {
       return {
         ...item,
-        desc: c("For builders shipping production workflows on top of OneAI.", "适合基于 OneAI 上线生产 workflow 的开发者。"),
-        cta: c("Upgrade to Pro", "升级到 Pro"),
+        name: c("Pay-as-you-go", "按量付费"),
+        price: c("Top up anytime", "随时充值"),
+        desc: c("Prepay credits, pay only for what you use. No monthly fee.", "预充值额度，按实际用量扣费，无月费。"),
+        cta: c("Top up now", "立即充值"),
         features: [
-          c("Higher request limits", "更高请求额度"),
-          c("Cost-aware model routing", "成本感知模型路由"),
-          "Request IDs and idempotency",
-          c("Customer usage analytics", "客户用量分析"),
+          c("Top up from ¥50 / $10", "最低充值 ¥50 / $10"),
+          c("Credits never expire", "额度永不过期"),
+          c("Claude Sonnet · Opus · Haiku", "支持全系列 Claude 模型"),
+          "120 RPM",
+          c("All routing modes", "全部路由模式"),
         ],
       };
     }
     if (item.key === "team") {
       return {
         ...item,
-        desc: c("For teams that need shared usage, stronger limits, and billing ops.", "适合需要共享用量、更强限额和账单运营的团队。"),
-        cta: c("Upgrade to Team", "升级到 Team"),
+        name: c("Team", "团队版"),
+        price: c("Top up + priority", "充值 + 优先支持"),
+        desc: c("Higher limits, debug traces, model controls, and priority support.", "更高限额、调试追踪、模型控制和优先支持。"),
+        cta: c("Contact to activate", "联系开通"),
         features: [
-          c("Shared organization billing", "组织共享账单"),
-          c("API key governance", "API key 治理"),
-          c("Provider/model policy", "Provider/model 策略"),
-          c("Agent OS preview and handoff contracts", "Agent OS 预览和交接合同"),
-          c("Priority commercial support", "优先商业支持"),
+          "600 RPM",
+          c("Debug trace + model registry", "调试追踪 + 模型注册表"),
+          c("Explicit model selection", "指定模型直连"),
+          c("Agent OS preview", "Agent OS 预览"),
+          c("Priority onboarding support", "优先开通支持"),
         ],
       };
     }
     return {
       ...item,
       price: c("Custom", "定制"),
-      desc: c("For production customers that need custom policy, provider controls, and support.", "适合需要定制策略、provider 控制和支持的生产客户。"),
+      desc: c("Custom limits, private provider policy, dedicated support.", "定制限额、私有 provider 策略和专属支持。"),
       cta: c("Contact sales", "联系销售"),
       features: [
-        c("Custom request and cost limits", "定制请求和成本限制"),
-        c("Custom provider/model policy", "定制 provider/model 策略"),
-        c("Private model configuration", "私有模型配置"),
+        c("Custom RPM & volume", "定制限速和用量"),
+        c("Dedicated provider policy", "专属 provider 策略"),
+        c("Custom models & health checks", "定制模型和健康检查"),
         c("Private Agent OS handoff protocol", "私有 Agent OS 交接协议"),
-        c("Launch support and operational review", "上线支持和运营检查"),
+        c("SLA + dedicated support", "SLA 保障 + 专属支持"),
       ],
     };
   });
@@ -505,14 +530,14 @@ export default function BillingPage() {
           </h1>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-black/55">
             {c(
-              "Sell reliable OneAI API access with model routing, usage visibility, and cost controls. Stripe handles subscription and invoices.",
-              "通过模型路由、用量可见性和成本控制售卖可靠的 OneAI API。Stripe 负责订阅和发票。"
+              "Prepaid credit billing — top up your balance, use the API, credits are deducted per request. No monthly fee, credits never expire.",
+              "预充值额度制 — 充值余额后调用 API，按每次请求实际消耗扣费，无月费，额度永不过期。"
             )}
           </p>
           {!ENABLE_STRIPE_CHECKOUT ? (
             <div className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-800">
-              <span>{c("Manual sales mode", "人工销售模式")}</span>
-              <span className="text-amber-900/50">{c("Contact:", "联系：")}</span>
+              <span>{c("Top up via WeChat / Alipay", "微信 / 支付宝充值")}</span>
+              <span className="text-amber-900/50">{c("Contact us after transfer:", "转账后联系：")}</span>
               <a className="underline underline-offset-2" href={CONTACT_SALES_HREF}>
                 {CONTACT_SALES_EMAIL}
               </a>

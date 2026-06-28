@@ -74,6 +74,8 @@ export async function getOrCreateOrgForUserEmail(emailRaw: string) {
       },
     });
 
+    const FREE_TRIAL_CREDIT_USD = 1.0;
+
     await tx.orgBilling.upsert({
       where: { orgId: org.id },
       update: {},
@@ -81,6 +83,8 @@ export async function getOrCreateOrgForUserEmail(emailRaw: string) {
         orgId: org.id,
         plan: "free",
         status: "inactive",
+        creditBalanceUsd: FREE_TRIAL_CREDIT_USD,
+        totalTopUpUsd: FREE_TRIAL_CREDIT_USD,
       },
     });
 
