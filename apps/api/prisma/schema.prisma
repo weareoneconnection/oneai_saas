@@ -291,6 +291,10 @@ model OrgBilling {
   monthlyCostLimitUsd Float?
   rateLimitRpm        Int?
 
+  creditBalanceUsd    Float   @default(0)
+  totalTopUpUsd       Float   @default(0)
+  totalSpentUsd       Float   @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

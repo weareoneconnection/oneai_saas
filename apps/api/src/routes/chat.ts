@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { requireApiKey, type AuthedRequest } from "../core/security/auth.js";
 import { rateLimitRedisTcp } from "../core/security/rateLimitRedis.js";
 import { prisma } from "../config/prisma.js";
+import { assertCreditBalance, deductCredit } from "../core/billing/creditService.js";
 import { buildChatCompletionParams, generateLLMText, getLLMClient } from "../core/llm/providerClient.js";
 import { assertLLMConfigured } from "../core/llm/providerClient.js";
 import { assertLLMAllowed, assertLLMCostAllowed } from "../core/llm/policy.js";
@@ -202,6 +203,11 @@ router.post("/completions", async (req, res) => {
     assertLLMConfigured(config);
     assertApiKeyAllowsModel(req as AuthedRequest, config);
 
+    const orgId = getOrgId(req as AuthedRequest);
+    if (!(req as AuthedRequest).auth?.isAdmin) {
+      await assertCreditBalance(orgId);
+    }
+
     if (parsed.stream) {
       res.status(200);
       res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
@@ -306,6 +312,8 @@ router.post("/completions", async (req, res) => {
       usage: result.usage,
       latencyMs: Date.now() - start,
     });
+
+    void deductCredit(orgId, result.usage.estimatedCostUSD || 0);
 
     return res.json(body);
   } catch (err: any) {

@@ -24,7 +24,7 @@ const POLICIES: Record<string, PlanPolicy> = {
   },
   pro: {
     monthlyRequestLimit: 50_000,
-    monthlyCostLimitUsd: 500,
+    monthlyCostLimitUsd: 29,
     rateLimitRpm: 120,
     maxCostPerRequestUsd: 1,
     allowedTiers: ["free", "pro"],
@@ -35,7 +35,7 @@ const POLICIES: Record<string, PlanPolicy> = {
   },
   team: {
     monthlyRequestLimit: 250_000,
-    monthlyCostLimitUsd: 2_500,
+    monthlyCostLimitUsd: 99,
     rateLimitRpm: 600,
     maxCostPerRequestUsd: 5,
     allowedTiers: ["free", "pro", "team"],

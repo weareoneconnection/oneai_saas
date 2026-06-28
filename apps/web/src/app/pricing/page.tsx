@@ -52,69 +52,64 @@ export default function PricingPage() {
 
   const plans = [
     {
-      name: "Free",
-      price: "$0",
-      desc: c("For local testing and validating structured tasks.", "适合测试和早期接入。"),
+      name: c("Trial", "试用"),
+      price: c("Free", "免费"),
+      desc: c("Test the API before topping up.", "充值前先体验 API 能力。"),
       features: [
-        c("1,000 requests / month", "每月 1,000 次请求"),
-        c("$10 model cost guard", "$10 模型成本保护"),
+        c("$10 free credit included", "赠送 $10 免费额度"),
+        c("1,000 requests / month", "每月最多 1,000 次请求"),
         "30 RPM",
         c("cheap + balanced modes", "cheap + balanced 模式"),
       ],
     },
     {
-      name: "Pro",
-      price: "$29/mo",
-      desc: c("For builders shipping apps on OneAI API.", "适合正在上线产品的开发者和 SaaS 团队。"),
+      name: c("Pay-as-you-go", "按量付费"),
+      price: c("Top up anytime", "随时充值"),
+      desc: c("Prepay credits, pay only for what you use. No monthly fee.", "预充值额度，按实际用量扣费，无月费。"),
       features: [
-        c("50,000 requests / month", "每月 50,000 次请求"),
-        c("$500 model cost guard", "$500 模型成本保护"),
-        "120 RPM",
-        c("cheap, balanced, fast, auto modes", "cheap、balanced、fast、auto 模式"),
+        c("Top up from ¥50 / $10", "最低充值 ¥50 / $10"),
+        c("Credits never expire", "额度永不过期"),
+        c("Claude Sonnet · Opus · Haiku", "支持 Claude Sonnet / Opus / Haiku"),
+        c("120 RPM", "120 RPM 限速"),
+        c("All routing modes", "全部路由模式"),
       ],
     },
     {
-      name: "Team",
-      price: "$99/mo",
-      desc: c(
-        "For teams needing shared billing, debug traces, and model controls.",
-        "适合需要团队协作、调试和模型权限的商业团队。"
-      ),
+      name: c("Team", "团队版"),
+      price: c("Top up + priority", "充值 + 优先支持"),
+      desc: c("Higher limits, debug traces, model controls, and priority support.", "更高限额、调试追踪、模型控制和优先支持。"),
       features: [
-        c("250,000 requests / month", "每月 250,000 次请求"),
-        c("$2,500 model cost guard", "$2,500 模型成本保护"),
-        "600 RPM",
-        c("premium mode, debug trace, model registry", "premium 模式、debug trace、模型注册表"),
-        c("Agent OS preview + handoff contracts", "Agent OS 预览和交接合同"),
+        c("600 RPM", "600 RPM 限速"),
+        c("Debug trace + model registry", "调试追踪 + 模型注册表"),
+        c("Explicit model selection", "指定模型直连"),
+        c("Agent OS preview", "Agent OS 预览"),
+        c("Priority onboarding support", "优先开通支持"),
       ],
     },
     {
       name: "Enterprise",
       price: c("Custom", "定制"),
-      desc: c(
-        "For custom providers, limits, contracts, and support.",
-        "适合需要私有策略、定制模型和更高额度的生产团队。"
-      ),
+      desc: c("Custom limits, private provider policy, dedicated support.", "定制限额、私有 provider 策略和专属支持。"),
       features: [
-        c("Custom request volume", "定制请求量"),
-        c("Custom model-cost guard", "定制模型成本保护"),
+        c("Custom RPM & volume", "定制限速和用量"),
         c("Dedicated provider policy", "专属 provider 策略"),
-        c("Custom models, health checks, support", "定制模型、健康检查和支持"),
+        c("Custom models & health checks", "定制模型和健康检查"),
         c("Private handoff protocol", "私有 Agent OS 交接协议"),
+        c("SLA + dedicated support", "SLA 保障 + 专属支持"),
       ],
     },
   ];
 
   const matrix = [
-    [c("Monthly requests", "每月请求量"), "1,000", "50,000", "250,000", c("Custom", "定制")],
-    [c("Monthly model-cost guard", "每月模型成本保护"), "$10", "$500", "$2,500", c("Custom", "定制")],
-    [c("API key rate limit", "API key 限流"), "30 RPM", "120 RPM", "600 RPM", c("Custom", "定制")],
-    ["maxCostUsd", "$0.05", "$1", "$5", c("Custom", "定制")],
-    [c("Routing modes", "路由模式"), "cheap, balanced", "cheap, balanced, fast, auto", c("all modes", "全部模式"), c("all modes", "全部模式")],
-    [c("Task tiers", "Task 等级"), "free", "free + pro", "free + pro + team", c("all tiers", "全部等级")],
+    [c("Billing model", "计费模式"), c("Free credit", "免费额度"), c("Prepaid credit", "预充值额度"), c("Prepaid credit", "预充值额度"), c("Custom", "定制")],
+    [c("Minimum top-up", "最低充值"), "—", "¥50 / $10", "¥50 / $10", c("Custom", "定制")],
+    [c("Credit expiry", "额度有效期"), "30 days", c("Never", "永不过期"), c("Never", "永不过期"), c("Custom", "定制")],
+    [c("Monthly request cap", "每月请求上限"), "1,000", c("Unlimited", "不限"), c("Unlimited", "不限"), c("Custom", "定制")],
+    [c("API key rate limit", "API key 限速"), "30 RPM", "120 RPM", "600 RPM", c("Custom", "定制")],
+    [c("Routing modes", "路由模式"), "cheap, balanced", c("All modes", "全部模式"), c("All modes", "全部模式"), c("All modes", "全部模式")],
     [c("Debug trace", "调试追踪"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
-    [c("Explicit provider/model", "指定 provider/model"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
-    [c("Model registry and health", "模型注册表和健康检查"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
+    [c("Explicit model selection", "指定模型直连"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
+    [c("Model registry", "模型注册表"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
     [c("Agent OS preview", "Agent OS 预览"), c("locked", "锁定"), c("locked", "锁定"), c("enabled", "开启"), c("enabled", "开启")],
   ];
 
@@ -128,12 +123,12 @@ export default function PricingPage() {
             {c("Commercial API pricing", "商用 API 价格")}
           </div>
           <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl md:text-5xl">
-            {c("Sell full-model intelligence with cost controls built in.", "用内置成本控制售卖全模型智能能力。")}
+            {c("Pay only for what you use. No monthly fees.", "按实际用量付费，无月费。")}
           </h1>
           <p className="mt-5 text-base leading-relaxed text-black/65">
             {c(
-              "OneAI pricing is built around commercial API access: model routing, structured outputs, customer usage, billing, and cost guardrails.",
-              "OneAI 的价格体系围绕商用 API、模型路由、结构化输出、客户用量、账单和成本控制设计。"
+              "OneAI uses a prepaid credit model. Top up your balance, call the API, and credits are deducted per request. No surprises, no waste.",
+              "OneAI 采用预充值额度制。充值后调用 API，按每次请求实际消耗扣费，用多少算多少，余额永不过期。"
             )}
           </p>
         </div>
@@ -185,8 +180,8 @@ export default function PricingPage() {
           <div className="text-sm font-bold text-black">{c("Manual onboarding", "人工开通")}</div>
           <p className="mt-2 text-sm leading-relaxed text-black/60">
             {c(
-              "Stripe checkout is temporarily hidden. For Pro, Team, or Enterprise access, contact us and we will activate the plan manually.",
-              "Stripe checkout 暂时隐藏。需要 Pro、Team 或企业版权限时，请通过邮箱、Telegram 或 X 联系，我们会人工开通。"
+              "Transfer via WeChat / Alipay, then contact us with your email. We will top up your credit balance within minutes.",
+              "微信或支付宝转账后，发送邮箱给我们，我们会在几分钟内为您充值额度，立即可用。"
             )}
           </p>
           <div className="mt-3 flex flex-wrap gap-4 text-sm font-semibold">
@@ -283,11 +278,11 @@ export default function PricingPage() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-lg border border-black/10 bg-black/[0.02] p-5">
-            <div className="text-sm font-bold">{c("Model gateway", "模型网关")}</div>
+            <div className="text-sm font-bold">{c("Model pricing", "模型定价")}</div>
             <p className="mt-2 text-sm leading-relaxed text-black/60">
               {c(
-                "Chat Completions, streaming, model catalog, health checks, and provider readiness.",
-                "支持模型网关、流式输出、模型目录和健康检查。"
+                "Claude Sonnet: ¥0.022 / 1K input tokens · ¥0.108 / 1K output tokens. Credits deducted per actual usage.",
+                "Claude Sonnet：¥0.022 / 千输入 tokens · ¥0.108 / 千输出 tokens，按实际用量从余额扣除。"
               )}
             </p>
           </div>
