@@ -4,12 +4,16 @@ async function getApiStatus(): Promise<{ up: boolean; uptime: string }> {
   const apiKey = process.env.UPTIMEROBOT_API_KEY;
   if (!apiKey) return { up: true, uptime: "" };
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5_000);
     const res = await fetch("https://api.uptimerobot.com/v2/getMonitors", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ api_key: apiKey, format: "json", custom_uptime_ratios: "30" }),
+      signal: controller.signal,
       next: { revalidate: 300 },
     });
+    clearTimeout(timer);
     const json = await res.json();
     const monitor = json?.monitors?.[0];
     if (!monitor) return { up: true, uptime: "" };

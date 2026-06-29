@@ -313,7 +313,7 @@ router.post("/completions", async (req, res) => {
       latencyMs: Date.now() - start,
     });
 
-    void deductCredit(orgId, result.usage.estimatedCostUSD || 0);
+    await deductCredit(orgId, result.usage.estimatedCostUSD || 0);
 
     return res.json(body);
   } catch (err: any) {
@@ -362,6 +362,11 @@ export const messagesHandler = async (req: any, res: any) => {
     assertLLMCostAllowed(config, req.body);
     assertLLMConfigured(config);
     assertApiKeyAllowsModel(req as AuthedRequest, config);
+
+    const orgId = getOrgId(req as AuthedRequest);
+    if (!req.auth?.isAdmin) {
+      await assertCreditBalance(orgId);
+    }
 
     const messages = normalizeMessages(parsed.messages);
     if (parsed.system) {
@@ -500,6 +505,8 @@ export const messagesHandler = async (req: any, res: any) => {
       usage: result.usage,
       latencyMs: Date.now() - start,
     });
+
+    await deductCredit(orgId, result.usage.estimatedCostUSD || 0);
 
     return res.json(body);
   } catch (err: any) {

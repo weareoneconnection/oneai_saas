@@ -189,6 +189,8 @@ export function getLLMClient(config: LLMResolvedConfig) {
   const client = new OpenAI({
     apiKey: resolved.apiKey,
     ...(resolved.baseURL ? { baseURL: resolved.baseURL } : {}),
+    timeout: 120_000,
+    maxRetries: 2,
   });
 
   clients.set(cacheKey, client);

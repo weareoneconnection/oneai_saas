@@ -11,6 +11,8 @@ const router = Router();
 // ✅ Stripe SDK（你的版本要求 apiVersion = "2026-01-28.clover"）
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-01-28.clover",
+  timeout: 30_000,
+  maxNetworkRetries: 2,
 });
 
 function isPlaceholder(value?: string | null) {

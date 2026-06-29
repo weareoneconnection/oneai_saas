@@ -360,18 +360,18 @@ async function assertPlanAllowsUsage(params: {
   const from = new Date();
   from.setUTCDate(1);
   from.setUTCHours(0, 0, 0, 0);
+  const fromDay = from.toISOString().slice(0, 10);
 
-  const aggregate = await prisma.request.aggregate({
+  const aggregate = await prisma.usageDaily.aggregate({
     where: {
       orgId: params.orgId,
-      createdAt: { gte: from },
+      day: { gte: fromDay },
     },
-    _count: { _all: true },
-    _sum: { estimatedCostUsd: true },
+    _sum: { requestCount: true, costUsd: true },
   });
 
-  const requests = aggregate._count._all || 0;
-  const costUsd = Number(aggregate._sum.estimatedCostUsd || 0);
+  const requests = aggregate._sum.requestCount || 0;
+  const costUsd = Number(aggregate._sum.costUsd || 0);
   const budget = params.apiKeyMonthlyBudgetUsd ?? policy.monthlyCostLimitUsd;
 
   if (enforcePlanPolicy && requests >= policy.monthlyRequestLimit) {

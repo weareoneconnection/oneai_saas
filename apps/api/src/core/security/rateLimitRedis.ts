@@ -96,7 +96,7 @@ export function rateLimitRedisTcp(options?: RateLimitOptions) {
 
       return next();
     } catch (e) {
-      // Redis挂了：建议 fail-open（不中断服务）
+      console.warn("[rate-limit] Redis error — rate limiting bypassed", e);
       if (failOpen) return next();
       return res.status(503).json({ success: false, error: "Rate limiter unavailable" });
     }

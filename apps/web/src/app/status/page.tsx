@@ -14,6 +14,8 @@ async function getMonitors(): Promise<Monitor[]> {
   if (!apiKey) return [];
 
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5_000);
     const res = await fetch("https://api.uptimerobot.com/v2/getMonitors", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -22,8 +24,10 @@ async function getMonitors(): Promise<Monitor[]> {
         format: "json",
         custom_uptime_ratios: "7-30",
       }),
+      signal: controller.signal,
       next: { revalidate: 60 },
     });
+    clearTimeout(timer);
     const json = await res.json();
     return json?.monitors || [];
   } catch {
