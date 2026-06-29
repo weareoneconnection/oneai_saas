@@ -1,28 +1,22 @@
-// 充值脚本：npx tsx scripts/topup.ts <email或orgId> <人民币金额>
-// 示例：npx tsx scripts/topup.ts user@example.com 100
+// 充值脚本：npx tsx scripts/topup.ts <email或orgId> <美元金额>
+// 示例：npx tsx scripts/topup.ts user@example.com 10
 import "dotenv/config";
 import { prisma } from "../src/config/prisma.js";
 import { topUpCredit, getOrgBalance } from "../src/core/billing/creditService.js";
 
-const CNY_TO_USD = 7.2;
-const MARKUP = 1.4; // 加价40%，实际汇率折算后留利润空间
-
 async function main() {
-  const [input, cnyStr] = process.argv.slice(2);
-  if (!input || !cnyStr) {
-    console.error("用法: npx tsx scripts/topup.ts <email或orgSlug> <人民币金额>");
-    console.error("示例: npx tsx scripts/topup.ts user@example.com 100");
+  const [input, usdStr] = process.argv.slice(2);
+  if (!input || !usdStr) {
+    console.error("用法: npx tsx scripts/topup.ts <email或orgSlug> <美元金额>");
+    console.error("示例: npx tsx scripts/topup.ts user@example.com 10");
     process.exit(1);
   }
 
-  const cny = parseFloat(cnyStr);
-  if (isNaN(cny) || cny <= 0) {
+  const creditUsd = parseFloat(parseFloat(usdStr).toFixed(4));
+  if (isNaN(creditUsd) || creditUsd <= 0) {
     console.error("金额必须是正数");
     process.exit(1);
   }
-
-  // 人民币 → 实际可用 USD 额度（除以汇率再除以加价倍数）
-  const creditUsd = parseFloat((cny / CNY_TO_USD / MARKUP).toFixed(4));
 
   // 查找 org
   let orgId: string | null = null;
@@ -58,11 +52,10 @@ async function main() {
   const after = await topUpCredit(orgId, creditUsd);
 
   console.log("✅ 充值成功");
-  console.log(`   用户:     ${input}`);
-  console.log(`   充值金额: ¥${cny} CNY`);
-  console.log(`   USD额度:  $${creditUsd} (汇率${CNY_TO_USD}, 加价${MARKUP}x)`);
-  console.log(`   充值前:   $${before.toFixed(4)}`);
-  console.log(`   充值后:   $${after.toFixed(4)}`);
+  console.log(`   用户:   ${input}`);
+  console.log(`   充值:   $${creditUsd} USD`);
+  console.log(`   充值前: $${before.toFixed(4)}`);
+  console.log(`   充值后: $${after.toFixed(4)}`);
 }
 
 main()
