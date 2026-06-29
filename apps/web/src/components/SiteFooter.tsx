@@ -27,18 +27,26 @@ export default async function SiteFooter() {
 
   return (
     <footer className="border-t border-black/10 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-6 sm:flex-row">
-        <p className="text-xs text-black/40">© {new Date().getFullYear()} OneAI. All rights reserved.</p>
-        <div className="flex items-center gap-6 text-xs text-black/40">
-          <Link href="/pricing" className="hover:text-black/70">Pricing</Link>
-          <Link href="/docs" className="hover:text-black/70">Docs</Link>
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-6 py-8 sm:flex-row">
+        <p className="text-sm text-black/40">© {new Date().getFullYear()} OneAI. All rights reserved.</p>
+        <div className="flex items-center gap-6 text-sm text-black/50">
+          <Link href="/pricing" className="hover:text-black">Pricing</Link>
+          <Link href="/docs" className="hover:text-black">Docs</Link>
           <Link
             href="/status"
-            className="flex items-center gap-1.5 hover:text-black/70"
+            className={[
+              "flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+              up
+                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                : "bg-red-50 text-red-700 hover:bg-red-100",
+            ].join(" ")}
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${up ? "bg-emerald-500" : "bg-red-500"}`} />
+            <span className={[
+              "h-2 w-2 rounded-full",
+              up ? "bg-emerald-500 shadow-[0_0_6px_1px_rgba(16,185,129,0.6)]" : "bg-red-500",
+            ].join(" ")} />
             <span>{up ? "All Systems Operational" : "Service Disruption"}</span>
-            {uptime && <span className="text-black/30">· {uptime}</span>}
+            {uptime && <span className="opacity-60">· {uptime}</span>}
           </Link>
         </div>
       </div>
